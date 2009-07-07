@@ -1,0 +1,16 @@
+Name:       FormulaRenderer
+Version:    1.0
+Synopsis:   Render math formula in ASCII, and works under windows 
+Build-Type: Simple
+Cabal-Version: >= 1.2
+Description: Lalalal
+Author: Vincent Berthoux
+Maintainer: Vincent Berthoux
+
+Executable formularender
+    Main-Is: formulaMain.hs
+    ghc-options:-Wall
+    Build-Depends: base >= 2.0
+                 , parsec >= 2.0
+                 , array
+

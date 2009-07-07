@@ -1,0 +1,5 @@
+:set -fbreak-on-exception
+:set -fbreak-on-error
+:set -fprint-evld-with-show
+:set args ["test.txt", "out.txt"]
+:load formulaMain.hs
