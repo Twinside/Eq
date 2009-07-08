@@ -89,7 +89,6 @@ sizeOfFormula sizer _isRight _prevPrio (BinOp OpPow f1 f2) =
           prioOfPow = prioOfBinaryOperators OpPow
           sizeDim = (powSize sizer) (sizeExtract nodeLeft) (sizeExtract nodeRight)
 
-
 -- add 3 char : ###### ! #######
 -- we add spaces around operators
 sizeOfFormula sizer isRight prevPrio (BinOp op formula1 formula2) =

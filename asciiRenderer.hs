@@ -19,7 +19,7 @@ asciiSizer = Dimensioner
     , divBar = \(_,(x1,y1)) (_,(x2,y2)) ->
                     (y1, (max x1 x2 + 2, y1 + y2 + 1))
     , powSize = \(b,(x1,y1)) (_,(x2,y2)) ->
-                    (b, (x1 + x2 + 3, y1 + y2))
+                    (b + y2, (x1 + x2 + 3, y1 + y2))
 
       -- We must handle case like this :
       --  +-------+
@@ -121,18 +121,17 @@ renderF (x,y) (BinOp OpDiv f1 f2) (BiSizeNode False (_,(w,_)) t1 t2) =
               leftBegin = x + (w - lw) `div` 2
               rightBegin = x + (w - rw) `div` 2
 
-renderF (x,y) (BinOp op f1 f2) (BiSizeNode False _ t1 t2) =
-  ((x + lw + 1, base),opChar) : (leftRender ++ rightRender)
+renderF (x,y) (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) =
+  ((x + lw + 1, y + base),opChar) : (leftRender ++ rightRender)
     where (lw, _) = sizeOfTree t1
-          (_, _) = sizeOfTree t2
           leftBase = baseLineOfTree t1
           rightBase = baseLineOfTree t2
           opChar = charOfOp op
 
-          (leftTop, rightTop, base) =
+          (leftTop, rightTop) =
               if leftBase > rightBase
-                 then (y, y + leftBase - rightBase, y + leftBase)
-                 else (y + rightBase - leftBase, y, y + rightBase)
+                 then (y, y + leftBase - rightBase)
+                 else (y + rightBase - leftBase, y)
 
           leftRender = renderF (x, leftTop) f1 t1
           rightRender = renderF (x + lw + 3, rightTop) f2 t2
