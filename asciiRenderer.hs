@@ -71,17 +71,23 @@ sizeOfFormula _ _ (UnOp OpNegate f) =
 --       #
 --       #
 sizeOfFormula _ _ (BinOp OpDiv f1 f2) = 
-  BiSizeNode False (y1+1) (max x1 x2 + 2, y1 + y2 + 1) nodeLeft nodeRight
+  BiSizeNode False base (max x1 x2 + 2, y1 + y2 + 1) nodeLeft nodeRight
     where nodeLeft = sizeOfFormula False maxPrio f1
           nodeRight = sizeOfFormula True maxPrio f2
+          base = y1
           (x1, y1) = sizeOfTree nodeLeft
           (x2, y2) = sizeOfTree nodeRight
 
+-- do something like that
+--         %%%%%%%
+--         %%%%%%%
+--  #### ^ 
+--  ####
 sizeOfFormula _isRight _prevPrio (BinOp OpPow f1 f2) =
   BiSizeNode False base (x1 + x2 + 3, y1 + y2) nodeLeft nodeRight
-    where nodeLeft = sizeOfFormula False maxPrio f1
-          nodeRight = sizeOfFormula True maxPrio f2
-          base = baseLineOfTree nodeLeft
+    where nodeLeft = sizeOfFormula False prioOfPow f1
+          nodeRight = sizeOfFormula True prioOfPow f2
+          base = baseLineOfTree nodeLeft + y2
           (x1, y1) = sizeOfTree nodeLeft
           (x2, y2) = sizeOfTree nodeRight
 
@@ -94,13 +100,16 @@ sizeOfFormula isRight prevPrio (BinOp OpAdd f1 f2) =
 sizeOfFormula isRight prevPrio (BinOp OpSub f1 f2) =
     combine isRight (3,0) prevPrio prioOfAdd f1 f2
 
--- BLA BLA BLA
+-- do something like this :
+--      #######
+-- %%%% #######
+--      #######
 sizeOfFormula _ _ (App f1 f2) =
     SizeNodeList False base finalSize (funcSize : trees)
         where trees = map (sizeOfFormula False maxPrio) f2
               sizes = map sizeOfTree trees
               funcSize = sizeOfFormula False maxPrio f1
-              base = (snd $ sizeOfTree funcSize) `div` 2
+              base = py `div` 2
               (xf, yf) = sizeOfTree funcSize
               (px, py) = foldl (\(xa, ya) (x,y) -> (xa + x + 2, max ya y)) 
                                (0, 0) sizes
@@ -109,19 +118,28 @@ sizeOfFormula _ _ (App f1 f2) =
 -- | Helper function used to create a SizeTree
 combine :: Bool -> Dimension -> Priority -> Priority -> Formula -> Formula -> SizeTree
 combine isRight (xa, ya) prevPrio prio formula1 formula2 =
-  ifPrio needParenthesis (x1 + x2 + xa, max y1 y2 + ya) nodeLeft nodeRight
+  ifPrio needParenthesis (x1 + x2 + xa, nodeSize) nodeLeft nodeRight
     where ifPrio True size = BiSizeNode True base (addParens size)
           ifPrio False size = BiSizeNode False base size
 
-          base = if y1 > y2
-                    then baseLineOfTree nodeLeft
-                    else baseLineOfTree nodeRight
+          baseLeft = baseLineOfTree nodeLeft
+          baseRight = baseLineOfTree nodeRight
 
           nodeLeft = sizeOfFormula False prio formula1
           nodeRight = sizeOfFormula True prio formula2
 
           (x1, y1) = sizeOfTree nodeLeft
           (x2, y2) = sizeOfTree nodeRight
+
+          -- We must handle case like this :
+          --  +-------+
+          --  |       |+-------+
+          --  +-------|+-------+
+          --  |       ||       |
+          --  +-------+|       |
+          --           +-------+
+          base = max baseLeft baseRight
+          nodeSize = base + ya + max (y1 - baseLeft) (y2 - baseRight)
 
           needParenthesis = if isRight then prio >= prevPrio
                                        else prio > prevPrio
@@ -155,15 +173,20 @@ renderParens (x,y) (w,h) =
              lastLine = y + h - 1
 
 renderBinaryOp :: Pos -> Char -> Formula -> Formula -> SizeTree -> [(Pos,Char)]
-renderBinaryOp (x,y) op f1 f2 (BiSizeNode False _base (_,h) t1 t2) =
-  ((x + lw + 1, y + h `div` 2),op) : (leftRender ++ rightRender)
-    where (lw, lh) = sizeOfTree t1
-          (_, rh) = sizeOfTree t2
-          leftBaseline = y + (h - lh) `div` 2
-          leftRender = renderF (x, leftBaseline) f1 t1
+renderBinaryOp (x,y) op f1 f2 (BiSizeNode False _ _ t1 t2) =
+  ((x + lw + 1, base),op) : (leftRender ++ rightRender)
+    where (lw, _) = sizeOfTree t1
+          (_, _) = sizeOfTree t2
+          leftBase = baseLineOfTree t1
+          rightBase = baseLineOfTree t2
 
-          rightBaseline = y + (h - rh) `div` 2
-          rightRender = renderF (x + lw + 3, rightBaseline) f2 t2
+          (leftTop, rightTop, base) =
+              if leftBase > rightBase
+                 then (y, y + leftBase - rightBase, y + leftBase)
+                 else (y + rightBase - leftBase, y, y + rightBase)
+
+          leftRender = renderF (x, leftTop) f1 t1
+          rightRender = renderF (x + lw + 3, rightTop) f2 t2
 
 renderBinaryOp _ _ _ _ _ = error "renderBinaryOp - wrong size tree node"
 
@@ -208,7 +231,7 @@ renderF (x,y) (BinOp OpPow f1 f2) (BiSizeNode False _base (_,_) t1 t2) =
 
 -- Division is of another kind :]
 renderF (x,y) (BinOp OpDiv f1 f2) (BiSizeNode False _base (w,_) t1 t2) =
-    [ ((xi,y + lh), '-') | xi <- [x .. x + w]] 
+    [ ((xi,y + lh), '-') | xi <- [x .. x + w - 1]] 
     ++ renderF (leftBegin , y) f1 t1 
     ++ renderF (rightBegin, y + lh + 1) f2 t2
         where (lw, lh) = sizeOfTree t1

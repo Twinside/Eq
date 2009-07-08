@@ -17,9 +17,8 @@ main = do
            (\f -> let (f', tree) = renderFormula f
                       formulaMatrix = linesOfArray f'
                   in
-                  write $ show formula ++ "\n\n\n"
-                       ++ show tree
-                       ++ "\n\n\n"
-                       ++ (concat $ intersperse "\n" formulaMatrix))
+                  do write . concat $ intersperse "\n" formulaMatrix
+                     writeFile "formula.txt" $ show formula
+                     writeFile "size.txt" $ show tree)
            formula
 
