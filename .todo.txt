@@ -1,0 +1,2 @@
+2:Make research to generalize placing
+2:Fix baseline in Ascii rendering
