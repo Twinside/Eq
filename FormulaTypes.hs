@@ -1,6 +1,7 @@
 module FormulaTypes( Formula( .. )
                    , BinOperator( .. )
                    , UnOperator( .. )
+                   , prioOfBinaryOperators 
                    , expr 
                    ) where
 
@@ -24,7 +25,7 @@ data BinOperator  =
     -- | '^'
     | OpPow 
     deriving (Eq,Show,Read)
-    
+
 data UnOperator =
     OpNegate
     deriving (Eq, Show, Read)
@@ -39,6 +40,14 @@ data Formula =
     deriving (Eq, Show, Read)
 
 type Parsed a b = GenParser Char a b
+
+prioOfBinaryOperators :: BinOperator -> Int
+prioOfBinaryOperators = prio
+    where prio OpAdd = 3
+          prio OpSub = 3
+          prio OpMul = 2
+          prio OpDiv = 2
+          prio OpPow = 1
 
 float :: CharParser st Double
 float = P.float lexer
