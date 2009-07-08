@@ -1,5 +1,6 @@
 import System.Environment
 import FormulaTypes
+import FormulaLinker
 import AsciiRenderer
 import CharArray
 import Data.List( intersperse )
@@ -14,7 +15,9 @@ main = do
     formulaText <- readFile input
     let formula = runParser expr () "FromFile" formulaText
     either (\_ -> print "No print-out")
-           (\f -> let (f', tree) = renderFormula f
+           (\unlinkedFormula ->
+                  let f = linkFormula unlinkedFormula
+                      (f', tree) = renderFormula f
                       formulaMatrix = linesOfArray f'
                   in
                   do write . concat $ intersperse "\n" formulaMatrix

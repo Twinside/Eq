@@ -27,7 +27,9 @@ data BinOperator  =
     deriving (Eq,Show,Read)
 
 data UnOperator =
-    OpNegate
+      OpNegate
+    | OpAbs
+    | OpSqrt
     deriving (Eq, Show, Read)
 
 data Formula =
@@ -40,7 +42,7 @@ data Formula =
     deriving (Eq, Show, Read)
 
 type Parsed a b = GenParser Char a b
-
+    
 prioOfBinaryOperators :: BinOperator -> Int
 prioOfBinaryOperators = prio
     where prio OpAdd = 3

@@ -10,16 +10,22 @@ type Pos = (Int, Int)
 
 asciiSizer :: Dimensioner
 asciiSizer = Dimensioner
-    { unaryDim = \_ _ -> (0, (1,0))
+    { unaryDim = \op (base, (w,h)) ->
+        let s OpNegate = (base, (w + 1, h))
+            s OpAbs = (base, (w + 2, h))
+            s OpSqrt = (base, (w + (h * 3) `div` 2, h + 1))
+            {-s _ = error "EEEEEEEERgl"-}
+        in s op
+
     , varSize = \s -> (0, (length s, 1))
     , intSize = \i -> (0, (length $ show i,1))
     , floatSize = \f -> (0, (length $ show f, 1))
-    , addParens = \(x, y) -> (x + 2, y)
-    , remParens = \(x, y) -> (x - 2, y)
-    , divBar = \(_,(x1,y1)) (_,(x2,y2)) ->
-                    (y1, (max x1 x2 + 2, y1 + y2 + 1))
-    , powSize = \(b,(x1,y1)) (_,(x2,y2)) ->
-                    (b + y2, (x1 + x2 + 3, y1 + y2))
+    , addParens = \(w, h) -> (w + 2, h)
+    , remParens = \(w, h) -> (w - 2, h)
+    , divBar = \(_,(w1,h1)) (_,(w2,h2)) ->
+                    (h1, (max w1 w2 + 2, h1 + h2 + 1))
+    , powSize = \(b,(w1,h1)) (_,(w2,h2)) ->
+                    (b + h2, (w1 + w2 + 3, h1 + h2))
 
       -- We must handle case like this :
       --  +-------+
@@ -28,17 +34,17 @@ asciiSizer = Dimensioner
       --  |       ||       |
       --  +-------+|       |
       --           +-------+
-    , binop = \(bl,(x1,y1)) (br,(x2,y2)) ->
+    , binop = \_ (bl,(w1,h1)) (br,(w2,h2)) ->
                     let base = max bl br
-                        nodeSize = base + max (y1 - bl) (y2 - br)
-                    in (base, (x1 + x2 + 3, nodeSize))
+                        nodeSize = base + max (h1 - bl) (h2 - br)
+                    in (base, (w1 + w2 + 3, nodeSize))
 
-    , argSize = \(xa, argBase, lower) (nodeBase, (x,y)) ->
-                  (xa + x + 2, max argBase nodeBase, max lower (y-nodeBase))
+    , argSize = \(wa, argBase, lower) (nodeBase, (w,h)) ->
+                  (wa + w + 2, max argBase nodeBase, max lower (h-nodeBase))
 
-    , appSize = \(px, argsBase, argsLeft) (_, (xf, yf)) ->
-            let finalY = max yf (argsBase + argsLeft)
-            in ((finalY - yf) `div` 2, (xf + px, finalY))
+    , appSize = \(pw, argsBase, argsLeft) (_, (wf, hf)) ->
+            let finalY = max hf (argsBase + argsLeft)
+            in ((finalY - hf) `div` 2, (wf + pw, finalY))
     }
 
 -------------------------------------------------------------
@@ -136,8 +142,26 @@ renderF (x,y) (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) =
           leftRender = renderF (x, leftTop) f1 t1
           rightRender = renderF (x + lw + 3, rightTop) f2 t2
 
+renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) =
+    -- tail of root
+    ((x + h `div` 2, y + h), 'v') :
+    -- The sub formula
+    renderF (leftBegin - 1, y + 1) f s
+    -- The top line
+    ++ [ ((left,y), '_') | left <- [leftBegin .. x + w] ]
+    -- big line from bottom to top
+    ++ [ ((x + h `div` 2 + i, y + h - i), '/') | i <- [1 .. h - 1] ]
+    -- Tiny line from middle to bottom
+    ++ [ ((x + i, h `div` 2 + i), '\\') | i <- [0 .. h `div` 2 - 1]]
+        where leftBegin = x + (h * 3) `div` 2
+
 renderF (x,y) (UnOp OpNegate f) (MonoSizeNode _ _ s) =
     ((x,y), '-') : renderF (x+1,y) f s
+
+renderF (x,y) (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) =
+    concat [  [((x,height), '|'), ((x + w - 1, height), '|')]
+             | height <- [y .. y + h - 1] ]
+    ++ renderF (x+1,y) f s
 
 renderF (x,y) (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) =
     concat params
@@ -154,7 +178,7 @@ renderF (x,y) (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts))
               write (acc, (x',y')) (node, size) =
                   ( commas : argWrite : acc , (x' + nodeWidth + 2, y') )
                     where (nodeWidth, _) = sizeOfTree size
-                          commas = [((x' + nodeWidth, argBase), ',')] 
+                          commas = [((x' + nodeWidth, y + argBase), ',')] 
                           nodeBase = baseLineOfTree size
                           baseLine' = y' + (argBase - nodeBase)
                           argWrite = renderF (x', baseLine') node size 

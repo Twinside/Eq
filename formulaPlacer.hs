@@ -19,7 +19,7 @@ data SizeTree =
 type RelativePlacement = (BaseLine, Dimension)
 
 data Dimensioner = Dimensioner
-    { unaryDim :: UnOperator -> Dimension -> RelativePlacement
+    { unaryDim :: UnOperator -> RelativePlacement -> RelativePlacement
     , varSize :: String -> RelativePlacement
     , intSize :: Int -> RelativePlacement
     , floatSize :: Double -> RelativePlacement
@@ -27,10 +27,9 @@ data Dimensioner = Dimensioner
     , remParens :: Dimension -> Dimension
     , divBar :: RelativePlacement -> RelativePlacement -> RelativePlacement
     , powSize :: RelativePlacement -> RelativePlacement -> RelativePlacement
-    , binop :: RelativePlacement -> RelativePlacement -> RelativePlacement
-
+    , binop :: BinOperator -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , argSize :: (Int, Int, Int) -> RelativePlacement -> (Int, Int, Int)
-    , appSize :: (Int,Int,Int) -> RelativePlacement -> RelativePlacement
+    , appSize :: (Int, Int, Int) -> RelativePlacement -> RelativePlacement
     }
 
 sizeExtract :: SizeTree -> (BaseLine, Dimension)
@@ -57,13 +56,10 @@ sizeOfFormula sizer _ _ (CInteger n) = EndNode $ intSize sizer $ n
 sizeOfFormula sizer _ _ (CFloat f) = EndNode $ floatSize sizer $ f
 
 -- Simply put a minus in front of the rest of the formula
-sizeOfFormula sizer _ _ (UnOp OpNegate f) =
-    MonoSizeNode False (base, (xa + x, ya + y)) subFormula
+sizeOfFormula sizer _ _ (UnOp op f) =
+    MonoSizeNode False sizeDim subFormula
         where subFormula = sizeOfFormula sizer False maxPrio f
-              subSize = sizeOfTree subFormula
-              base = (snd subSize) `div` 2
-              (xa, ya) = snd $ (unaryDim sizer) OpNegate subSize
-              (x, y) = sizeOfTree subFormula
+              sizeDim = (unaryDim sizer) op (sizeExtract subFormula)
 
 
 -- do something like that :
@@ -101,7 +97,7 @@ sizeOfFormula sizer isRight prevPrio (BinOp op formula1 formula2) =
           nodeLeft = sizeOfFormula sizer False prio formula1
           nodeRight = sizeOfFormula sizer True prio formula2
 
-          (base, s) = (binop sizer) (sizeExtract nodeLeft) (sizeExtract nodeRight)
+          (base, s) = (binop sizer) op (sizeExtract nodeLeft) (sizeExtract nodeRight)
 
           sizeDim = if needParenthesis
                 then (base, addParens sizer s)
