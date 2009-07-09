@@ -13,7 +13,9 @@ asciiSizer = Dimensioner
     { unaryDim = \op (base, (w,h)) ->
         let s OpNegate = (base, (w + 1, h))
             s OpAbs = (base, (w + 2, h))
-            s OpSqrt = (base, (w + max 2 ((h * 3) `div` 2), h + 1))
+            s OpSqrt = if h == 1
+                then (base + 1, (w + 2, h + 1))
+                else (base + 1, (w + max 2 ((h * 3) `div` 2), h + 1))
             {-s _ = error "EEEEEEEERgl"-}
         in s op
 
@@ -147,6 +149,10 @@ renderF (x,y) (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) =
           leftRender = renderF (x, leftTop) f1 t1
           rightRender = renderF (x + lw + 3, rightTop) f2 t2
 
+renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) =
+    ((x, y+1), '\\') : ((x + 1, y + 1), '/')
+    : [ ((i, y), '_') | i <- [x + 2 .. x + w - 1] ]
+    ++ renderF (x + 2, y + 1) f s
 renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) =
     -- The sub formula
     renderF (leftBegin - 1, y + 1) f s

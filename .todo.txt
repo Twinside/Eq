@@ -1,0 +1,3 @@
+3:Fix SQRT
+2:Finish sum
+2:Finish integrate
