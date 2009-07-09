@@ -14,7 +14,7 @@ main = do
         write = writeFile output
     formulaText <- readFile input
     let formula = runParser expr () "FromFile" formulaText
-    either (\_ -> print "No print-out")
+    either (\err -> print "Error : " >> print err)
            (\unlinkedFormula ->
                   let f = linkFormula unlinkedFormula
                       (f', tree) = renderFormula f

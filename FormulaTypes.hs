@@ -10,7 +10,6 @@ import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language( haskellStyle )
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Control.Applicative( (<$>) )
-import Control.Monad( liftM2 )
 
 -- | All Binary operators
 data BinOperator  =
@@ -37,6 +36,8 @@ data Formula =
     | CInteger Int
     | CFloat Double
     | App Formula [Formula]
+    | Sum Formula Formula Formula
+    | Integrate Formula Formula Formula
     | UnOp UnOperator Formula
     | BinOp BinOperator Formula Formula
     deriving (Eq, Show, Read)
@@ -51,6 +52,9 @@ prioOfBinaryOperators = prio
           prio OpDiv = 2
           prio OpPow = 1
 
+-----------------------------------------------------------
+--          Lexing defs
+-----------------------------------------------------------
 float :: CharParser st Double
 float = P.float lexer
 
@@ -66,28 +70,32 @@ integer = P.integer lexer
 parens :: CharParser st a -> CharParser st a
 parens = P.parens lexer
 
+whiteSpace :: CharParser st ()
+whiteSpace = P.whiteSpace lexer
+
 lexer :: P.TokenParser st
 lexer  = P.makeTokenParser 
          (haskellStyle { P.reservedOpNames = ["*","/","+","-","^"] } )
 
+-----------------------------------------------------------
+--          Real "grammar"
+-----------------------------------------------------------
 expr :: Parsed st Formula
-expr = buildExpressionParser operatorDefs funCall
+expr = buildExpressionParser operatorDefs term
     <?> "expression"
 
-funCall :: Parsed st Formula
-funCall = try (liftM2 App var argList)
-       <|> term
+funCall :: Formula -> Parsed st Formula
+funCall funcName = App funcName <$> argList
        <?> "funCall"
-
-argList :: Parsed st [Formula]
-argList = parens $ sepBy expr $ char ','
+        where argList = parens $ sepBy expr $ (char ',' >> whiteSpace)
 
 var :: Parsed st Formula
 var = Variable <$> identifier
 
 term :: Parsed st Formula
-term = try (parens expr)
-   <|> var
+term = parens expr
+   <|> (do varName <- var
+           try (funCall varName) <|> return varName)
    <|> try (CFloat <$> float)
    <|> CInteger . fromInteger <$> integer
    <?> "Term error"
@@ -97,9 +105,6 @@ binary  name fun assoc = Infix (do{ reservedOp name; return fun }) assoc
 
 prefix :: String -> (a -> a) -> Operator Char st a
 prefix  name fun       = Prefix (do{ reservedOp name; return fun })
-
-{-postfix :: String -> (a -> a) -> Operator Char st a-}
-{-postfix name fun       = Postfix (do{ reservedOp name; return fun })-}
 
 operatorDefs :: OperatorTable Char st Formula
 operatorDefs = 

@@ -13,7 +13,7 @@ asciiSizer = Dimensioner
     { unaryDim = \op (base, (w,h)) ->
         let s OpNegate = (base, (w + 1, h))
             s OpAbs = (base, (w + 2, h))
-            s OpSqrt = (base, (w + (h * 3) `div` 2, h + 1))
+            s OpSqrt = (base, (w + max 2 ((h * 3) `div` 2), h + 1))
             {-s _ = error "EEEEEEEERgl"-}
         in s op
 
@@ -45,6 +45,11 @@ asciiSizer = Dimensioner
     , appSize = \(pw, argsBase, argsLeft) (_, (wf, hf)) ->
             let finalY = max hf (argsBase + argsLeft)
             in ((finalY - hf) `div` 2, (wf + pw, finalY))
+
+    , sumSize = \(_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
+            let height = inih + endh + whath
+                width = max iniw endw + whatw
+            in (endh + whath `div` 2 , (width, height))
     }
 
 -------------------------------------------------------------
@@ -143,8 +148,6 @@ renderF (x,y) (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) =
           rightRender = renderF (x + lw + 3, rightTop) f2 t2
 
 renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) =
-    -- tail of root
-    ((x + h `div` 2, y + h), 'v') :
     -- The sub formula
     renderF (leftBegin - 1, y + 1) f s
     -- The top line
@@ -152,7 +155,7 @@ renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) =
     -- big line from bottom to top
     ++ [ ((x + h `div` 2 + i, y + h - i), '/') | i <- [1 .. h - 1] ]
     -- Tiny line from middle to bottom
-    ++ [ ((x + i, h `div` 2 + i), '\\') | i <- [0 .. h `div` 2 - 1]]
+    ++ [ ((x + i, h `div` 2 + i - 1), '\\') | i <- [0 .. h `div` 2 ]]
         where leftBegin = x + (h * 3) `div` 2
 
 renderF (x,y) (UnOp OpNegate f) (MonoSizeNode _ _ s) =
@@ -162,6 +165,10 @@ renderF (x,y) (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) =
     concat [  [((x,height), '|'), ((x + w - 1, height), '|')]
              | height <- [y .. y + h - 1] ]
     ++ renderF (x+1,y) f s
+
+{-renderF (x,y) (Sum init end what) -}
+              {-(SizeNodeList False -}
+                        {-(base, (_,h)) argBase [iniSize,endSize,whatSize]) =-}
 
 renderF (x,y) (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) =
     concat params
