@@ -15,7 +15,8 @@ asciiSizer = Dimensioner
             s OpAbs = (base, (w + 2, h))
             s OpSqrt = if h == 1
                 then (base + 1, (w + 2, h + 1))
-                else (base + 1, (w + max 2 ((h * 3) `div` 2), h + 1))
+                else (base + 1, (w + (h * 3) `div` 2, h + 1))
+
             {-s _ = error "EEEEEEEERgl"-}
         in s op
 
@@ -155,14 +156,17 @@ renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) =
     ++ renderF (x + 2, y + 1) f s
 renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) =
     -- The sub formula
-    renderF (leftBegin - 1, y + 1) f s
+    renderF (leftBegin, y + 1) f s
     -- The top line
-    ++ [ ((left,y), '_') | left <- [leftBegin .. x + w] ]
+    ++ [ ((left,y), '_') | left <- [leftBegin .. x + w - 1] ]
     -- big line from bottom to top
-    ++ [ ((x + h `div` 2 + i, y + h - i), '/') | i <- [1 .. h - 1] ]
+    ++ [ ((middleMark + i, y + h - i), '/') | i <- [1 .. h - 1] ]
     -- Tiny line from middle to bottom
-    ++ [ ((x + i, h `div` 2 + i - 1), '\\') | i <- [0 .. h `div` 2 ]]
-        where leftBegin = x + (h * 3) `div` 2
+    ++ [ ((x + i, halfScreen + i), '\\') | i <- [0 .. h `div` 2 - 2]]
+        where (subW,_) = sizeOfTree s
+              leftBegin = x + w - subW
+              middleMark = leftBegin - h
+              halfScreen = y + h `div` 2 + 1
 
 renderF (x,y) (UnOp OpNegate f) (MonoSizeNode _ _ s) =
     ((x,y), '-') : renderF (x+1,y) f s
