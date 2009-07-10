@@ -50,9 +50,9 @@ asciiSizer = Dimensioner
             in ((finalY - hf) `div` 2, (wf + pw, finalY))
 
     , sumSize = \(_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
-            let height = inih + endh + whath + 1
-                sumW = maximum [iniw, endw, whath]
-                width = sumW + whatw
+            let height = inih + endh + max 2 whath + 2
+                sumW = maximum [iniw, endw, whath, 2]
+                width = sumW + whatw + 1
             in (endh + 1 + whath `div` 2 , (width, height))
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     }
@@ -186,20 +186,22 @@ renderF (x,y) (Sum ini end what)
                         (_, (w,_h)) _ [iniSize,endSize,whatSize]) =
     renderF (x + (sumWidth - ew) `div` 2, y) end endSize
     ++ renderF (x + (sumWidth - iw) `div` 2, y + eh + wh + 1) ini iniSize
-    ++ renderF (whatBegin, y + eh + 1) what whatSize
+    ++ renderF (whatBegin + 1, y + eh + 1) what whatSize
     -- Top line
     ++ [ ((i, y + eh), '_') | i <- [x .. whatBegin - 1]]
     -- Bottom line
     ++ [ ((i, y + wh + eh), '_') | i <- [x .. whatBegin - 1]]
     -- Descending line
-    ++ [ ((x + i, y + eh + 1 + i), '\\') | i <- [0 .. wh `div` 2]]
+    ++ [ ((x + i, y + eh + 1 + i), '\\') | i <- [0 .. middleStop]]
     -- Ascending line
-    ++ [ ((x + i, y + eh + wh - i), '/') | i <- [0 .. wh `div` 2]]
+    ++ [ ((x + i, y + eh + wh - i), '/') | i <- [0 .. middleStop]]
         where (_, (ww, wh)) = sizeExtract whatSize
               (_, (ew, eh)) = sizeExtract endSize
               (_, (iw, _)) = sizeExtract iniSize
-              sumWidth = w - ww
-              whatBegin = x + w - ww
+              sumWidth = w - 1 - ww
+              whatBegin = x + w - 1 - ww
+              middleStop = wh `div` 2 + if wh `mod` 2 == 0
+                    then -1 else 0
 
 renderF (x,y) (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) =
     concat params
