@@ -1,0 +1,6 @@
+sum(1,1,1)
++ sum( block( 1, 2, 2), block(1, 2, 2), block(1,2,2))
++ sum( block( 1, 4, 2), block(1, 2, 2), block(1,5,2))
++ sum( block( 1, 2, 2), block(1, 2, 2), block(1,4,5))
++ sum( block( 1, 2, 2), block(1, 2, 2), block(1,2,6))
++ sum( block( 1, 4, 2), block(1, 2, 2), block(1,7,3))
