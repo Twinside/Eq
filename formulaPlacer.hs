@@ -31,6 +31,7 @@ data Dimensioner = Dimensioner
     , argSize :: (Int, Int, Int) -> RelativePlacement -> (Int, Int, Int)
     , appSize :: (Int, Int, Int) -> RelativePlacement -> RelativePlacement
     , sumSize :: RelativePlacement -> RelativePlacement -> RelativePlacement -> RelativePlacement
+    , blockSize :: (Int, Int, Int) -> RelativePlacement
     }
 
 sizeExtract :: SizeTree -> (BaseLine, Dimension)
@@ -55,6 +56,8 @@ sizeOfFormula :: Dimensioner -> Bool -> Priority -> Formula -> SizeTree
 sizeOfFormula sizer _ _ (Variable v) = EndNode $ varSize sizer $ v
 sizeOfFormula sizer _ _ (CInteger n) = EndNode $ intSize sizer $ n
 sizeOfFormula sizer _ _ (CFloat f) = EndNode $ floatSize sizer $ f
+sizeOfFormula sizer _ _ (Block i1 i2 i3) = 
+    EndNode $ (blockSize sizer) (i1, i2, i3)
 
 -- Simply put a minus in front of the rest of the formula
 sizeOfFormula sizer _ _ (UnOp op f) =

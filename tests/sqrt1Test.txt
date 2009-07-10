@@ -1,1 +1,5 @@
-sqrt( 3 + 2 )
+sqrt( 3 + 2 ) 
++ sqrt( block( 1, 2, 2 ) ) 
++ sqrt( block( 2, 2, 3 ) )
++ sqrt( block( 3, 2, 4 ) )
++ sqrt( block( 3, 5, 5 ) )

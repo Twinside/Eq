@@ -7,6 +7,8 @@ linkFormula = link
 
 link :: Formula -> Formula
 -- Special cases
+link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
+    Block i1 i2 i3
 link (App (Variable "abs") [x]) = UnOp OpAbs $ link x
 link (App (Variable "sqrt") [x]) = UnOp OpSqrt $ link x
 link (App (Variable "sum") [ini, end, what]) = 

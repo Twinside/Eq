@@ -40,6 +40,7 @@ data Formula =
     | Integrate Formula Formula Formula
     | UnOp UnOperator Formula
     | BinOp BinOperator Formula Formula
+    | Block Int Int Int
     deriving (Eq, Show, Read)
 
 type Parsed a b = GenParser Char a b

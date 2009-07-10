@@ -54,6 +54,7 @@ asciiSizer = Dimensioner
                 sumW = maximum [iniw, endw, whath]
                 width = sumW + whatw
             in (endh + 1 + whath `div` 2 , (width, height))
+    , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     }
 
 -------------------------------------------------------------
@@ -114,6 +115,8 @@ renderF (x,y) node (SizeNodeList True (base, dim) abase stl) =
               neoTree = SizeNodeList False (base, subSize) abase stl
 
 -- Here we make the "simple" rendering, just a conversion.
+renderF (x,y) (Block _ w h) _ =
+    [ ((xw, yh), '#') | xw <- [x .. x + w - 1], yh <- [y .. y + h - 1]]
 renderF (x,y) (Variable s) _ = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] s
 renderF (x,y) (CInteger i) _ = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show i)
 renderF (x,y) (CFloat d)   _ = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show d)
