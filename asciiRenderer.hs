@@ -185,21 +185,22 @@ renderF (x,y) (Sum ini end what)
               (SizeNodeList False
                         (_, (w,_h)) _ [iniSize,endSize,whatSize]) =
     renderF (x + (sumWidth - ew) `div` 2, y) end endSize
-    ++ renderF (x + (sumWidth - iw) `div` 2, y + eh + wh + 1) ini iniSize
+    ++ renderF (x + (sumWidth - iw) `div` 2, bottom + 1) ini iniSize
     ++ renderF (whatBegin + 1, y + eh + 1) what whatSize
     -- Top line
     ++ [ ((i, y + eh), '_') | i <- [x .. whatBegin - 1]]
     -- Bottom line
-    ++ [ ((i, y + wh + eh), '_') | i <- [x .. whatBegin - 1]]
+    ++ [ ((i, bottom), '_') | i <- [x .. whatBegin - 1]]
     -- Descending line
     ++ [ ((x + i, y + eh + 1 + i), '\\') | i <- [0 .. middleStop]]
     -- Ascending line
-    ++ [ ((x + i, y + eh + wh - i), '/') | i <- [0 .. middleStop]]
+    ++ [ ((x + i, bottom - i), '/') | i <- [0 .. middleStop]]
         where (_, (ww, wh)) = sizeExtract whatSize
               (_, (ew, eh)) = sizeExtract endSize
               (_, (iw, _)) = sizeExtract iniSize
               sumWidth = w - 1 - ww
               whatBegin = x + w - 1 - ww
+              bottom = y + eh + max 2 wh
               middleStop = wh `div` 2 + if wh `mod` 2 == 0
                     then -1 else 0
 
