@@ -166,11 +166,12 @@ renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) =
     -- big line from bottom to top
     ++ [ ((middleMark + i, y + h - i), '/') | i <- [1 .. h - 1] ]
     -- Tiny line from middle to bottom
-    ++ [ ((x + i, halfScreen + i), '\\') | i <- [0 .. h `div` 2 - 2]]
+    ++ [ ((x + i, halfScreen + i), '\\') | i <- [0 .. midEnd]]
         where (subW,_) = sizeOfTree s
               leftBegin = x + w - subW
               middleMark = leftBegin - h
               halfScreen = y + h `div` 2 + 1
+              midEnd = h `div` 2 - 2 + h `mod` 2
 
 renderF (x,y) (UnOp OpNegate f) (MonoSizeNode _ _ s) =
     ((x,y), '-') : renderF (x+1,y) f s
