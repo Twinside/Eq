@@ -18,6 +18,13 @@ link (App (Variable "sum") [ini, what]) =
 link (App (Variable "sum") [what]) = 
     Sum (Variable "") (Variable "") (link what)
 
+link (App (Variable "integrate") [ini, end, what, dvar]) = 
+    Integrate (link ini) (link end) (link what) (link dvar)
+link (App (Variable "integrate") [ini, what, dvar]) = 
+    Integrate (link ini) (Variable "") (link what) (link dvar)
+link (App (Variable "integrate") [what, dvar]) = 
+    Integrate (Variable "") (Variable "") (link what) (link dvar)
+
 -- General transformations
 link (App f flst) = App (link f) $ map link flst
 link (UnOp op f) = UnOp op $ link f

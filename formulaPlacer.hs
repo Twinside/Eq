@@ -31,6 +31,8 @@ data Dimensioner = Dimensioner
     , argSize :: (Int, Int, Int) -> RelativePlacement -> (Int, Int, Int)
     , appSize :: (Int, Int, Int) -> RelativePlacement -> RelativePlacement
     , sumSize :: RelativePlacement -> RelativePlacement -> RelativePlacement -> RelativePlacement
+    , integralSize :: RelativePlacement -> RelativePlacement 
+                   -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , blockSize :: (Int, Int, Int) -> RelativePlacement
     }
 
@@ -107,6 +109,13 @@ sizeOfFormula sizer isRight prevPrio (BinOp op formula1 formula2) =
                 then (base, addParens sizer s)
                 else (base, s)
 
+sizeOfFormula sizer _isRight _prevPrio (Integrate inite end what dx) =
+    SizeNodeList False sizeDim 0 trees
+        where sof = sizeOfFormula sizer False maxPrio
+              trees = map sof [inite, end, what, dx]
+              [iniDim, endDim, whatDim, dxDim] = map sizeExtract trees
+              sizeDim = (integralSize sizer) iniDim endDim whatDim dxDim
+
 sizeOfFormula sizer _isRight _prevPrio (Sum inite end what) =
     SizeNodeList False sizeDim 0 trees
         where sof = sizeOfFormula sizer False maxPrio
@@ -132,4 +141,3 @@ sizeOfFormula sizer _ _ (App f1 f2) =
               accumulated = foldl' sizeExtractor (0, 0, 0) trees
               (_, argsBase, _) = accumulated
 
-sizeOfFormula _ _ _ (Integrate _ _ _) = error "Matching integrate, not implemented"

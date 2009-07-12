@@ -54,6 +54,15 @@ asciiSizer = Dimensioner
                 sumW = maximum [iniw, endw, whath, 2]
                 width = sumW + whatw + 1
             in (endh + 1 + whath `div` 2 , (width, height))
+
+    , integralSize = \(_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) 
+                      (_, (dvarw, dvarh))->
+            let height = inih + endh + maximum [2, dvarh, whath] + 2
+                sumW = maximum [iniw, endw, whath, 4]
+                width = sumW + whatw + 2 + dvarw
+            in (endh + 1 + whath `div` 2 , (width, height))
+
+
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     }
 
@@ -180,6 +189,35 @@ renderF (x,y) (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) =
     concat [  [((x,height), '|'), ((x + w - 1, height), '|')]
              | height <- [y .. y + h - 1] ]
     ++ renderF (x+1,y) f s
+
+renderF (x,y) (Integrate ini end what var)
+              (SizeNodeList False
+                        (_, (w,_h)) _ [iniSize,endSize,whatSize, varSize]) =
+       renderF (x + (integWidth - ew) `div` 2, y) end endSize
+    ++ renderF (x + (integWidth - iw) `div` 2 - 1, bottom + 1) ini iniSize
+    ++ renderF (whatBegin + 1, whatTop) what whatSize
+    ++ renderF (varBegin + 1, varTop) var varSize
+
+    ++ [ ((integPos, y + eh + 1), '/'), ((integPos + 1, y + eh), '_')
+       , ((integPos, bottom),'/'), ((integPos - 1, bottom),'_')
+       , ((varBegin, varTop + vh `div` 2), 'd')]
+
+    ++ [ ((x + 1, i), '|') | i <- [y + eh + 2 .. bottom - 1] ]
+        where (ww, wh) = snd $ sizeExtract whatSize
+              (ew, eh) = snd $ sizeExtract endSize
+              (iw, _) = snd $ sizeExtract iniSize
+              (vw, vh) = snd $ sizeExtract varSize
+
+              integPos = x + 1 -- (integWidth - 4) `div` 2
+              whatTop = y + eh + 1
+              varTop = whatTop + (wh - vh) `div` 2
+
+              integWidth = w - 1 - ww - vw
+              varBegin = x + w - vw - 1
+              whatBegin = varBegin - 2 - ww
+              bottom = y + eh + max 2 wh
+              middleStop = wh `div` 2 + if wh `mod` 2 == 0
+                    then -1 else 0
 
 renderF (x,y) (Sum ini end what)
               (SizeNodeList False

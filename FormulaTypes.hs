@@ -37,7 +37,8 @@ data Formula =
     | CFloat Double
     | App Formula [Formula]
     | Sum Formula Formula Formula
-    | Integrate Formula Formula Formula
+    -- | lowBound highBound expression dx
+    | Integrate Formula Formula Formula Formula
     | UnOp UnOperator Formula
     | BinOp BinOperator Formula Formula
     | Block Int Int Int
