@@ -1,7 +1,7 @@
 import System.Environment
-import FormulaTypes
-import FormulaLinker
-import AsciiRenderer
+import EqManips.Types
+import EqManips.Linker
+import EqManips.Renderer.Ascii
 import CharArray
 import Data.List( intersperse )
 import Text.ParserCombinators.Parsec.Prim( runParser )

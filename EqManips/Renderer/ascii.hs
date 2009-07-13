@@ -1,10 +1,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module AsciiRenderer where
+module EqManips.Renderer.Ascii where
 
 import Data.List( foldl' )
 import Data.Array.Unboxed
-import FormulaTypes
-import FormulaPlacer
+import EqManips.Types
+import EqManips.Renderer.Placer
 
 type Pos = (Int, Int)
 

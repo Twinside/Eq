@@ -1,6 +1,6 @@
-module FormulaLinker( linkFormula ) where
+module EqManips.Linker( linkFormula ) where
 
-import FormulaTypes
+import EqManips.Types
 
 linkFormula :: Formula -> Formula
 linkFormula = link

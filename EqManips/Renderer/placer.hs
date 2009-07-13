@@ -1,6 +1,6 @@
-module FormulaPlacer where
+module EqManips.Renderer.Placer where
 
-import FormulaTypes
+import EqManips.Types
 import Data.List( foldl' )
 
 type Priority = Int

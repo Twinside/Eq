@@ -1,9 +1,9 @@
-module FormulaTypes( Formula( .. )
-                   , BinOperator( .. )
-                   , UnOperator( .. )
-                   , prioOfBinaryOperators 
-                   , expr 
-                   ) where
+module EqManips.Types( Formula( .. )
+                     , BinOperator( .. )
+                     , UnOperator( .. )
+                     , prioOfBinaryOperators 
+                     , expr 
+                     ) where
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
@@ -29,14 +29,31 @@ data UnOperator =
       OpNegate
     | OpAbs
     | OpSqrt
+
+    | OpSin
+    | OpASin
+
+    | OpCos
+    | OpACos
+
+    | OpTan
+    | OpATan
+
+    | OpExp
+    | OpLn
+
     deriving (Eq, Show, Read)
 
 data Formula =
       Variable String
     | CInteger Int
     | CFloat Double
+    -- | FunName arguments
     | App Formula [Formula]
+    -- | LowBound highbound expression
     | Sum Formula Formula Formula
+    -- | LowBound highbound expression
+    | Product Formula Formula Formula
     -- | lowBound highBound expression dx
     | Integrate Formula Formula Formula Formula
     | UnOp UnOperator Formula
