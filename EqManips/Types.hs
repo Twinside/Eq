@@ -3,6 +3,7 @@ module EqManips.Types( Formula( .. )
                      , UnOperator( .. )
                      , prioOfBinaryOperators 
                      , expr 
+                     , unOpNames
                      ) where
 
 import Text.ParserCombinators.Parsec
@@ -39,10 +40,33 @@ data UnOperator =
     | OpTan
     | OpATan
 
-    | OpExp
     | OpLn
+    | OpLog
+
+    | OpExp
 
     deriving (Eq, Show, Read)
+
+unOpNames :: [(UnOperator, String)]
+unOpNames =
+    [ (OpNegate, "-")
+    , (OpAbs, "abs")
+    , (OpSqrt, "sqrt")
+
+    , (OpSin, "sin")
+    , (OpASin, "asin")
+
+    , (OpCos, "cos")
+    , (OpACos, "acos")
+
+    , (OpTan, "tan")
+    , (OpATan, "atan")
+
+    , (OpLn, "ln")
+    , (OpLog, "log")
+
+    , (OpExp, "exp")
+    ]
 
 data Formula =
       Variable String
@@ -58,6 +82,8 @@ data Formula =
     | Integrate Formula Formula Formula Formula
     | UnOp UnOperator Formula
     | BinOp BinOperator Formula Formula
+    -- | Width, Height, all formulas
+    | Matrix Int Int [[Formula]]
     | Block Int Int Int
     deriving (Eq, Show, Read)
 

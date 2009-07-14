@@ -18,6 +18,13 @@ link (App (Variable "sum") [ini, what]) =
 link (App (Variable "sum") [what]) = 
     Sum (Variable "") (Variable "") (link what)
 
+link (App (Variable "product") [ini, end, what]) = 
+    Product (link ini) (link end) (link what)
+link (App (Variable "product") [ini, what]) = 
+    Product (link ini) (Variable "") (link what)
+link (App (Variable "product") [what]) = 
+    Product (Variable "") (Variable "") (link what)
+    
 link (App (Variable "integrate") [ini, end, what, dvar]) = 
     Integrate (link ini) (link end) (link what) (link dvar)
 link (App (Variable "integrate") [ini, what, dvar]) = 

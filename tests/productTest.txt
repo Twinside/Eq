@@ -1,0 +1,6 @@
+product(1,1,1)
++ product( block( 1, 2, 2), block(1, 2, 2), block(1,2,2))
++ product( block( 1, 4, 2), block(1, 2, 2), block(1,5,2))
++ product( block( 1, 2, 2), block(1, 2, 2), block(1,4,5))
++ product( block( 1, 2, 2), block(1, 2, 2), block(1,2,6))
++ product( block( 1, 4, 2), block(1, 2, 2), block(1,7,3))

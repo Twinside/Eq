@@ -17,6 +17,18 @@ asciiSizer = Dimensioner
                 then (base + 1, (w + 2, h + 1))
                 else (base + 1, (w + (h * 3) `div` 2, h + 1))
 
+            s OpSin = (base, (2 + w + 3,h))
+            s OpASin = (base, (2 + w + 4,h))
+
+            s OpCos = (base, (2 + w + 3,h))
+            s OpACos = (base, (2 + w + 4,h))
+
+            s OpTan = (base, (2 + w + 3,h))
+            s OpATan = (base, (2 + w + 4,h))
+
+            s OpLn = (base, (2 + w + 2,h))
+            s OpExp = (base, (2 + w + 3,h))
+            s OpLog = (base, (2 + w + 3,h))
             {-s _ = error "EEEEEEEERgl"-}
         in s op
 
@@ -48,6 +60,12 @@ asciiSizer = Dimensioner
     , appSize = \(pw, argsBase, argsLeft) (_, (wf, hf)) ->
             let finalY = max hf (argsBase + argsLeft)
             in ((finalY - hf) `div` 2, (wf + pw, finalY))
+
+    , productSize = \(_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
+            let height = inih + endh + max 2 whath
+                sumW = maximum [iniw, endw, 3]
+                width = sumW + whatw + 1
+            in (endh + 1 + whath `div` 2 , (width, height))
 
     , sumSize = \(_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
             let height = inih + endh + max 2 whath + 2
@@ -190,13 +208,40 @@ renderF (x,y) (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) =
              | height <- [y .. y + h - 1] ]
     ++ renderF (x+1,y) f s
 
+renderF (x,y) (UnOp op f) (MonoSizeNode _ nodeSize@(_,(w,_)) subSize) =
+    renderF (x,y) (App (Variable opName) [f]) 
+                  (SizeNodeList False nodeSize (w `div` 2) [subSize])
+        where opName = case lookup op unOpNames of
+                        Just name -> name
+                        _ -> error "Wrong lookup"
+
+renderF (x,y) (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) =
+    concat params
+    ++ renderF (x,baseLine) func s
+    ++ renderParens (x + fw, y) (xla - argBegin, h)
+        where (fw, _) = sizeOfTree s
+
+              baseLine = y + base
+
+              mixedList = zip flist ts
+              argBegin = x + fw + 1
+              (params, (xla,_)) = foldl' write ([], (argBegin,y)) mixedList
+
+              write (acc, (x',y')) (node, size) =
+                  ( commas : argWrite : acc , (x' + nodeWidth + 2, y') )
+                    where (nodeWidth, _) = sizeOfTree size
+                          commas = [((x' + nodeWidth, y + argBase), ',')] 
+                          nodeBase = baseLineOfTree size
+                          baseLine' = y' + (argBase - nodeBase)
+                          argWrite = renderF (x', baseLine') node size 
+
 renderF (x,y) (Integrate ini end what var)
               (SizeNodeList False
-                        (_, (w,_h)) _ [iniSize,endSize,whatSize, varSize]) =
+                        (_, (w,_h)) _ [iniSize,endSize,whatSize, derVarSize]) =
        renderF (x + (integWidth - ew) `div` 2, y) end endSize
     ++ renderF (x + (integWidth - iw) `div` 2 - 1, bottom + 1) ini iniSize
     ++ renderF (whatBegin + 1, whatTop) what whatSize
-    ++ renderF (varBegin + 1, varTop) var varSize
+    ++ renderF (varBegin + 1, varTop) var derVarSize
 
     ++ [ ((integPos, y + eh + 1), '/'), ((integPos + 1, y + eh), '_')
        , ((integPos, bottom),'/'), ((integPos - 1, bottom),'_')
@@ -206,7 +251,7 @@ renderF (x,y) (Integrate ini end what var)
         where (ww, wh) = snd $ sizeExtract whatSize
               (ew, eh) = snd $ sizeExtract endSize
               (iw, _) = snd $ sizeExtract iniSize
-              (vw, vh) = snd $ sizeExtract varSize
+              (vw, vh) = snd $ sizeExtract derVarSize
 
               integPos = x + 1 -- (integWidth - 4) `div` 2
               whatTop = y + eh + 1
@@ -216,8 +261,28 @@ renderF (x,y) (Integrate ini end what var)
               varBegin = x + w - vw - 1
               whatBegin = varBegin - 2 - ww
               bottom = y + eh + max 2 wh
-              middleStop = wh `div` 2 + if wh `mod` 2 == 0
-                    then -1 else 0
+              {-middleStop = wh `div` 2 + if wh `mod` 2 == 0-}
+                    {-then -1 else 0-}
+
+renderF (x,y) (Product ini end what)
+              (SizeNodeList False
+                        (_, (w,_h)) _ [iniSize,endSize,whatSize]) =
+    renderF (x + (sumWidth - ew) `div` 2, y) end endSize
+    ++ renderF (x + (sumWidth - iw) `div` 2, bottom + 1) ini iniSize
+    ++ renderF (whatBegin + 1, y + eh + 1) what whatSize
+    -- Top line
+    ++ [ ((i, y + eh), '_') | i <- [x .. whatBegin - 1]]
+    -- Descending line
+    ++ concat [ [((x,i), '|'), ((whatBegin - 1,i), '|')] 
+                    | i <- [ y + eh + 1.. bottom] ]
+        where (_, (ww, wh)) = sizeExtract whatSize
+              (_, (ew, eh)) = sizeExtract endSize
+              (_, (iw, _)) = sizeExtract iniSize
+              sumWidth = w - 1 - ww
+              whatBegin = x + w - 1 - ww
+              bottom = y + eh + max 2 wh
+              {-middleStop = wh `div` 2 + if wh `mod` 2 == 0-}
+                    {-then -1 else 0-}
 
 renderF (x,y) (Sum ini end what)
               (SizeNodeList False
@@ -241,25 +306,5 @@ renderF (x,y) (Sum ini end what)
               bottom = y + eh + max 2 wh
               middleStop = wh `div` 2 + if wh `mod` 2 == 0
                     then -1 else 0
-
-renderF (x,y) (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) =
-    concat params
-    ++ renderF (x,baseLine) func s
-    ++ renderParens (x + fw, y) (xla - argBegin, h)
-        where (fw, _) = sizeOfTree s
-
-              baseLine = y + base
-
-              mixedList = zip flist ts
-              argBegin = x + fw + 1
-              (params, (xla,_)) = foldl' write ([], (argBegin,y)) mixedList
-
-              write (acc, (x',y')) (node, size) =
-                  ( commas : argWrite : acc , (x' + nodeWidth + 2, y') )
-                    where (nodeWidth, _) = sizeOfTree size
-                          commas = [((x' + nodeWidth, y + argBase), ',')] 
-                          nodeBase = baseLineOfTree size
-                          baseLine' = y' + (argBase - nodeBase)
-                          argWrite = renderF (x', baseLine') node size 
 
 renderF _ _ _ = error "renderF - unmatched case"

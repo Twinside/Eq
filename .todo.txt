@@ -1,1 +1,4 @@
+3:Think about some vector things
 2:Finish integrate
+2:Make product
+1:Make matrix formatting

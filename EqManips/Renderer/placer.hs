@@ -31,6 +31,7 @@ data Dimensioner = Dimensioner
     , argSize :: (Int, Int, Int) -> RelativePlacement -> (Int, Int, Int)
     , appSize :: (Int, Int, Int) -> RelativePlacement -> RelativePlacement
     , sumSize :: RelativePlacement -> RelativePlacement -> RelativePlacement -> RelativePlacement
+    , productSize :: RelativePlacement -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , integralSize :: RelativePlacement -> RelativePlacement 
                    -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , blockSize :: (Int, Int, Int) -> RelativePlacement
@@ -115,6 +116,16 @@ sizeOfFormula sizer _isRight _prevPrio (Integrate inite end what dx) =
               trees = map sof [inite, end, what, dx]
               [iniDim, endDim, whatDim, dxDim] = map sizeExtract trees
               sizeDim = (integralSize sizer) iniDim endDim whatDim dxDim
+
+sizeOfFormula _sizer _isRight _prevPrio (Matrix _counRow _countColumn _) =
+    error "Unimplemented matrix placement"
+
+sizeOfFormula sizer _isRight _prevPrio (Product inite end what) =
+    SizeNodeList False sizeDim 0 trees
+        where sof = sizeOfFormula sizer False maxPrio
+              trees = map sof [inite, end, what]
+              [iniDim, endDim, whatDim] = map sizeExtract trees
+              sizeDim = (productSize sizer) iniDim endDim whatDim
 
 sizeOfFormula sizer _isRight _prevPrio (Sum inite end what) =
     SizeNodeList False sizeDim 0 trees
