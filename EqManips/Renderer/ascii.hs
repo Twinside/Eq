@@ -103,42 +103,7 @@ renderFormula formula =
         where sizeTree = sizeOfFormula asciiSizer False maxPrio formula
               size = ((0,0), sizeOfTree sizeTree)
               writeList = renderF formula sizeTree (0,0) 
-
-horizontalLayouter :: Int -> [(Formula, SizeTree)] -> Pos -> [(Pos, Char)]
-horizontalLayouter baseLine lst pos = 
-  producedList $ foldM layout pos lst
-    where layout (xc,yc) (formul, size) =
-              let (nodeBase, (w,h)) = sizeExtract size
-                  renderList = renderF formul size (xc,yc + toBase) 
-                  toBase = max 0 $ baseLine - nodeBase
-              in do
-              concatFront $ renderList
-              return (xc + w, h)
-
-data Align = AlignLeft | AlignRight | AlignCenter
            
-verticalLayouter :: [(Align, (Pos -> [(Pos,Char)], RelativePlacement))]
-                 -> Pos 
-                 -> [(Pos,Char)]
-verticalLayouter lst pos =
-  producedList $ foldM writer pos lst
-    where widthOf = fst . snd
-          height = snd . snd
-
-          maxWidth = maximum [ w | (_,(_,(w,_))) <- lst ]
-          
-          writer pos'@(x',y') (AlignLeft, (f,size)) = do
-              concatFront $ f pos'
-              return (x', y' + height size)
-          writer (x',y') (AlignRight,  (f,size)) = do
-              {-concatFront $ f (x' + maxWidth - widthOf size, y')-}
-              concatFront $ f (x', y')
-              return (x', y' + height size)
-          writer (x',y') (AlignCenter, (f,size)) = do
-              {-concatFront $ f (x' + (maxWidth - widthOf size) `div` 2, y')-}
-              concatFront $ f (x', y')
-              return (x', y' + height size)
-
 -- | One function to render them all! (parenthesis)
 -- for one line ( ... )
 -- else we try to render something like that :
@@ -363,9 +328,9 @@ renderF (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
 
            renderLine :: (Int, Int) -> (Formula, (RelativePlacement, SizeTree))
                       -> ListProducer (Pos,Char) (Int,Int)
-           renderLine (x', y') (formu, ((_,(w,_)),size)) = do
+           renderLine (x', y') (formu, ((_,(w',_)),size)) = do
             concatFront $ renderF formu size (x', y')
-            return (x' + w + 1, y')
+            return (x' + w' + 1, y')
            
            renderMatrix :: (Int, Int) 
                         -> ([Formula], [(RelativePlacement, SizeTree)])
