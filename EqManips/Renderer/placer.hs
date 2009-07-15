@@ -14,6 +14,7 @@ data SizeTree =
     | MonoSizeNode Bool (BaseLine, Dimension) SizeTree
     | BiSizeNode Bool (BaseLine, Dimension) SizeTree SizeTree
     | SizeNodeList Bool (BaseLine, Dimension) BaseLine [SizeTree]
+    | SizeNodeArray Bool (BaseLine, Dimension) [[((BaseLine, Dimension), SizeTree)]]
     deriving (Eq, Show, Read)
 
 type RelativePlacement = (BaseLine, Dimension)
@@ -35,6 +36,7 @@ data Dimensioner = Dimensioner
     , integralSize :: RelativePlacement -> RelativePlacement 
                    -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , blockSize :: (Int, Int, Int) -> RelativePlacement
+    , matrixSize :: [[RelativePlacement]] -> RelativePlacement
     }
 
 sizeExtract :: SizeTree -> (BaseLine, Dimension)
@@ -42,6 +44,7 @@ sizeExtract (EndNode s) = s
 sizeExtract (MonoSizeNode _ s _) = s
 sizeExtract (BiSizeNode _ s _ _) = s
 sizeExtract (SizeNodeList _ s _ _) = s
+sizeExtract (SizeNodeArray _ s _) = s
 
 sizeOfTree :: SizeTree -> (Int, Int)
 sizeOfTree = snd . sizeExtract
@@ -117,8 +120,38 @@ sizeOfFormula sizer _isRight _prevPrio (Integrate inite end what dx) =
               [iniDim, endDim, whatDim, dxDim] = map sizeExtract trees
               sizeDim = (integralSize sizer) iniDim endDim whatDim dxDim
 
-sizeOfFormula _sizer _isRight _prevPrio (Matrix _counRow _countColumn _) =
-    error "Unimplemented matrix placement"
+sizeOfFormula sizer _ _ (Matrix _ _ exprs) =
+    SizeNodeArray False sizeDim mixedMatrix
+        where lineMapper = map (sizeOfFormula sizer False maxPrio)
+              sizeMatrix = map lineMapper exprs
+
+              sizeDim = matrixSize sizer dimensionMatrix
+              baseLineExtractor (base, depth) size =
+                  let (base', (_,h')) = sizeExtract size
+                  in (max base base', max depth (h' - base'))
+
+              heights :: [(Int,Int)]
+              heights = map (foldl' baseLineExtractor (0,0)) sizeMatrix
+
+              widths :: [Int]
+              widths = widthExtract [0..] 
+                                (map head sizeMatrix , map tail sizeMatrix)
+
+              widthOf :: SizeTree -> Int
+              widthOf size = fst . snd $ sizeExtract size
+
+              widthExtract :: [Int] -> ([SizeTree], [[SizeTree]]) -> [Int]
+              widthExtract widthLst (_, []) = widthLst
+              widthExtract widthLst (hd, tl) =
+                  widthExtract [ max w $ widthOf size | (size, w) <- zip hd widthLst]
+                               (map head tl, map tail tl)
+              dimensionMatrix =
+                  [ [(bases, (w, bases + depth)) | w <- widths] 
+                        | (bases, depth) <- heights]
+
+              mixedMatrix =
+                  [ zip dims sizes
+                    | (dims, sizes) <- zip dimensionMatrix sizeMatrix]
 
 sizeOfFormula sizer _isRight _prevPrio (Product inite end what) =
     SizeNodeList False sizeDim 0 trees

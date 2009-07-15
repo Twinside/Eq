@@ -1,6 +1,7 @@
 module EqManips.Linker( linkFormula ) where
 
 import EqManips.Types
+import Data.List
 
 linkFormula :: Formula -> Formula
 linkFormula = link
@@ -31,6 +32,14 @@ link (App (Variable "integrate") [ini, what, dvar]) =
     Integrate (link ini) (Variable "") (link what) (link dvar)
 link (App (Variable "integrate") [what, dvar]) = 
     Integrate (Variable "") (Variable "") (link what) (link dvar)
+
+link (App (Variable "matrix") (CInteger n: CInteger m: exps))
+    | n * m /= length exps = error "The matrix has not enough expressions"
+    | otherwise = Matrix n m $ splitMatrix exps
+        where splitMatrix  [] = []
+              splitMatrix lst =
+                let (matrixLine, matrixRest) = genericSplitAt n lst
+                in matrixLine : splitMatrix matrixRest
 
 -- General transformations
 link (App f flst) = App (link f) $ map link flst

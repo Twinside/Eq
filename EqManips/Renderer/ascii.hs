@@ -1,10 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module EqManips.Renderer.Ascii where
 
+import Control.Monad( foldM )
 import Data.List( foldl' )
 import Data.Array.Unboxed
 import EqManips.Types
 import EqManips.Renderer.Placer
+import Monad.ListProducer
 
 type Pos = (Int, Int)
 
@@ -80,6 +82,13 @@ asciiSizer = Dimensioner
                 width = sumW + whatw + 2 + dvarw
             in (endh + 1 + whath `div` 2 , (width, height))
 
+    , matrixSize = \lst ->
+        let mHeight = sum [ h | (_,(_,h)) <- map head lst ]
+                      + length lst
+            firstLine = head lst
+            mWidth = length firstLine + sum [ w | (_,(w,_)) <- firstLine ]
+        in
+        (mHeight `div` 2, (mWidth, mHeight))
 
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     }
@@ -93,7 +102,42 @@ renderFormula formula =
     (accumArray (flip const) ' ' size writeList, sizeTree)
         where sizeTree = sizeOfFormula asciiSizer False maxPrio formula
               size = ((0,0), sizeOfTree sizeTree)
-              writeList = renderF (0,0) formula sizeTree
+              writeList = renderF formula sizeTree (0,0) 
+
+horizontalLayouter :: Int -> [(Formula, SizeTree)] -> Pos -> [(Pos, Char)]
+horizontalLayouter baseLine lst pos = 
+  producedList $ foldM layout pos lst
+    where layout (xc,yc) (formul, size) =
+              let (nodeBase, (w,h)) = sizeExtract size
+                  renderList = renderF formul size (xc,yc + toBase) 
+                  toBase = max 0 $ baseLine - nodeBase
+              in do
+              concatFront $ renderList
+              return (xc + w, h)
+
+data Align = AlignLeft | AlignRight | AlignCenter
+           
+verticalLayouter :: [(Align, (Pos -> [(Pos,Char)], RelativePlacement))]
+                 -> Pos 
+                 -> [(Pos,Char)]
+verticalLayouter lst pos =
+  producedList $ foldM writer pos lst
+    where widthOf = fst . snd
+          height = snd . snd
+
+          maxWidth = maximum [ w | (_,(_,(w,_))) <- lst ]
+          
+          writer pos'@(x',y') (AlignLeft, (f,size)) = do
+              concatFront $ f pos'
+              return (x', y' + height size)
+          writer (x',y') (AlignRight,  (f,size)) = do
+              {-concatFront $ f (x' + maxWidth - widthOf size, y')-}
+              concatFront $ f (x', y')
+              return (x', y' + height size)
+          writer (x',y') (AlignCenter, (f,size)) = do
+              {-concatFront $ f (x' + (maxWidth - widthOf size) `div` 2, y')-}
+              concatFront $ f (x', y')
+              return (x', y' + height size)
 
 -- | One function to render them all! (parenthesis)
 -- for one line ( ... )
@@ -120,53 +164,53 @@ charOfOp OpMul = '*'
 charOfOp OpDiv = '/'
 charOfOp OpPow = '^'
 
-renderF :: Pos -- ^ Where to render
-        -> Formula -- ^ CurrentNode
+renderF :: Formula -- ^ CurrentNode
         -> SizeTree -- ^ Previously calculated size
+        -> Pos -- ^ Where to render
         -> [(Pos,Char)] -- ^ Result to be used in accumArray
 
 -- In the following matches, we render parenthesis and
 -- then recurse to the normal flow for the regular render.
-renderF (x,y) node (MonoSizeNode True (base, dim) st) =
-    renderParens (x,y) dim ++ renderF (x+1, y) node neoTree
+renderF node (MonoSizeNode True (base, dim) st) (x,y) =
+    renderParens (x,y) dim ++ renderF node neoTree (x+1, y) 
         where subSize = (remParens asciiSizer) dim
               neoTree = MonoSizeNode False (base, subSize) st
-renderF (x,y) node (BiSizeNode True (base, dim) st1 st2) =
-    renderParens (x,y) dim ++ renderF (x+1, y) node neoTree
+renderF node (BiSizeNode True (base, dim) st1 st2) (x,y) =
+    renderParens (x,y) dim ++ renderF node neoTree (x+1, y) 
         where subSize = (remParens asciiSizer) dim
               neoTree = BiSizeNode False (base, subSize) st1 st2
 
-renderF (x,y) node (SizeNodeList True (base, dim) abase stl) =
-    renderParens (x,y) dim ++ renderF (x+1, y) node neoTree
+renderF node (SizeNodeList True (base, dim) abase stl) (x,y) =
+    renderParens (x,y) dim ++ renderF node neoTree (x+1, y)
         where subSize = (remParens asciiSizer) dim
               neoTree = SizeNodeList False (base, subSize) abase stl
 
 -- Here we make the "simple" rendering, just a conversion.
-renderF (x,y) (Block _ w h) _ =
+renderF (Block _ w h) _ (x,y) =
     [ ((xw, yh), '#') | xw <- [x .. x + w - 1], yh <- [y .. y + h - 1]]
-renderF (x,y) (Variable s) _ = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] s
-renderF (x,y) (CInteger i) _ = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show i)
-renderF (x,y) (CFloat d)   _ = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show d)
+renderF (Variable s) _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] s
+renderF (CInteger i) _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show i)
+renderF (CFloat d)   _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show d)
 
-renderF (x,y) (BinOp OpPow f1 f2) (BiSizeNode False _ t1 t2) =
+renderF (BinOp OpPow f1 f2) (BiSizeNode False _ t1 t2) (x,y) =
     operator : leftRender ++ rightRender
     where operator = ((x + lw + 2, y + rh), '^')
-          leftRender = renderF (x, y + rh) f1 t1
-          rightRender = renderF (x + lw + 3, y) f2 t2
+          leftRender = renderF f1 t1 (x, y + rh)
+          rightRender = renderF f2 t2 (x + lw + 3, y)
           (lw, _) = sizeOfTree t1
           (_, rh) = sizeOfTree t2
 
 -- Division is of another kind :]
-renderF (x,y) (BinOp OpDiv f1 f2) (BiSizeNode False (_,(w,_)) t1 t2) =
+renderF (BinOp OpDiv f1 f2) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
     [ ((xi,y + lh), '-') | xi <- [x .. x + w - 1]] 
-    ++ renderF (leftBegin , y) f1 t1 
-    ++ renderF (rightBegin, y + lh + 1) f2 t2
+    ++ renderF f1 t1 (leftBegin , y)
+    ++ renderF f2 t2 (rightBegin, y + lh + 1)
         where (lw, lh) = sizeOfTree t1
               (rw, _) = sizeOfTree t2
               leftBegin = x + (w - lw) `div` 2
               rightBegin = x + (w - rw) `div` 2
 
-renderF (x,y) (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) =
+renderF (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) (x,y) =
   ((x + lw + 1, y + base),opChar) : (leftRender ++ rightRender)
     where (lw, _) = sizeOfTree t1
           leftBase = baseLineOfTree t1
@@ -178,16 +222,17 @@ renderF (x,y) (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) =
                  then (y, y + leftBase - rightBase)
                  else (y + rightBase - leftBase, y)
 
-          leftRender = renderF (x, leftTop) f1 t1
-          rightRender = renderF (x + lw + 3, rightTop) f2 t2
+          leftRender = renderF f1 t1 (x, leftTop)
+          rightRender = renderF f2 t2 (x + lw + 3, rightTop)
 
-renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) =
+renderF (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) (x,y) =
     ((x, y+1), '\\') : ((x + 1, y + 1), '/')
     : [ ((i, y), '_') | i <- [x + 2 .. x + w - 1] ]
-    ++ renderF (x + 2, y + 1) f s
-renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) =
+    ++ renderF f s (x + 2, y + 1)
+
+renderF (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     -- The sub formula
-    renderF (leftBegin, y + 1) f s
+    renderF f s (leftBegin, y + 1)
     -- The top line
     ++ [ ((left,y), '_') | left <- [leftBegin .. x + w - 1] ]
     -- big line from bottom to top
@@ -200,24 +245,26 @@ renderF (x,y) (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) =
               halfScreen = y + h `div` 2 + 1
               midEnd = h `div` 2 - 2 + h `mod` 2
 
-renderF (x,y) (UnOp OpNegate f) (MonoSizeNode _ _ s) =
-    ((x,y), '-') : renderF (x+1,y) f s
+renderF (UnOp OpNegate f) (MonoSizeNode _ _ s) (x,y) =
+    ((x,y), '-') : renderF f s (x+1,y)
 
-renderF (x,y) (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) =
+renderF (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     concat [  [((x,height), '|'), ((x + w - 1, height), '|')]
              | height <- [y .. y + h - 1] ]
-    ++ renderF (x+1,y) f s
+    ++ renderF f s (x+1,y)
 
-renderF (x,y) (UnOp op f) (MonoSizeNode _ nodeSize@(_,(w,_)) subSize) =
-    renderF (x,y) (App (Variable opName) [f]) 
-                  (SizeNodeList False nodeSize (w `div` 2) [subSize])
+renderF (UnOp op f) (MonoSizeNode _ nodeSize@(_,(w,_)) subSize) (x,y) =
+    renderF (App (Variable opName) [f]) 
+            (SizeNodeList False nodeSize (w `div` 2) [subSize])
+            (x,y) 
         where opName = case lookup op unOpNames of
                         Just name -> name
                         _ -> error "Wrong lookup"
 
-renderF (x,y) (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) =
+renderF (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
+        (x,y) =
     concat params
-    ++ renderF (x,baseLine) func s
+    ++ renderF func s (x,baseLine) 
     ++ renderParens (x + fw, y) (xla - argBegin, h)
         where (fw, _) = sizeOfTree s
 
@@ -233,15 +280,16 @@ renderF (x,y) (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts))
                           commas = [((x' + nodeWidth, y + argBase), ',')] 
                           nodeBase = baseLineOfTree size
                           baseLine' = y' + (argBase - nodeBase)
-                          argWrite = renderF (x', baseLine') node size 
+                          argWrite = renderF node size (x', baseLine')
 
-renderF (x,y) (Integrate ini end what var)
-              (SizeNodeList False
-                        (_, (w,_h)) _ [iniSize,endSize,whatSize, derVarSize]) =
-       renderF (x + (integWidth - ew) `div` 2, y) end endSize
-    ++ renderF (x + (integWidth - iw) `div` 2 - 1, bottom + 1) ini iniSize
-    ++ renderF (whatBegin + 1, whatTop) what whatSize
-    ++ renderF (varBegin + 1, varTop) var derVarSize
+renderF (Integrate ini end what var)
+        (SizeNodeList False
+            (_, (w,_h)) _ [iniSize,endSize,whatSize, derVarSize])
+        (x,y) =
+       renderF end endSize (x + (integWidth - ew) `div` 2, y)
+    ++ renderF ini iniSize (x + (integWidth - iw) `div` 2 - 1, bottom + 1)
+    ++ renderF what whatSize (whatBegin + 1, whatTop)
+    ++ renderF var derVarSize (varBegin + 1, varTop)
 
     ++ [ ((integPos, y + eh + 1), '/'), ((integPos + 1, y + eh), '_')
        , ((integPos, bottom),'/'), ((integPos - 1, bottom),'_')
@@ -261,15 +309,14 @@ renderF (x,y) (Integrate ini end what var)
               varBegin = x + w - vw - 1
               whatBegin = varBegin - 2 - ww
               bottom = y + eh + max 2 wh
-              {-middleStop = wh `div` 2 + if wh `mod` 2 == 0-}
-                    {-then -1 else 0-}
 
-renderF (x,y) (Product ini end what)
-              (SizeNodeList False
-                        (_, (w,_h)) _ [iniSize,endSize,whatSize]) =
-    renderF (x + (sumWidth - ew) `div` 2, y) end endSize
-    ++ renderF (x + (sumWidth - iw) `div` 2, bottom + 1) ini iniSize
-    ++ renderF (whatBegin + 1, y + eh + 1) what whatSize
+renderF (Product ini end what)
+        (SizeNodeList False
+             (_, (w,_h)) _ [iniSize,endSize,whatSize])
+        (x,y) =
+    renderF end endSize (x + (sumWidth - ew) `div` 2, y)
+    ++ renderF ini iniSize (x + (sumWidth - iw) `div` 2, bottom + 1)
+    ++ renderF what whatSize (whatBegin + 1, y + eh + 1)
     -- Top line
     ++ [ ((i, y + eh), '_') | i <- [x .. whatBegin - 1]]
     -- Descending line
@@ -284,12 +331,13 @@ renderF (x,y) (Product ini end what)
               {-middleStop = wh `div` 2 + if wh `mod` 2 == 0-}
                     {-then -1 else 0-}
 
-renderF (x,y) (Sum ini end what)
-              (SizeNodeList False
-                        (_, (w,_h)) _ [iniSize,endSize,whatSize]) =
-    renderF (x + (sumWidth - ew) `div` 2, y) end endSize
-    ++ renderF (x + (sumWidth - iw) `div` 2, bottom + 1) ini iniSize
-    ++ renderF (whatBegin + 1, y + eh + 1) what whatSize
+renderF (Sum ini end what)
+        (SizeNodeList False
+              (_, (w,_h)) _ [iniSize,endSize,whatSize])
+        (x,y) =
+    renderF end endSize (x + (sumWidth - ew) `div` 2, y)
+    ++ renderF ini iniSize (x + (sumWidth - iw) `div` 2, bottom + 1)
+    ++ renderF what whatSize (whatBegin + 1, y + eh + 1)
     -- Top line
     ++ [ ((i, y + eh), '_') | i <- [x .. whatBegin - 1]]
     -- Bottom line
@@ -307,4 +355,28 @@ renderF (x,y) (Sum ini end what)
               middleStop = wh `div` 2 + if wh `mod` 2 == 0
                     then -1 else 0
 
+renderF (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
+    vertLine x ++ vertLine (x + w - 1)
+    ++ producedList final
+     where vertLine left = 
+            [ ((left,height), '|') | height <- [y .. y + h - 1] ]
+
+           renderLine :: (Int, Int) -> (Formula, (RelativePlacement, SizeTree))
+                      -> ListProducer (Pos,Char) (Int,Int)
+           renderLine (x', y') (formu, ((_,(w,_)),size)) = do
+            concatFront $ renderF formu size (x', y')
+            return (x' + w + 1, y')
+           
+           renderMatrix :: (Int, Int) 
+                        -> ([Formula], [(RelativePlacement, SizeTree)])
+                        -> ListProducer (Pos, Char) (Int, Int)
+           renderMatrix (x', y') (formulas, sizes) = 
+               let ((_,(_,height)),_) = head sizes
+               in do
+               foldM renderLine (x', y') $ zip formulas sizes
+               return (x', y' + height + 1)
+
+           final = foldM renderMatrix (x,y) $ zip subs lst
+
 renderF _ _ _ = error "renderF - unmatched case"
+

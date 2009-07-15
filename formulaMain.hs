@@ -21,7 +21,7 @@ main = do
                       formulaMatrix = linesOfArray f'
                   in
                   do write . concat $ intersperse "\n" formulaMatrix
-                     writeFile "formula.txt" $ show formula
+                     writeFile "formula.txt" $ show f
                      writeFile "size.txt" $ show tree)
            formula
 
