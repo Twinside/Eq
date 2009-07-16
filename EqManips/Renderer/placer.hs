@@ -1,7 +1,7 @@
 module EqManips.Renderer.Placer where
 
 import EqManips.Types
-import Data.List( foldl' )
+import Data.List( foldl', transpose )
 
 type Priority = Int
 type BaseLine = Int
@@ -14,7 +14,7 @@ data SizeTree =
     | MonoSizeNode Bool (BaseLine, Dimension) SizeTree
     | BiSizeNode Bool (BaseLine, Dimension) SizeTree SizeTree
     | SizeNodeList Bool (BaseLine, Dimension) BaseLine [SizeTree]
-    | SizeNodeArray Bool (BaseLine, Dimension) [[((BaseLine, Dimension), SizeTree)]]
+    | SizeNodeArray Bool (BaseLine, Dimension) ![[((BaseLine, Dimension), SizeTree)]]
     deriving (Eq, Show, Read)
 
 type RelativePlacement = (BaseLine, Dimension)
@@ -126,6 +126,8 @@ sizeOfFormula sizer _ _ (Matrix _ _ exprs) =
               sizeMatrix = map lineMapper exprs
 
               sizeDim = matrixSize sizer dimensionMatrix
+
+              baseLineExtractor :: (Int, Int) -> SizeTree -> (Int,Int)
               baseLineExtractor (base, depth) size =
                   let (base', (_,h')) = sizeExtract size
                   in (max base base', max depth (h' - base'))
@@ -134,17 +136,12 @@ sizeOfFormula sizer _ _ (Matrix _ _ exprs) =
               heights = map (foldl' baseLineExtractor (0,0)) sizeMatrix
 
               widths :: [Int]
-              widths = widthExtract [0..] 
-                                (map head sizeMatrix , map tail sizeMatrix)
+              widths =
+                   [ maximum $ map widthOf column | column <- transpose sizeMatrix ]
 
               widthOf :: SizeTree -> Int
               widthOf size = fst . snd $ sizeExtract size
 
-              widthExtract :: [Int] -> ([SizeTree], [[SizeTree]]) -> [Int]
-              widthExtract widthLst (_, []) = widthLst
-              widthExtract widthLst (hd, tl) =
-                  widthExtract [ max w $ widthOf size | (size, w) <- zip hd widthLst]
-                               (map head tl, map tail tl)
               dimensionMatrix =
                   [ [(bases, (w, bases + depth)) | w <- widths] 
                         | (bases, depth) <- heights]

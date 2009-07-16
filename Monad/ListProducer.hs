@@ -1,3 +1,4 @@
+{-# LANGUAGE MagicHash #-}
 module Monad.ListProducer( producedValue
                          , producedList
                          , runProducer
@@ -6,9 +7,12 @@ module Monad.ListProducer( producedValue
                          , pushBack
                          , concatFront
                          , concatBack ) where
+{-import GHC.Exts-}
+{-import GHC.Prim-}
+import Control.Monad.Fix
 
 data ListProducer e a = ListProducer {
-        runListProducer :: [[e]] -> ([[e]], a)
+        runListProducer :: [[e]] -> ( [[e]], a)
     }
 
 instance Functor (ListProducer e) where
@@ -27,6 +31,11 @@ instance Monad (ListProducer e) where
         let (lst', value) = runListProducer m lst
         in runListProducer (k value) $ lst'
 
+instance MonadFix (ListProducer e) where
+    mfix  f = ListProducer $ \lst -> 
+        let (lst', val) = runListProducer (f val) lst 
+        in (lst', val) 
+
 producedValue :: ListProducer e a -> a
 producedValue = snd . runProducer
 
@@ -35,7 +44,7 @@ producedList = fst . runProducer
 
 runProducer :: ListProducer e a -> ([e], a)
 runProducer producer =
-    let (lst, val) = runListProducer producer $ [[]]
+    let (lst, val) = runListProducer producer $ []
     in (concat lst, val)
 
 pushFront :: e -> ListProducer e ()

@@ -85,10 +85,11 @@ asciiSizer = Dimensioner
     , matrixSize = \lst ->
         let mHeight = sum [ h | (_,(_,h)) <- map head lst ]
                       + length lst
+                      + 1
             firstLine = head lst
             mWidth = length firstLine + sum [ w | (_,(w,_)) <- firstLine ]
         in
-        (mHeight `div` 2, (mWidth, mHeight))
+        (mHeight `div` 2, (mWidth + 3, mHeight))
 
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     }
@@ -324,12 +325,15 @@ renderF (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
     vertLine x ++ vertLine (x + w - 1)
     ++ producedList final
      where vertLine left = 
-            [ ((left,height), '|') | height <- [y .. y + h - 1] ]
+            [ ((left,height), '|') | height <- [y + 1.. y + h - 2] ]
 
            renderLine :: (Int, Int) -> (Formula, (RelativePlacement, SizeTree))
                       -> ListProducer (Pos,Char) (Int,Int)
-           renderLine (x', y') (formu, ((_,(w',_)),size)) = do
-            concatFront $ renderF formu size (x', y')
+           renderLine (x', y') (formu, ((base,(w',_)),size)) = do
+            let (nodeBase, (nodeWidth, _)) = sizeExtract size
+                xStart = x' + (w' - nodeWidth) `div` 2
+                yStart = y' + (base - nodeBase)
+            concatFront $ renderF formu size (xStart, yStart)
             return (x' + w' + 1, y')
            
            renderMatrix :: (Int, Int) 
@@ -341,7 +345,7 @@ renderF (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
                foldM renderLine (x', y') $ zip formulas sizes
                return (x', y' + height + 1)
 
-           final = foldM renderMatrix (x,y) $ zip subs lst
+           final = foldM renderMatrix (x + 2, y + 1) $ zip subs lst
 
 renderF _ _ _ = error "renderF - unmatched case"
 
