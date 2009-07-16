@@ -19,18 +19,18 @@ asciiSizer = Dimensioner
                 then (base + 1, (w + 2, h + 1))
                 else (base + 1, (w + (h * 3) `div` 2, h + 1))
 
-            s OpSin = (base, (2 + w + 3,h))
-            s OpASin = (base, (2 + w + 4,h))
+            s OpSin = (h `div` 2, (2 + w + 3,h))
+            s OpASin = (h `div` 2, (2 + w + 4,h))
 
-            s OpCos = (base, (2 + w + 3,h))
-            s OpACos = (base, (2 + w + 4,h))
+            s OpCos = (h `div` 2, (2 + w + 3,h))
+            s OpACos = (h `div` 2, (2 + w + 4,h))
 
-            s OpTan = (base, (2 + w + 3,h))
-            s OpATan = (base, (2 + w + 4,h))
+            s OpTan = (h `div` 2, (2 + w + 3,h))
+            s OpATan = (h `div` 2, (2 + w + 4,h))
 
-            s OpLn = (base, (2 + w + 2,h))
-            s OpExp = (base, (2 + w + 3,h))
-            s OpLog = (base, (2 + w + 3,h))
+            s OpLn = (h `div` 2, (2 + w + 2,h))
+            s OpLog = (h `div` 2, (2 + w + 3,h))
+            s OpExp = (h, (1 + w, 1 + h))
             {-s _ = error "EEEEEEEERgl"-}
         in s op
 
@@ -41,8 +41,9 @@ asciiSizer = Dimensioner
     , remParens = \(w, h) -> (w - 2, h)
     , divBar = \(_,(w1,h1)) (_,(w2,h2)) ->
                     (h1, (max w1 w2 + 2, h1 + h2 + 1))
+
     , powSize = \(b,(w1,h1)) (_,(w2,h2)) ->
-                    (b + h2, (w1 + w2 + 3, h1 + h2))
+                    (b + h2, (w1 + w2, h1 + h2))
 
       -- We must handle case like this :
       --  +-------+
@@ -92,7 +93,7 @@ asciiSizer = Dimensioner
         (mHeight `div` 2, (mWidth + 3, mHeight))
 
     , derivateSize = \(_,(we,he)) (_,(wv, hv)) ->
-        (he + 1, (max we wv + 2, he + hv + 1))
+        (he + 1, (max we wv + 3, he + hv + 1))
 
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     }
@@ -163,10 +164,9 @@ renderF (CInteger i) _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show 
 renderF (CFloat d)   _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show d)
 
 renderF (BinOp OpPow f1 f2) (BiSizeNode False _ t1 t2) (x,y) =
-    operator : leftRender ++ rightRender
-    where operator = ((x + lw + 2, y + rh), '^')
-          leftRender = renderF f1 t1 (x, y + rh)
-          rightRender = renderF f2 t2 (x + lw + 3, y)
+    leftRender ++ rightRender
+    where leftRender = renderF f1 t1 (x, y + rh)
+          rightRender = renderF f2 t2 (x + lw, y)
           (lw, _) = sizeOfTree t1
           (_, rh) = sizeOfTree t2
 
@@ -218,16 +218,21 @@ renderF (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
 renderF (UnOp OpNegate f) (MonoSizeNode _ _ s) (x,y) =
     ((x,y), '-') : renderF f s (x+1,y)
 
+renderF (UnOp OpExp f) (MonoSizeNode _ (_,(_,h)) s) (x,y) =
+    ((x, y + h - 1), 'e') : renderF f s (x + 1, y)
+
 renderF (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     concat [  [((x,height), '|'), ((x + w - 1, height), '|')]
              | height <- [y .. y + h - 1] ]
     ++ renderF f s (x+1,y)
 
-renderF (UnOp op f) (MonoSizeNode _ nodeSize@(_,(w,_)) subSize) (x,y) =
+renderF (UnOp op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
     renderF (App (Variable opName) [f]) 
-            (SizeNodeList False nodeSize (w `div` 2) [subSize])
+            (SizeNodeList False nodeSize b 
+                    [EndNode(0,(length opName,1)) ,subSize])
             (x,y) 
-        where opName = case lookup op unOpNames of
+        where (b,_) = sizeExtract subSize
+              opName = case lookup op unOpNames of
                         Just name -> name
                         _ -> error "Wrong lookup"
 
@@ -304,8 +309,8 @@ renderF (Product ini end what)
 renderF (Derivate what var) (BiSizeNode _ (_,(w,_)) whatSize vardSize) (x,y) =
     ((x, y + wh - 1), 'd') : ((x, y + wh + 1), 'd')
     : [ ((i, y + wh), '-') | i <- [x .. x + w - 1] ]
-    ++ renderF what whatSize (x + 1, y)
-    ++ renderF var vardSize (x + 1, y + wh + 1)
+    ++ renderF what whatSize (x + 2, y)
+    ++ renderF var vardSize (x + 2, y + wh + 1)
      where (_, (_, wh)) = sizeExtract whatSize
 
 renderF (Sum ini end what)

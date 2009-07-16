@@ -12,6 +12,7 @@ link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) =
     Block i1 i2 i3
 link (App (Variable "abs") [x]) = UnOp OpAbs $ link x
 link (App (Variable "sqrt") [x]) = UnOp OpSqrt $ link x
+link (App (Variable "exp") [x]) = UnOp OpExp $ link x
 link (App (Variable "sum") [ini, end, what]) = 
     Sum (link ini) (link end) (link what)
 link (App (Variable "sum") [ini, what]) = 
@@ -19,8 +20,20 @@ link (App (Variable "sum") [ini, what]) =
 link (App (Variable "sum") [what]) = 
     Sum (Variable "") (Variable "") (link what)
 
+link (App (Variable "sin") [x]) = UnOp OpSin $ link x
+link (App (Variable "asin") [x]) = UnOp OpASin $ link x
+
+link (App (Variable "cos") [x]) = UnOp OpCos $ link x
+link (App (Variable "acos") [x]) = UnOp OpACos $ link x
+
+link (App (Variable "tan") [x]) = UnOp OpTan $ link x
+link (App (Variable "atan") [x]) = UnOp OpATan $ link x
+
+link (App (Variable "ln") [x]) = UnOp OpLn $ link x
+link (App (Variable "log") [x]) = UnOp OpLog $ link x
+
 link (App (Variable "derivate") [what, var]) =
-    Derivate what var
+    Derivate (link what) (link var)
 
 link (App (Variable "product") [ini, end, what]) = 
     Product (link ini) (link end) (link what)
