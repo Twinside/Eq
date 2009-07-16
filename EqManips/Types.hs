@@ -24,6 +24,9 @@ data BinOperator  =
     | OpDiv 
     -- | '^'
     | OpPow 
+
+    -- | '='
+    | OpEq
     deriving (Eq,Show,Read)
 
 data UnOperator =
@@ -78,12 +81,23 @@ data Formula =
     | Sum Formula Formula Formula
     -- | LowBound highbound expression
     | Product Formula Formula Formula
+
+    -- | Derivate expression withVar
+    | Derivate Formula Formula
+
     -- | lowBound highBound expression dx
     | Integrate Formula Formula Formula Formula
+
+    -- | -1 for example
     | UnOp UnOperator Formula
+
+    -- | f1 op f2
     | BinOp BinOperator Formula Formula
+
     -- | Width, Height, all formulas
     | Matrix Int Int [[Formula]]
+
+    -- | Used for debug
     | Block Int Int Int
     deriving (Eq, Show, Read)
 
@@ -91,7 +105,8 @@ type Parsed a b = GenParser Char a b
     
 prioOfBinaryOperators :: BinOperator -> Int
 prioOfBinaryOperators = prio
-    where prio OpAdd = 3
+    where prio OpEq = 4
+          prio OpAdd = 3
           prio OpSub = 3
           prio OpMul = 2
           prio OpDiv = 2
@@ -120,7 +135,7 @@ whiteSpace = P.whiteSpace lexer
 
 lexer :: P.TokenParser st
 lexer  = P.makeTokenParser 
-         (haskellStyle { P.reservedOpNames = ["*","/","+","-","^"] } )
+         (haskellStyle { P.reservedOpNames = ["*","/","+","-","^","="] } )
 
 -----------------------------------------------------------
 --          Real "grammar"
@@ -157,5 +172,6 @@ operatorDefs =
     , [binary "^" (BinOp OpPow) AssocLeft]
     , [binary "/" (BinOp OpDiv) AssocLeft, binary "*" (BinOp OpMul) AssocLeft]
     , [binary "+" (BinOp OpAdd) AssocLeft, binary "-" (BinOp OpSub) AssocLeft]
+    , [binary "=" (BinOp OpEq) AssocRight]
     ]
 

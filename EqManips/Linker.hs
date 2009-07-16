@@ -19,6 +19,9 @@ link (App (Variable "sum") [ini, what]) =
 link (App (Variable "sum") [what]) = 
     Sum (Variable "") (Variable "") (link what)
 
+link (App (Variable "derivate") [what, var]) =
+    Derivate what var
+
 link (App (Variable "product") [ini, end, what]) = 
     Product (link ini) (link end) (link what)
 link (App (Variable "product") [ini, what]) = 

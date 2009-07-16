@@ -1,1 +1,1 @@
-Variable "vartest"
+BinOp OpDiv (UnOp OpSqrt (Derivate (BinOp OpAdd (BinOp OpSub (BinOp OpAdd (BinOp OpPow (Variable "x") (CInteger 2)) (BinOp OpPow (Variable "x") (CInteger 3))) (BinOp OpMul (CInteger 5) (App (Variable "sin") [BinOp OpPow (Variable "x") (CInteger 2)]))) (App (Variable "exp") [App (Variable "exp") [Variable "x"]])) (Variable "x"))) (CInteger 2)

@@ -91,6 +91,9 @@ asciiSizer = Dimensioner
         in
         (mHeight `div` 2, (mWidth + 3, mHeight))
 
+    , derivateSize = \(_,(we,he)) (_,(wv, hv)) ->
+        (he + 1, (max we wv + 2, he + hv + 1))
+
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     }
 
@@ -124,6 +127,7 @@ renderParens (x,y) (w,h) =
 
 
 charOfOp :: BinOperator -> Char
+charOfOp OpEq = '='
 charOfOp OpAdd = '+'
 charOfOp OpSub = '-'
 charOfOp OpMul = '*'
@@ -296,6 +300,13 @@ renderF (Product ini end what)
               bottom = y + eh + max 2 wh
               {-middleStop = wh `div` 2 + if wh `mod` 2 == 0-}
                     {-then -1 else 0-}
+
+renderF (Derivate what var) (BiSizeNode _ (_,(w,_)) whatSize vardSize) (x,y) =
+    ((x, y + wh - 1), 'd') : ((x, y + wh + 1), 'd')
+    : [ ((i, y + wh), '-') | i <- [x .. x + w - 1] ]
+    ++ renderF what whatSize (x + 1, y)
+    ++ renderF var vardSize (x + 1, y + wh + 1)
+     where (_, (_, wh)) = sizeExtract whatSize
 
 renderF (Sum ini end what)
         (SizeNodeList False

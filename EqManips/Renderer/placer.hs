@@ -37,6 +37,7 @@ data Dimensioner = Dimensioner
                    -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , blockSize :: (Int, Int, Int) -> RelativePlacement
     , matrixSize :: [[RelativePlacement]] -> RelativePlacement
+    , derivateSize :: RelativePlacement -> RelativePlacement -> RelativePlacement
     }
 
 sizeExtract :: SizeTree -> (BaseLine, Dimension)
@@ -156,6 +157,14 @@ sizeOfFormula sizer _isRight _prevPrio (Product inite end what) =
               trees = map sof [inite, end, what]
               [iniDim, endDim, whatDim] = map sizeExtract trees
               sizeDim = (productSize sizer) iniDim endDim whatDim
+
+
+sizeOfFormula sizer _isRight _prevPrio (Derivate what vard) =
+    BiSizeNode False sizeDim whatDim vardDim
+        where whatDim = sizeOfFormula sizer False maxPrio what
+              vardDim = sizeOfFormula sizer False maxPrio vard
+              sizeDim = derivateSize sizer (sizeExtract whatDim)
+                                           (sizeExtract vardDim)
 
 sizeOfFormula sizer _isRight _prevPrio (Sum inite end what) =
     SizeNodeList False sizeDim 0 trees
