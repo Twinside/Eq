@@ -69,7 +69,8 @@ sizeOfFormula sizer _ _ (Block i1 i2 i3) =
 -- Simply put a minus in front of the rest of the formula
 sizeOfFormula sizer _ _ (UnOp op f) =
     MonoSizeNode False sizeDim subFormula
-        where subFormula = sizeOfFormula sizer False maxPrio f
+        where prio = prioOfUnaryOperators op
+              subFormula = sizeOfFormula sizer True prio f
               sizeDim = (unaryDim sizer) op (sizeExtract subFormula)
 
 

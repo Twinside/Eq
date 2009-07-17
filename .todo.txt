@@ -1,2 +1,2 @@
+4:How to handle manipulation of formula
 3:Think about some vector things
-1:Make matrix formatting

@@ -19,19 +19,13 @@ asciiSizer = Dimensioner
                 then (base + 1, (w + 2, h + 1))
                 else (base + 1, (w + (h * 3) `div` 2, h + 1))
 
-            s OpSin = (h `div` 2, (2 + w + 3,h))
-            s OpASin = (h `div` 2, (2 + w + 4,h))
-
-            s OpCos = (h `div` 2, (2 + w + 3,h))
-            s OpACos = (h `div` 2, (2 + w + 4,h))
-
-            s OpTan = (h `div` 2, (2 + w + 3,h))
-            s OpATan = (h `div` 2, (2 + w + 4,h))
-
-            s OpLn = (h `div` 2, (2 + w + 2,h))
-            s OpLog = (h `div` 2, (2 + w + 3,h))
             s OpExp = (h, (1 + w, 1 + h))
-            {-s _ = error "EEEEEEEERgl"-}
+
+            s oper = (h `div` 2, (w + opLength + 2, h))
+                where opLength = 
+                       case lookup oper unOpNames of
+                           Just name -> length name
+                           Nothing -> error "Unknown operator name"
         in s op
 
     , varSize = \s -> (0, (length s, 1))

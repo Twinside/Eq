@@ -1,0 +1,2 @@
+integrate( a, b, integrate( c, d, integrate( e, f, sin(x), x), y), z )
+

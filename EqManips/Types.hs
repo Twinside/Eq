@@ -145,7 +145,7 @@ instance Num Formula where
     signum (CFloat f) = CFloat (signum f)
     signum _ = CInteger 0
     fromInteger = CInteger . fromInteger
-    
+
 instance Fractional Formula where
     (/) = BinOp OpDiv 
     recip = BinOp OpDiv (CInteger 1)

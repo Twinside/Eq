@@ -6,6 +6,10 @@ import CharArray
 import Data.List( intersperse )
 import Text.ParserCombinators.Parsec.Prim( runParser )
 
+-- Just to be able to compile...
+import EqManips.Aproximated
+import EqManips.Algorithm.Derivative
+
 main :: IO ()
 main = do
     args <- getArgs
