@@ -1,7 +1,8 @@
 module EqManips.Types( Formula( .. )
                      , BinOperator( .. )
                      , UnOperator( .. )
-                     , prioOfBinaryOperators 
+                     , prioOfBinaryOperators
+                     , prioOfUnaryOperators
                      , expr 
                      , unOpNames
                      ) where
@@ -9,6 +10,7 @@ module EqManips.Types( Formula( .. )
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language( haskellStyle )
+import Data.Ratio
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Control.Applicative( (<$>) )
 
@@ -35,13 +37,19 @@ data UnOperator =
     | OpSqrt
 
     | OpSin
+    | OpSinh
     | OpASin
+    | OpASinh
 
     | OpCos
+    | OpCosh
     | OpACos
+    | OpACosh
 
     | OpTan
+    | OpTanh
     | OpATan
+    | OpATanh
 
     | OpLn
     | OpLog
@@ -58,12 +66,18 @@ unOpNames =
 
     , (OpSin, "sin")
     , (OpASin, "asin")
+    , (OpSinh, "sinh")
+    , (OpASinh, "asinh")
 
     , (OpCos, "cos")
     , (OpACos, "acos")
+    , (OpCosh, "cosh")
+    , (OpACosh, "acosh")
 
     , (OpTan, "tan")
     , (OpATan, "atan")
+    , (OpTanh, "tanh")
+    , (OpATanh, "atanh")
 
     , (OpLn, "ln")
     , (OpLog, "log")
@@ -71,6 +85,9 @@ unOpNames =
     , (OpExp, "exp")
     ]
 
+-- | Main type manipulated by the software.
+-- All relevant instances for numeric types
+-- are provided for ease of use
 data Formula =
       Variable String
     | CInteger Int
@@ -112,6 +129,49 @@ prioOfBinaryOperators = prio
           prio OpDiv = 2
           prio OpPow = 1
 
+prioOfUnaryOperators :: UnOperator -> Int
+prioOfUnaryOperators = p
+    where p OpNegate = 0
+          p OpExp = 1
+          p _ = 10000
+    
+instance Num Formula where
+    (+) = BinOp OpAdd
+    (-) = BinOp OpSub
+    (*) = BinOp OpMul
+    negate = UnOp OpNegate
+    abs = UnOp OpAbs
+    signum (CInteger n) = CInteger (signum n)
+    signum (CFloat f) = CFloat (signum f)
+    signum _ = CInteger 0
+    fromInteger = CInteger . fromInteger
+    
+instance Fractional Formula where
+    (/) = BinOp OpDiv 
+    recip = BinOp OpDiv (CInteger 1)
+    fromRational a = BinOp OpDiv (int $ numerator a) 
+                                 (int $ denominator a)
+            where int = CInteger . fromInteger
+    
+instance Floating Formula where
+    pi = CFloat pi 
+    exp = UnOp OpExp
+    sqrt = UnOp OpSqrt
+    log = UnOp OpLn
+    (**) = BinOp OpPow
+    sin = UnOp OpSin
+    cos = UnOp OpCos
+    tan = UnOp OpTan
+    asin = UnOp OpASin
+    acos = UnOp OpACos
+    atan = UnOp OpATan
+    sinh = UnOp OpSinh
+    cosh = UnOp OpCosh
+    tanh = UnOp OpTanh
+    asinh = UnOp OpASinh
+    acosh = UnOp OpACosh
+    atanh = UnOp OpATanh
+    
 -----------------------------------------------------------
 --          Lexing defs
 -----------------------------------------------------------
