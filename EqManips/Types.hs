@@ -58,33 +58,6 @@ data UnOperator =
 
     deriving (Eq, Show, Read)
 
-unOpNames :: [(UnOperator, String)]
-unOpNames =
-    [ (OpNegate, "-")
-    , (OpAbs, "abs")
-    , (OpSqrt, "sqrt")
-
-    , (OpSin, "sin")
-    , (OpASin, "asin")
-    , (OpSinh, "sinh")
-    , (OpASinh, "asinh")
-
-    , (OpCos, "cos")
-    , (OpACos, "acos")
-    , (OpCosh, "cosh")
-    , (OpACosh, "acosh")
-
-    , (OpTan, "tan")
-    , (OpATan, "atan")
-    , (OpTanh, "tanh")
-    , (OpATanh, "atanh")
-
-    , (OpLn, "ln")
-    , (OpLog, "log")
-
-    , (OpExp, "exp")
-    ]
-
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types
 -- are provided for ease of use
@@ -120,6 +93,9 @@ data Formula =
 
 type Parsed a b = GenParser Char a b
     
+-------------------------------------------
+---- "Language" helpers
+-------------------------------------------
 prioOfBinaryOperators :: BinOperator -> Int
 prioOfBinaryOperators = prio
     where prio OpEq = 4
@@ -135,6 +111,36 @@ prioOfUnaryOperators = p
           p OpExp = 1
           p _ = 10000
     
+unOpNames :: [(UnOperator, String)]
+unOpNames =
+    [ (OpNegate, "-")
+    , (OpAbs, "abs")
+    , (OpSqrt, "sqrt")
+
+    , (OpSin, "sin")
+    , (OpASin, "asin")
+    , (OpSinh, "sinh")
+    , (OpASinh, "asinh")
+
+    , (OpCos, "cos")
+    , (OpACos, "acos")
+    , (OpCosh, "cosh")
+    , (OpACosh, "acosh")
+
+    , (OpTan, "tan")
+    , (OpATan, "atan")
+    , (OpTanh, "tanh")
+    , (OpATanh, "atanh")
+
+    , (OpLn, "ln")
+    , (OpLog, "log")
+
+    , (OpExp, "exp")
+    ]
+
+----------------------------------------
+----  Strong and valid instances    ----
+----------------------------------------
 instance Num Formula where
     (+) = BinOp OpAdd
     (-) = BinOp OpSub
@@ -171,7 +177,7 @@ instance Floating Formula where
     asinh = UnOp OpASinh
     acosh = UnOp OpACosh
     atanh = UnOp OpATanh
-    
+
 -----------------------------------------------------------
 --          Lexing defs
 -----------------------------------------------------------

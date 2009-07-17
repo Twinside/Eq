@@ -113,30 +113,49 @@ instance Integral a => Integral (Aproximated a) where
 
     toInteger (Aproximated (_,n)) = toInteger n
 
+-- | Problematic instance. We must loose the formula
+-- during the process, because :
+-- class ... RealFrac a where
+--      ...
+--      truncate :: (Integral b) => a -> b
+--      ...
+-- mean in our case
+--  truncate :: (Integral b) => Aproximated a -> b
+-- ergl, what we really want is :
+--  truncate :: (Integral b) => Aproximated a -> Aproximated b
+--
+-- So, basically, we're screwed
+-- All the instances arise from primitve type (float/double)
+-- or coerce around using the previous instance.
 instance RealFrac a => RealFrac (Aproximated a) where
     {- TODO 3 Maybe add frac as an operator 
      - somehting -}
+
+    -- | This one is kept around because if you
+    -- use the fractional part, formula information
+    -- is still there
     properFraction (Aproximated (f,n)) = 
         let (integ, frac) = properFraction n 
             app = App (Variable "frac") [f]
         in ( integ
            , Aproximated (app ,frac))
 
-    {- TODO 3 add truncation to formula -}
-    truncate (Aproximated (f,n)) =
-        let newNum :: (Integral b) => b
-            newNum = truncate n
-        in Aproximated (f, newNum)
+    truncate (Aproximated (_f,_n)) =
+        error "EqManips.Aproximated - truncate called. You will obtain wrong result."
+        {-Aproximated (f, truncate newNum)-}
 
     {- TODO 3 add rounding to formula -}
-    round (Aproximated (f,n)) = 
-        Aproximated (f, round n)
+    round (Aproximated (_f,_n)) = 
+        error "EqManips.Aproximated - round called. You will obtain wrong result."
+        {-Aproximated (f, round n)-}
 
     {- TODO 3 add ceiling to formula -}
-    ceiling (Aproximated (f,n)) = 
-        Aproximated (f, ceiling n)
+    ceiling (Aproximated (_f,_n)) = 
+        error "EqManips.Aproximated - ceiling called. You will obtain wrong result."
+        {-Aproximated (f, ceiling n)-}
 
     {- TODO 3 add floor to formula -}
-    floor (Aproximated (f,n)) =
-        Aproximated (f, floor n)
+    floor (Aproximated (_f,_n)) =
+        error "EqManips.Aproximated - floor called. You will obtain wrong result."
+        {-Aproximated (f, floor n)-}
 
