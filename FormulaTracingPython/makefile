@@ -1,0 +1,4 @@
+
+all:
+	python formulaMascarade.py
+
