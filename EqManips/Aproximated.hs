@@ -10,11 +10,11 @@
 -- After the end of the computation, you can retrieve the
 -- formula and display it for debugging or code documentation.
 --
--- You may want to perform symbolic computation on the resulting 
+-- You may want to perform symbolic computation on the resulting
 -- formula.
 module EqManips.Aproximated( Aproximated
-                           , formulaOfAproximation 
-                           , valueOfAproximation 
+                           , formulaOfAproximation
+                           , valueOfAproximation
                            ) where
 
 import EqManips.Types
@@ -50,8 +50,8 @@ instance (Ord a) => Ord (Aproximated a) where
 -- | Not a really useful declaration, but needed
 -- to implement Num, so here we go...
 instance (Show a) => Show (Aproximated a) where
-    show (Aproximated (_,n)) = show n 
-    
+    show (Aproximated (_,n)) = show n
+
 instance (Show a, Num a) => Num (Aproximated a) where
     (Aproximated (fa, na)) + (Aproximated (fb, nb)) =
         Aproximated (fa + fb, na + nb)
@@ -59,23 +59,23 @@ instance (Show a, Num a) => Num (Aproximated a) where
         Aproximated (fa - fb, na - nb)
     (Aproximated (fa, na)) * (Aproximated (fb, nb)) =
         Aproximated (fa * fb, na * nb)
-    negate (Aproximated (f,n)) = 
+    negate (Aproximated (f,n)) =
         Aproximated (negate f, negate n)
-    abs (Aproximated (f,n)) = 
+    abs (Aproximated (f,n)) =
         Aproximated (abs f, abs n)
     signum (Aproximated (f,n)) =
         Aproximated (signum f, signum n)
-    fromInteger i = 
+    fromInteger i =
         Aproximated (fromInteger i, fromInteger i)
 
 instance (Real a) => Real (Aproximated a) where
     toRational (Aproximated (_,n)) = toRational n
-    
+
 instance (Fractional a) => Fractional (Aproximated a) where
     (Aproximated (fa, na)) / (Aproximated (fb, nb)) =
         Aproximated (fa / fb, na / nb)
     recip (Aproximated (f,n)) = Aproximated (recip f, recip n)
-    fromRational i = 
+    fromRational i =
         Aproximated (fromRational i, fromRational i)
 
 instance (Enum a) => Enum (Aproximated a) where
@@ -90,7 +90,7 @@ instance (Enum a) => Enum (Aproximated a) where
     {- TODO 1 maybe define a pred function in formula -}
     pred (Aproximated (f,n)) =
         Aproximated (f - CInteger 1, pred n)
-    
+
 instance Integral a => Integral (Aproximated a) where
     {-TODO 4 Specify quot in formula-}
     quot (Aproximated (f1, n1)) (Aproximated (f2, n2)) =
@@ -128,14 +128,14 @@ instance Integral a => Integral (Aproximated a) where
 -- All the instances arise from primitve type (float/double)
 -- or coerce around using the previous instance.
 instance RealFrac a => RealFrac (Aproximated a) where
-    {- TODO 3 Maybe add frac as an operator 
+    {- TODO 3 Maybe add frac as an operator
      - somehting -}
 
     -- | This one is kept around because if you
     -- use the fractional part, formula information
     -- is still there
-    properFraction (Aproximated (f,n)) = 
-        let (integ, frac) = properFraction n 
+    properFraction (Aproximated (f,n)) =
+        let (integ, frac) = properFraction n
             app = App (Variable "frac") [f]
         in ( integ
            , Aproximated (app ,frac))
@@ -145,12 +145,12 @@ instance RealFrac a => RealFrac (Aproximated a) where
         {-Aproximated (f, truncate newNum)-}
 
     {- TODO 3 add rounding to formula -}
-    round (Aproximated (_f,_n)) = 
+    round (Aproximated (_f,_n)) =
         error "EqManips.Aproximated - round called. You will obtain wrong result."
         {-Aproximated (f, round n)-}
 
     {- TODO 3 add ceiling to formula -}
-    ceiling (Aproximated (_f,_n)) = 
+    ceiling (Aproximated (_f,_n)) =
         error "EqManips.Aproximated - ceiling called. You will obtain wrong result."
         {-Aproximated (f, ceiling n)-}
 
