@@ -9,6 +9,7 @@ import Text.ParserCombinators.Parsec.Prim( runParser )
 -- Just to be able to compile...
 import EqManips.Aproximated
 import EqManips.Algorithm.Derivative
+import EqManips.Algorithm.Simplify
 
 main :: IO ()
 main = do

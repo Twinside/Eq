@@ -11,15 +11,19 @@ int = CInteger
 derivate :: Formula -> Variable -> EqContext Formula
 derivate f v = d f v
 
-
-{-App Formula [Formula]-}
 d :: Formula -> String -> EqContext Formula
-{-d a _b = a-}
 d (Variable v) var
     | v == var = return $ int 1
     | otherwise = return $ int 0
 d (CInteger _) _ = return $ int 0
 d (CFloat _) _ = return $ int 0
+d (App f [g]) var = do
+    f' <- d f var
+    g' <- d g var
+    return $ (App f' [g]) * g'
+
+d (App _ _) _ =
+    fail "Ok, now solution for app with multi argument"
 
 -- EQ: derivate(f + g, x) = derivate( f, x ) + 
 --                          derivate( g, x )
@@ -109,6 +113,30 @@ d (UnOp OpACos f) var = do
 d (UnOp OpATan f) var = do
     f' <- d f var
     return $ f' * (int 1 / (int 1 + f ** 2))
+
+d (UnOp OpSinh f) var = do
+    f' <- d f var
+    return $ f' * (UnOp OpCosh f)
+
+d (UnOp OpCosh f) var = do
+    f' <- d f var
+    return $ f' * (UnOp OpSinh f)
+
+d (UnOp OpTanh f) var = do
+    f' <- d f var
+    return $ f' * (int 1)
+
+d (UnOp OpASinh f) var = do
+    f' <- d f var
+    return $ f' * (int 1 / sqrt (f ** 2 + 1))
+
+d (UnOp OpACosh f) var = do
+    f' <- d f var
+    return $ f' * (int 1 / sqrt (f ** 2 - 1))
+
+d (UnOp OpATanh f) var = do
+    f' <- d f var
+    return $ f' * (int 1 / (int 1 - f ** 2))
 
 d (BinOp OpEq _f1 _f2) _var =
     fail " '=' For the moment we don't know what to do with it"

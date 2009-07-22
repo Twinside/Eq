@@ -13,4 +13,5 @@ Executable formularender
     Build-Depends: base >= 2.0
                  , parsec >= 3.0
                  , array
+                 , mtl
 

@@ -4,6 +4,7 @@ module EqManips.Types( Formula( .. )
                      , prioOfBinaryOperators
                      , prioOfUnaryOperators
                      , expr 
+                     , isFormulaLeaf
                      , unOpNames
                      ) where
 
@@ -92,10 +93,16 @@ data Formula =
     deriving (Eq, Show, Read)
 
 type Parsed a b = GenParser Char a b
-    
+
 -------------------------------------------
 ---- "Language" helpers
 -------------------------------------------
+isFormulaLeaf :: Formula -> Bool
+isFormulaLeaf (Variable _) = True
+isFormulaLeaf (CInteger _) = True
+isFormulaLeaf (CFloat _) = True
+isFormulaLeaf _ = False
+
 prioOfBinaryOperators :: BinOperator -> Int
 prioOfBinaryOperators = prio
     where prio OpEq = 4
