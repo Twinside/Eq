@@ -1,10 +1,12 @@
 module EqManips.Types( Formula( .. )
                      , BinOperator( .. )
                      , UnOperator( .. )
+                     , Entity( .. )
                      , prioOfBinaryOperators
                      , prioOfUnaryOperators
                      , expr 
                      , isFormulaLeaf
+                     , textOfEntity
                      , unOpNames
                      ) where
 
@@ -56,14 +58,23 @@ data UnOperator =
     | OpLog
 
     | OpExp
-
     deriving (Eq, Show, Read)
+
+data Entity =
+      Pi
+    | Nabla
+    deriving (Eq, Show, Read)
+
+textOfEntity :: Entity -> ((Int,(Int,Int)), [String])
+textOfEntity Pi = ((0,(2,1)),["pi"])
+textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types
 -- are provided for ease of use
 data Formula =
       Variable String
+    | NumEntity Entity
     | CInteger Int
     | CFloat Double
     -- | FunName arguments
@@ -101,6 +112,7 @@ isFormulaLeaf :: Formula -> Bool
 isFormulaLeaf (Variable _) = True
 isFormulaLeaf (CInteger _) = True
 isFormulaLeaf (CFloat _) = True
+isFormulaLeaf (NumEntity _) = True
 isFormulaLeaf _ = False
 
 prioOfBinaryOperators :: BinOperator -> Int

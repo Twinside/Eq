@@ -17,6 +17,7 @@ d (Variable v) var
     | otherwise = return $ int 0
 d (CInteger _) _ = return $ int 0
 d (CFloat _) _ = return $ int 0
+d (NumEntity _) _ = return $ int 0
 d (App f [g]) var = do
     f' <- d f var
     g' <- d g var
