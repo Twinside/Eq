@@ -7,12 +7,11 @@ module Monad.ListProducer( producedValue
                          , pushBack
                          , concatFront
                          , concatBack ) where
-{-import GHC.Exts-}
-{-import GHC.Prim-}
+
 import Control.Monad.Fix
 
 data ListProducer e a = ListProducer {
-        runListProducer :: [[e]] -> ( [[e]], a)
+        runListProducer :: [[e]] -> ([[e]], a)
     }
 
 instance Functor (ListProducer e) where

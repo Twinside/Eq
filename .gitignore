@@ -1,0 +1,13 @@
+*.swp
+*.o
+*.obj
+.svn
+Debug
+Release
+Build
+tags
+out.txt
+size.txt
+test.txt
+dist
+

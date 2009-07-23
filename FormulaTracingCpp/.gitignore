@@ -1,0 +1,13 @@
+*.swp
+*.o
+*.obj
+.svn
+Debug
+Release
+Build
+Formula.inline.h
+FormulaBoileprlateOverloaded.h
+FormulaOverloadedOp.h
+FormulaTables.cpp
+enumOpCode.h
+tags
