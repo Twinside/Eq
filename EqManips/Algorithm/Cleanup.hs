@@ -3,14 +3,15 @@ module EqManips.Algorithm.Cleanup ( cleanup ) where
 import Control.Monad.State
 import EqManips.Types
 import EqManips.FormulaIterator
+import EqManips.EvaluationContext
 
-recurse :: (Monad m) => Formula -> m Formula
+recurse :: Formula -> EqContext Formula
 recurse = formulaIterate cleanup
 
 int :: Int -> Formula
 int = CInteger
 
-cleanup :: (Monad m) => Formula -> m Formula
+cleanup :: Formula -> EqContext Formula
 -- -(-x) <=> x
 cleanup (UnOp OpNegate (UnOp OpNegate x)) = recurse x
 -- x - (-y) <=> x + y
@@ -49,7 +50,7 @@ cleanup (BinOp OpMul (CFloat i1) (CFloat i2)) =
 -- / cases
 cleanup (BinOp OpDiv (CInteger 0) _) = recurse $ int 0
 cleanup (BinOp OpDiv x (CInteger 1)) = recurse x
-cleanup (BinOp OpDiv _ (CInteger 0)) = fail "Division by 0, WTF (BBQ)!"
+cleanup f@(BinOp OpDiv _ (CInteger 0)) = eqFail f "Division by 0, WTF (BBQ)!"
 
 -- POWER function
 cleanup (BinOp OpPow _ (CInteger 0)) = return $ int 1

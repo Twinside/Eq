@@ -23,8 +23,9 @@ d (App f [g]) var = do
     g' <- d g var
     return $ (App f' [g]) * g'
 
-d (App _ _) _ =
-    fail "Ok, now solution for app with multi argument"
+
+d f@(App _ _) _ =
+    eqFail f "Ok, now solution for app with multi argument"
 
 -- EQ: derivate(f + g, x) = derivate( f, x ) + 
 --                          derivate( g, x )
@@ -139,28 +140,33 @@ d (UnOp OpATanh f) var = do
     f' <- d f var
     return $ f' * (int 1 / (int 1 - f ** 2))
 
-d (BinOp OpEq _f1 _f2) _var =
-    fail " '=' For the moment we don't know what to do with it"
-d (UnOp OpLn _f) _var =
-    fail "No position for Ln for now"
-d (UnOp OpLog _f) _var =
-    fail "No position for Log for now"
-d (UnOp OpAbs _f) _var =
-    fail "abs is derivable? I don't think so"
+d f@(BinOp OpEq _f1 _f2) _var =
+    eqFail f " '=' For the moment we don't know what to do with it"
+d f@(UnOp OpLn _f) _var =
+    eqFail f "No position for Ln for now"
+d f@(UnOp OpLog _f) _var =
+    eqFail f "No position for Log for now"
+d f@(UnOp OpAbs _f) _var =
+    eqFail f "abs is derivable? I don't think so"
 
-d (Sum _i _e _w) _var =
-    fail "Oki, deriving sums is not defined..."
+d f@(Sum _i _e _w) _var =
+    eqFail f "Oki, deriving sums is not defined..."
 
-d (Product _i _e _w) _var =
-    fail "Deriving product is undefined. Sorry. Really."
-d (Derivate _w _v) _var =
-    fail ""
-d (Integrate _i _e _w _v) _var =
-    fail  ""
-d (Matrix _ _ _formulas) _var =
-    fail "Can't derive a matrix."
+d f@(Product _i _e _w) _var =
+    eqFail f "Deriving product is undefined. Sorry. Really."
+
+d f@(Derivate _w _v) _var =
+    eqFail f "Derivate a derivative, what to do?"
+
+d f@(Integrate _i _e _w _v) _var =
+    eqFail f "Derivate an integration, what to do?"
+
+d f@(Matrix _ _ _formulas) _var =
+    eqFail f "Deriving a Matrix, what to do?"
+
 d (Block _ _ _) _var =
-    fail $ "hmm, you are trying to derivate a function used\n"
+    eqFail (Block 0 1 1)
+         $ "hmm, you are trying to derivate a function used\n"
         ++ "to debug the equation renderer. Here is the result :\n"
         ++ "@\n"
         ++ "\n"
