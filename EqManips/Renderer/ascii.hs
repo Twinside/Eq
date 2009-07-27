@@ -90,7 +90,13 @@ asciiSizer = Dimensioner
         (he + 1, (max we wv + 3, he + hv + 1))
 
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
+    , entitySize = fst . textOfEntity
     }
+
+
+textOfEntity :: Entity -> ((Int,(Int,Int)), [String])
+textOfEntity Pi = ((0,(2,1)),["pi"])
+textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 
 -------------------------------------------------------------
 ----                     Rendering                       ----

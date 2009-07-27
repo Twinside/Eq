@@ -6,7 +6,6 @@ module EqManips.Types( Formula( .. )
                      , prioOfUnaryOperators
                      , expr 
                      , isFormulaLeaf
-                     , textOfEntity
                      , unOpNames
                      ) where
 
@@ -64,10 +63,6 @@ data Entity =
       Pi
     | Nabla
     deriving (Eq, Show, Read)
-
-textOfEntity :: Entity -> ((Int,(Int,Int)), [String])
-textOfEntity Pi = ((0,(2,1)),["pi"])
-textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types

@@ -6,6 +6,7 @@ formulaIterate :: (Monad m)
 formulaIterate f v@(Variable _) = f v
 formulaIterate f i@(CInteger _) = f i
 formulaIterate f d@(CFloat _) = f d
+formulaIterate f e@(NumEntity _) = f e
 
 formulaIterate f (App func args) = do
     fs <- f func
