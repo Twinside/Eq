@@ -7,7 +7,7 @@ Description: Lalalal
 Author: Vincent Berthoux
 Maintainer: Vincent Berthoux
 
-Executable formularender
+Executable eq
     Main-Is: formulaMain.hs
     ghc-options:-Wall
     Build-Depends: base >= 2.0
