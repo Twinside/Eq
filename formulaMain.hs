@@ -10,8 +10,6 @@ import System.IO
 import System.Console.GetOpt
 
 import Data.List( find )
-import Data.Maybe( fromMaybe )
-
 
 -- Just to be able to compile...
 import EqManips.Algorithm.Eval
@@ -62,7 +60,8 @@ formatCommand args = do
 transformParseFormula :: (Formula -> EqContext Formula) -> [String]
                       -> IO ()
 transformParseFormula operation args = do
-    formulaText <- readFile input
+    formulaText <- input
+    finalFile <- outputFile
     let formula = runParser expr () "FromFile" formulaText
     either (\err -> print "Error : " >> print err)
            (\formula' -> do
@@ -72,13 +71,11 @@ transformParseFormula operation args = do
                mapM_ (\(f,s) -> do
                             putStrLn s
                             putStrLn $ formatFormula f) $ errorList rez
-               write . formatFormula $ result rez)
+               hPutStr finalFile . formatFormula $ result rez)
            formula
 
      where (opt, left, _) = getOpt Permute formatOption args
-           input = left !! 0
-           output = fromMaybe "stdout" $ lookup Output opt
-           write = writeFile output
+           (input, outputFile) = getInputOutput opt left
 
 printVer :: IO ()
 printVer = 
