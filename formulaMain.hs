@@ -9,6 +9,7 @@ import Text.ParserCombinators.Parsec.Prim( runParser )
 import System.IO
 import System.Console.GetOpt
 
+import Data.List( find )
 import Data.Maybe( fromMaybe )
 
 
@@ -17,8 +18,9 @@ import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 
 data Flag =
-    Output
-    deriving (Eq, Show)
+      Output
+    | Input
+    deriving Eq
 
 version :: String
 version = "0.1"
@@ -30,14 +32,23 @@ formatFormula f = concat $ intersperse "\n" formulaMatrix
 
 commonOption :: [OptDescr (Flag, String)]
 commonOption =
-    [ Option ['o']  ["output"] (ReqArg ((,) Output) "FILE") "output FILE" ]
+    [ Option ['o']  ["output"] (ReqArg ((,) Output) "FILE") "output FILE"
+    , Option ['f']  ["file"] (ReqArg ((,) Input) "FILE") "input FILE"
+    ]
 
 formatOption :: [OptDescr (Flag, String)]
 formatOption = commonOption
 
+getInputOutput :: [(Flag, String)] -> [String] -> (IO String, IO Handle)
+getInputOutput opts args = (inputFile, outputFile)
+   where outputFile = maybe (return stdout) (\name -> openFile name WriteMode)
+                            (lookup Output opts)
+         inputFile = maybe (return $ args !! 0) readFile
+                           (lookup Input opts)
+
 formatCommand :: [String] -> IO ()
 formatCommand args = do
-    formulaText <- readFile input
+    formulaText <- input
     let formula = runParser expr () "FromFile" formulaText
     output <- outputFile
     either (\err -> print "Error : " >> print err)
@@ -46,10 +57,7 @@ formatCommand args = do
     hClose output
 
      where (opt, left, _) = getOpt Permute formatOption args
-           input = left !! 0
-           outputFile = case lookup Output opt of
-                             Nothing -> return stdout 
-                             Just n -> openFile n ReadMode
+           (input, outputFile) = getInputOutput opt left
 
 transformParseFormula :: (Formula -> EqContext Formula) -> [String]
                       -> IO ()
@@ -72,30 +80,39 @@ transformParseFormula operation args = do
            output = fromMaybe "stdout" $ lookup Output opt
            write = writeFile output
 
+printVer :: IO ()
+printVer = 
+    putStrLn $ "EqManips " ++ version ++ " command list"
+
 helpCommand :: [String] -> IO ()
 helpCommand [] = do
-    putStrLn $ "EqManips " ++ version ++ " command list"
+    printVer
     putStrLn ""
     mapM_ printCommand commandList
     putStrLn ""
-    where maxCommandLen = 4 + maximum [ length c | (c,_,_) <- commandList ]
+    where maxCommandLen = 4 + maximum [ length c | (c,_,_,_) <- commandList ]
           spaces = repeat ' '
-          printCommand (com, hlp, _) = do
+          printCommand (com, hlp, _, _) = do
               putStrLn $ ' ' : com 
                       ++ take (maxCommandLen - length com) spaces 
                       ++ hlp
-helpCommand _args = return ()
 
-commandList :: [(String, String, [String] -> IO ())]
+helpCommand (x:_) = case find (\(x',_,_,_) -> x' == x) commandList of
+     Just (_, hlp, _, options) -> do
+         printVer
+         putStrLn $ usageInfo hlp options
+     Nothing -> putStrLn $ "Unknown command " ++ x
+
+commandList :: [(String, String, [String] -> IO (), [OptDescr (Flag, String)])]
 commandList = 
-    [ ("cleanup", "Perform trivial simplification on formula", transformParseFormula reduce)
-    , ("eval", "Try to evaluate/reduce the formula", transformParseFormula reduce)
-    , ("format", "Load and display the formula in ASCII Art", formatCommand)
-    , ("help", "Ask specific help for a command, or this", helpCommand)
+    [ ("cleanup", "Perform trivial simplification on formula", transformParseFormula reduce, commonOption)
+    , ("eval", "Try to evaluate/reduce the formula", transformParseFormula reduce, commonOption)
+    , ("format", "Load and display the formula in ASCII Art", formatCommand, commonOption)
+    , ("help", "Ask specific help for a command, or this", helpCommand, [])
     ]
 
 reducedCommand :: [(String, [String] -> IO ())]
-reducedCommand = map (\(n,_,a) -> (n,a)) commandList
+reducedCommand = map (\(n,_,a,_) -> (n,a)) commandList
 
 main :: IO ()
 main = do
