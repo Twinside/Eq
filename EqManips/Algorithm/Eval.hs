@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.Eval where
+module EqManips.Algorithm.Eval( reduce ) where
 
 import EqManips.Types
 import EqManips.EvaluationContext
@@ -38,8 +38,16 @@ reduce f@(BinOp _ _ (Matrix _ _ _)) = eqFail f "Error invalid operation on Matri
 reduce (BinOp OpAdd f1 f2) = binOpReduce (+) f1 f2
 reduce (BinOp OpSub f1 f2) = binOpReduce (-) f1 f2
 reduce (BinOp OpMul f1 f2) = binOpReduce (*) f1 f2
-reduce (BinOp OpDiv f1 f2) = division f1 f2
-{-reduce (BinOp OpPow f1 f2) =-}
+reduce (BinOp OpDiv f1 f2) = do
+    f1' <- reduce f1
+    f2' <- reduce f2
+    division f2 f1' f2'
+
+reduce (BinOp OpPow f1 f2) =  do
+    f1' <- reduce f1
+    f2' <- reduce f2
+    power f1' f2'
+
 reduce (UnOp op f) = unOpReduce (funOf op) f
     where funOf OpNegate = negate
           funOf OpAbs = abs
@@ -69,16 +77,17 @@ reduce f@(Derivate _ _) =
 reduce f@(Sum _ _ _) = eqFail f "Sorry, sum is not implemented yet"
 reduce f@(Product _ _ _) = eqFail f "Sorry, product is not implemented yet"
 
-reduce f@(Block _ _ _) =
-    eqFail f "Block cannot be evaluated"
-
-reduce f@(App _ _) =
-    eqFail f "Sorry, no algorithm for your function yet"
-
 reduce f@(Integrate _ _ _ _) =
     eqFail f "No algorithm to integrate your function, sorry"
 
+reduce f@(Block _ _ _) = eqFail f "Block cannot be evaluated"
+reduce f@(App _ _) = eqFail f "Sorry, no algorithm for your function yet"
 reduce end = return end
+
+--------------------------------------------------------------
+---- Scalar related function
+--------------------------------------------------------------
+{-iterate ivar initf endf what = ()-}
 
 --------------------------------------------------------------
 ---- Scalar related function
@@ -95,6 +104,8 @@ binOpReduce op f1 f2 = do
     f2' <- reduce f2
     return $ simply op f1' f2'
 
+-- | Handle the operators +, - and *.
+-- Handle type conversion automatically.
 simply :: (forall a. (Num a) => (a -> a -> a))
        -> Formula -> Formula -> Formula
 simply op (CInteger i1) (CInteger i2) = CInteger $ i1 `op` i2
@@ -103,14 +114,30 @@ simply op (CFloat f1) (CInteger i2) = CFloat $ f1 `op` fromIntegral i2
 simply op (CFloat f1) (CFloat f2) = CFloat $ f1 `op` f2
 simply op e e' = e `op` e'
 
-division :: Formula -> Formula -> EqContext Formula
-division l@(CFloat _) (CInteger i2) = division l . CFloat $ toEnum i2
-division (CInteger i) r@(CFloat _) = division (CFloat $ toEnum i) r
-division (CFloat i1) (CFloat i2) = return . CFloat $ i1 / i2
-division (CInteger i1) (CInteger i2)
+-- | yeah handle all the power operation.
+power :: Formula -> Formula -> EqContext Formula
+power l@(CFloat _) (CInteger i2) = power l . CFloat $ toEnum i2
+power (CInteger i) r@(CFloat _) = power (CFloat $ toEnum i) r
+power (CFloat i1) (CFloat i2) = return . CFloat $ i1 ** i2
+power (CInteger i1) (CInteger i2) = return . CInteger $ i1 ^ i2
+power f1 (CInteger i2) | i2 < 0 = return $ CInteger 1 / (f1 ** CInteger (-i2))
+power f1 f2 = return $ f1 ** f2
+
+-- | Handle the division operator. Nicely handle the case
+-- of division by 0.
+division :: Formula -> Formula -> Formula -> EqContext Formula
+division f2orig _ (CInteger 0) =
+    eqFail f2orig "This expression evaluate to 0, and is used in a division."
+division f2orig _ (CFloat 0) =
+    eqFail f2orig "This expression evaluate to 0, and is used in a division."
+
+division f l@(CFloat _) (CInteger i2) = division f l . CFloat $ toEnum i2
+division f (CInteger i) r@(CFloat _) = division f (CFloat $ toEnum i) r
+division _ (CFloat i1) (CFloat i2) = return . CFloat $ i1 / i2
+division _ (CInteger i1) (CInteger i2)
     | i1 `mod` i2 == 0 = return . CInteger $ i1 `div` i2
     | otherwise = return . CFloat $ toEnum i1 / toEnum i2
-division f1 f2 = return $ f1 / f2
+division _ f1 f2 = return $ f1 / f2
 
 --------------------------------------------------------------
 ---- Matrix related functions
