@@ -7,6 +7,7 @@ linkFormula :: Formula -> Formula
 linkFormula = link
 
 link :: Formula -> Formula
+link (Variable "pi") = NumEntity Pi
 -- Special cases
 link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
     Block i1 i2 i3
@@ -50,7 +51,8 @@ link (App (Variable "integrate") [what, dvar]) =
     Integrate (Variable "") (Variable "") (link what) (link dvar)
 
 link (App (Variable "matrix") (CInteger n: CInteger m: exps))
-    | n * m /= length exps = error "The matrix has not enough expressions"
+    | n * m > length exps = error "The matrix has not enough expressions"
+    | n * m < length exps = error "The matrix has too much expressions"
     | otherwise = Matrix n m $ splitMatrix exps
         where splitMatrix  [] = []
               splitMatrix lst =

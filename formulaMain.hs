@@ -6,6 +6,7 @@ import CharArray
 import Data.List( intersperse )
 import Text.ParserCombinators.Parsec.Prim( runParser )
 
+import System.Exit
 import System.IO
 import System.Console.GetOpt
 
@@ -44,34 +45,44 @@ getInputOutput opts args = (inputFile, outputFile)
          inputFile = maybe (return $ args !! 0) readFile
                            (lookup Input opts)
 
-formatCommand :: [String] -> IO ()
+formatCommand :: [String] -> IO Bool
 formatCommand args = do
     formulaText <- input
     let formula = runParser expr () "FromFile" formulaText
     output <- outputFile
-    either (\err -> print "Error : " >> print err)
-           (\formula' -> hPutStrLn output. formatFormula $ linkFormula formula')
+    either (\err -> do print "Error : "
+                       print err
+                       hClose output
+                       return False)
+           (\formula' -> do 
+                hPutStrLn output. formatFormula $ linkFormula formula'
+                hClose output
+                return True)
            formula
-    hClose output
-
      where (opt, left, _) = getOpt Permute formatOption args
            (input, outputFile) = getInputOutput opt left
 
+printErrors :: [(Formula, String)] -> IO ()
+printErrors =
+    mapM_ (\(f,s) -> do putStrLn s
+                        putStrLn $ formatFormula f) 
+
 transformParseFormula :: (Formula -> EqContext Formula) -> [String]
-                      -> IO ()
+                      -> IO Bool
 transformParseFormula operation args = do
     formulaText <- input
     finalFile <- outputFile
     let formula = runParser expr () "FromFile" formulaText
-    either (\err -> print "Error : " >> print err)
+    either (\err -> do print "Error : " 
+                       print err
+                       return False)
            (\formula' -> do
                let rez = performTransformation 
                                 . operation 
                                 $ linkFormula formula'
-               mapM_ (\(f,s) -> do
-                            putStrLn s
-                            putStrLn $ formatFormula f) $ errorList rez
-               hPutStr finalFile . formatFormula $ result rez)
+               printErrors $ errorList rez
+               hPutStr finalFile . formatFormula $ result rez
+               return . null $ errorList rez)
            formula
 
      where (opt, left, _) = getOpt Permute formatOption args
@@ -81,12 +92,13 @@ printVer :: IO ()
 printVer = 
     putStrLn $ "EqManips " ++ version ++ " command list"
 
-helpCommand :: [String] -> IO ()
+helpCommand :: [String] -> IO Bool
 helpCommand [] = do
     printVer
     putStrLn ""
     mapM_ printCommand commandList
     putStrLn ""
+    return True
     where maxCommandLen = 4 + maximum [ length c | (c,_,_,_) <- commandList ]
           spaces = repeat ' '
           printCommand (com, hlp, _, _) = do
@@ -98,9 +110,11 @@ helpCommand (x:_) = case find (\(x',_,_,_) -> x' == x) commandList of
      Just (_, hlp, _, options) -> do
          printVer
          putStrLn $ usageInfo hlp options
-     Nothing -> putStrLn $ "Unknown command " ++ x
+         return True
+     Nothing -> do putStrLn $ "Unknown command " ++ x
+                   return False
 
-commandList :: [(String, String, [String] -> IO (), [OptDescr (Flag, String)])]
+commandList :: [(String, String, [String] -> IO Bool, [OptDescr (Flag, String)])]
 commandList = 
     [ ("cleanup", "Perform trivial simplification on formula", transformParseFormula reduce, commonOption)
     , ("eval", "Try to evaluate/reduce the formula", transformParseFormula reduce, commonOption)
@@ -108,7 +122,7 @@ commandList =
     , ("help", "Ask specific help for a command, or this", helpCommand, [])
     ]
 
-reducedCommand :: [(String, [String] -> IO ())]
+reducedCommand :: [(String, [String] -> IO Bool)]
 reducedCommand = map (\(n,_,a,_) -> (n,a)) commandList
 
 main :: IO ()
@@ -117,6 +131,8 @@ main = do
     if null args
        then error "No command give, try the help command"
        else case lookup (args !! 0) reducedCommand of
-                 Just c -> c $ tail args
+                 Just c -> (c $ tail args) >>= systemReturn
                  Nothing -> error $ "Unknown command " ++ (args !! 0)
+     where systemReturn True = exitWith ExitSuccess
+           systemReturn False = exitWith $ ExitFailure 1
               

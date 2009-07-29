@@ -1,6 +1,7 @@
 
 build:
 	runhaskell Setup.hs build
+	cp dist/build/eq/eq.exe .
 
 clean:
 	runhaskell Setup.hs clean

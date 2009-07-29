@@ -162,6 +162,9 @@ renderF (Block _ w h) _ (x,y) =
 renderF (Variable s) _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] s
 renderF (CInteger i) _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show i)
 renderF (CFloat d)   _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show d)
+renderF (NumEntity e) _ (x,y) = concat
+    [ [((x + xi,y + yi),c) | (xi, c) <- zip [0..] elines]
+        | (yi, elines) <- zip [0..] $ snd $ textOfEntity e]
 
 renderF (BinOp OpPow f1 f2) (BiSizeNode False _ t1 t2) (x,y) =
     leftRender ++ rightRender

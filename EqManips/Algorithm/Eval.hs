@@ -25,7 +25,7 @@ reduce (BinOp OpMul f1@(Matrix _ _ _) f2@(Matrix _ _ _)) =
     matrixMatrixMul f1 f2
 
 -- All valid Matrix/Scalar operations
-reduce (BinOp OpMul m@(Matrix _ _ _) s) =matrixScalar (*) m s
+reduce (BinOp OpMul m@(Matrix _ _ _) s) = matrixScalar (*) m s
 reduce (BinOp OpMul s m@(Matrix _ _ _)) = matrixScalar (*) m s
 reduce (BinOp OpDiv m@(Matrix _ _ _) s) = matrixScalar (/) m s
 reduce (BinOp OpDiv s m@(Matrix _ _ _)) = matrixScalar (/) m s
@@ -37,9 +37,27 @@ reduce f@(BinOp _ _ (Matrix _ _ _)) = eqFail f "Error invalid operation on Matri
 reduce (BinOp OpAdd f1 f2) = binOpReduce (+) f1 f2
 reduce (BinOp OpSub f1 f2) = binOpReduce (-) f1 f2
 reduce (BinOp OpMul f1 f2) = binOpReduce (*) f1 f2
+reduce (UnOp op f) = unOpReduce (funOf op) f
+    where funOf OpNegate = negate
+          funOf OpAbs = abs
+          funOf OpSqrt = sqrt
+          funOf OpSin = sin
+          funOf OpSinh = sinh
+          funOf OpASin = asin
+          funOf OpASinh = asinh
+          funOf OpCos = cos
+          funOf OpCosh = cosh
+          funOf OpACos = acos
+          funOf OpACosh = acosh
+          funOf OpTan = tan
+          funOf OpTanh = tanh
+          funOf OpATan = atan
+          funOf OpATanh = atanh
+          funOf OpLn = log
+          funOf OpLog = \n -> log n / log 10.0
+          funOf OpExp = exp
 
 {-reduce (NumEntity Pi) = return $ CFloat pi-}
-{-reduce (UnOp UnOperator Formula)-}
 
 reduce (BinOp OpDiv f1 f2) = division f1 f2
 {-reduce (BinOp OpPow f1 f2) =-}
@@ -53,20 +71,25 @@ reduce f@(Derivate _ _) =
 reduce f@(Sum _ _ _) = eqFail f "Sorry, sum is not implemented yet"
 reduce f@(Product _ _ _) = eqFail f "Sorry, product is not implemented yet"
 
+reduce f@(Block _ _ _) =
+    eqFail f "Block cannot be evaluated"
+
 reduce f@(App _ _) =
     eqFail f "Sorry, no algorithm for your function yet"
 
 reduce f@(Integrate _ _ _ _) =
     eqFail f "No algorithm to integrate your function, sorry"
 
-reduce f@(Block _ _ _) =
-    eqFail f "Block cannot be evaluated"
-
 reduce end = return end
 
 --------------------------------------------------------------
 ---- Scalar related function
 --------------------------------------------------------------
+unOpReduce :: (Double -> Double) -> Formula -> EqContext Formula
+unOpReduce f (CInteger i) = unOpReduce f . CFloat $ toEnum i
+unOpReduce f (CFloat num) = return . CFloat $ f num
+unOpReduce _ formula = reduce formula
+
 binOpReduce :: (forall a. (Num a) => (a -> a -> a)) 
             -> Formula -> Formula -> EqContext Formula
 binOpReduce op f1 f2 = do
