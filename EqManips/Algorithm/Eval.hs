@@ -12,6 +12,7 @@ type FormulOperator = Formula -> Formula -> Formula
 
 -- General reduction
 reduce :: Formula -> EqContext Formula
+reduce (NumEntity Pi) = return $ CFloat pi
 reduce (Matrix n m mlines) = do
     cells <- sequence [mapM reduce line | line <- mlines]
     return $ Matrix n m cells
@@ -37,6 +38,8 @@ reduce f@(BinOp _ _ (Matrix _ _ _)) = eqFail f "Error invalid operation on Matri
 reduce (BinOp OpAdd f1 f2) = binOpReduce (+) f1 f2
 reduce (BinOp OpSub f1 f2) = binOpReduce (-) f1 f2
 reduce (BinOp OpMul f1 f2) = binOpReduce (*) f1 f2
+reduce (BinOp OpDiv f1 f2) = division f1 f2
+{-reduce (BinOp OpPow f1 f2) =-}
 reduce (UnOp op f) = unOpReduce (funOf op) f
     where funOf OpNegate = negate
           funOf OpAbs = abs
@@ -56,11 +59,6 @@ reduce (UnOp op f) = unOpReduce (funOf op) f
           funOf OpLn = log
           funOf OpLog = \n -> log n / log 10.0
           funOf OpExp = exp
-
-{-reduce (NumEntity Pi) = return $ CFloat pi-}
-
-reduce (BinOp OpDiv f1 f2) = division f1 f2
-{-reduce (BinOp OpPow f1 f2) =-}
 
 reduce (Derivate what (Variable s)) =
     derivate what s >>= cleanup
@@ -106,6 +104,12 @@ simply op (CFloat f1) (CFloat f2) = CFloat $ f1 `op` f2
 simply op e e' = e `op` e'
 
 division :: Formula -> Formula -> EqContext Formula
+division l@(CFloat _) (CInteger i2) = division l . CFloat $ toEnum i2
+division (CInteger i) r@(CFloat _) = division (CFloat $ toEnum i) r
+division (CFloat i1) (CFloat i2) = return . CFloat $ i1 / i2
+division (CInteger i1) (CInteger i2)
+    | i1 `mod` i2 == 0 = return . CInteger $ i1 `div` i2
+    | otherwise = return . CFloat $ toEnum i1 / toEnum i2
 division f1 f2 = return $ f1 / f2
 
 --------------------------------------------------------------
