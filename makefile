@@ -9,11 +9,11 @@ conf:
 	runhaskell Setup.hs configure
 
 copy:
-	cp dist/build/formularender/eq.exe .
+	cp dist/build/eq/eq.exe .
 
 run:
-	dist/build/formularender/eq.exe test.txt out.txt
+	dist/build/eq/eq.exe test.txt out.txt
 
 help:
-	dist/build/formularender/eq.exe help
+	dist/build/eq/eq.exe help
 
