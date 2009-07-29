@@ -22,13 +22,19 @@ link (App (Variable "sum") [what]) =
     Sum (Variable "") (Variable "") (link what)
 
 link (App (Variable "sin") [x]) = UnOp OpSin $ link x
+link (App (Variable "sinh") [x]) = UnOp OpSinh $ link x
 link (App (Variable "asin") [x]) = UnOp OpASin $ link x
+link (App (Variable "asinh") [x]) = UnOp OpASinh $ link x
 
 link (App (Variable "cos") [x]) = UnOp OpCos $ link x
+link (App (Variable "cosh") [x]) = UnOp OpCosh $ link x
 link (App (Variable "acos") [x]) = UnOp OpACos $ link x
+link (App (Variable "acosh") [x]) = UnOp OpACosh $ link x
 
 link (App (Variable "tan") [x]) = UnOp OpTan $ link x
+link (App (Variable "tanh") [x]) = UnOp OpTanh $ link x
 link (App (Variable "atan") [x]) = UnOp OpATan $ link x
+link (App (Variable "atanh") [x]) = UnOp OpATanh $ link x
 
 link (App (Variable "ln") [x]) = UnOp OpLn $ link x
 link (App (Variable "log") [x]) = UnOp OpLog $ link x
