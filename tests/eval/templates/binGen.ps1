@@ -11,4 +11,4 @@ genBin "+" "Add"
 genBin "-" "Sub"
 genBin "*" "Mul"
 genBin "/" "Div"
-
+genBin "^" "Pow"
