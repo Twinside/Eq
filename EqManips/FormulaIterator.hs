@@ -27,7 +27,7 @@ formulaIterate f (Product ini end what) = do
     inis <- f ini
     ends <- f end
     whats <- f what
-    return $ Sum inis ends whats
+    return $ Product inis ends whats
 
 formulaIterate f (Derivate what var) = do
     whats <- f what

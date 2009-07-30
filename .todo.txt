@@ -1,5 +1,7 @@
-4:Make some validation about definition domain
-3:Make a preprocessor thingie
+4:create a regurgitation formula, to be able to chain
+3:Worry about scope of variables, it can become _VERY_ messy quickly
+3:Make some validation about definition domain
+2:Make a preprocessor thingie
 1:Make some HLSL/GLSL output
 1:Make some LaTeX output
 0:Make some C output (quid matrix?)
