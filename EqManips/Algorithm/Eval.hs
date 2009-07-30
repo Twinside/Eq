@@ -7,6 +7,7 @@ import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Inject
 import EqManips.Algorithm.Derivative
 
+import Control.Monad( foldM )
 import Data.List( foldl' , transpose )
 
 type FormulOperator = Formula -> Formula -> Formula
@@ -75,8 +76,16 @@ reduce (Derivate what (Variable s)) =
 reduce f@(Derivate _ _) =
     eqFail f "Sorry your derivation doesn't have a good variable specification"
 
-reduce f@(Sum _ _ _) = eqFail f "Sorry, sum is not implemented yet"
-reduce f@(Product _ _ _) = eqFail f "Sorry, product is not implemented yet"
+reduce (Sum (BinOp OpEq (Variable v) (CInteger initi))
+            (CInteger endi) 
+            f) = iterateFormula (+) v initi endi f
+
+reduce f@(Sum _ _ _) = eqFail f "Sorry, your sum don't have the good form to be evaluated."
+
+reduce (Product (BinOp OpEq (Variable v) (CInteger initi))
+                (CInteger endi) 
+                f) = iterateFormula (*) v initi endi f
+reduce f@(Product _ _ _) = eqFail f "Sorry, your product don't have the good form to be evaluated."
 
 reduce f@(Integrate _ _ _ _) =
     eqFail f "No algorithm to integrate your function, sorry"
@@ -86,9 +95,25 @@ reduce f@(App _ _) = eqFail f "Sorry, no algorithm for your function yet"
 reduce end = return end
 
 --------------------------------------------------------------
----- Scalar related function
+---- iteration
 --------------------------------------------------------------
-{-iterate ivar initf endf what = ()-}
+iterateFormula :: (Formula -> Formula -> Formula) -> String -> Int -> Int -> Formula
+               -> EqContext Formula
+iterateFormula op ivar initi endi what = do
+    pushContext
+
+    addSymbol ivar (CInteger initi)
+    first <- inject what
+
+    rez <- foldM combiner first [initi + 1 .. endi]
+    popContext
+    reduce rez
+     where combiner :: Formula -> Int -> EqContext Formula
+           combiner acc i = do
+               addSymbol ivar (CInteger i)
+               whated <- inject what
+               return $ op acc whated
+
 
 --------------------------------------------------------------
 ---- Scalar related function
