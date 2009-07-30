@@ -1,0 +1,1 @@
+derivate( integrate( a, b, x^2, x ), x )
