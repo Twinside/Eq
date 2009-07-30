@@ -1,0 +1,1 @@
+sum( n = 0, 5, (f(a)^n) / product(i=1,n,i) * (x - a) ^ n)
