@@ -12,6 +12,7 @@ import Data.List( find )
 
 -- Just to be able to compile...
 import EqManips.Algorithm.Eval
+import EqManips.Algorithm.Derivative
 import EqManips.EvaluationContext
 
 data Flag =
