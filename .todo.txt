@@ -1,0 +1,5 @@
+4:Make some validation about definition domain
+3:Make a preprocessor thingie
+1:Make some HLSL/GLSL output
+1:Make some LaTeX output
+0:Make some C output (quid matrix?)

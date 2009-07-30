@@ -1,6 +1,10 @@
 module EqManips.FormulaIterator where
 
 import EqManips.Types
+
+-- | Depth first traversal of formula.
+-- Be sure to _NOT_ call formulaIterate on leaf nodes,
+-- you can use EqManips.Types.isFormulaLeaf to avoid this...
 formulaIterate :: (Monad m) 
                => (Formula -> m Formula) -> Formula -> m Formula
 formulaIterate f v@(Variable _) = f v

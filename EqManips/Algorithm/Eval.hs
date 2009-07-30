@@ -4,6 +4,7 @@ module EqManips.Algorithm.Eval( reduce ) where
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Cleanup
+import EqManips.Algorithm.Inject
 import EqManips.Algorithm.Derivative
 
 import Data.List( foldl' , transpose )
