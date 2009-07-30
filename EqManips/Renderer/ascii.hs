@@ -1,13 +1,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module EqManips.Renderer.Ascii where
+module EqManips.Renderer.Ascii( renderFormula
+                              , formatFormula ) where
 
 import Control.Monad( foldM )
-import Data.List( foldl' )
+import Data.List( foldl', intersperse )
 import Data.Array.Unboxed
 import EqManips.Types
 import EqManips.Renderer.Placer
 import Monad.ListProducer
 
+import CharArray
 type Pos = (Int, Int)
 
 asciiSizer :: Dimensioner
@@ -97,6 +99,12 @@ asciiSizer = Dimensioner
 textOfEntity :: Entity -> ((Int,(Int,Int)), [String])
 textOfEntity Pi = ((0,(2,1)),["pi"])
 textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
+
+-- | Little helper for ready to parse string
+formatFormula :: Formula -> String
+formatFormula f = concat $ intersperse "\n" formulaMatrix
+    where (f', _tree) = renderFormula f
+          formulaMatrix = linesOfArray f'
 
 -------------------------------------------------------------
 ----                     Rendering                       ----

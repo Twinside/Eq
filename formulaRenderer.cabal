@@ -10,6 +10,8 @@ Maintainer: Vincent Berthoux
 Executable eq
     Main-Is: formulaMain.hs
     ghc-options:-Wall
+    extensions: CPP
+    cpp-options: -D_DEBUG
     Build-Depends: base >= 2.0
                  , parsec >= 3.0
                  , array

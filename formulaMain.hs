@@ -2,8 +2,6 @@ import System.Environment
 import EqManips.Types
 import EqManips.Linker
 import EqManips.Renderer.Ascii
-import CharArray
-import Data.List( intersperse )
 import Text.ParserCombinators.Parsec.Prim( runParser )
 
 import System.Exit
@@ -23,11 +21,6 @@ data Flag =
 
 version :: String
 version = "0.1"
-
-formatFormula :: Formula -> String
-formatFormula f = concat $ intersperse "\n" formulaMatrix
-    where (f', _tree) = renderFormula f
-          formulaMatrix = linesOfArray f'
 
 commonOption :: [OptDescr (Flag, String)]
 commonOption =
@@ -82,6 +75,13 @@ transformParseFormula operation args = do
                                 $ linkFormula formula'
                printErrors $ errorList rez
                hPutStr finalFile . formatFormula $ result rez
+
+#ifdef _DEBUG
+               hPutStrLn finalFile "\n####### <TRACE> #########"
+               printTrace finalFile rez
+               hPutStrLn finalFile "####### </TRACE> #########"
+#endif
+
                return . null $ errorList rez)
            formula
 

@@ -90,8 +90,12 @@ reduce f@(Product _ _ _) = eqFail f "Sorry, your product don't have the good for
 reduce f@(Integrate _ _ _ _) =
     eqFail f "No algorithm to integrate your function, sorry"
 
+reduce (App def var) = do
+    redDef <- reduce def
+    redVar <- mapM reduce var
+    return $ App redDef redVar
+
 reduce f@(Block _ _ _) = eqFail f "Block cannot be evaluated"
-reduce f@(App _ _) = eqFail f "Sorry, no algorithm for your function yet"
 reduce end = return end
 
 --------------------------------------------------------------

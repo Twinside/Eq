@@ -5,9 +5,18 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , eqFail
                                  , symbolLookup
                                  , pushContext, popContext
+#ifdef _DEBUG
+                                 , addTrace
+                                 , printTrace
+#endif /* _DEBUG */
                                  ) where
 
 import EqManips.Types
+
+#ifdef _DEBUG
+import System.IO
+import EqManips.Renderer.Ascii( formatFormula )
+#endif /* _DEBUG */
 
 -- | The real context info.
 data EqTransformInfo = EqTransformInfo {
@@ -27,6 +36,11 @@ data EqTransformInfo = EqTransformInfo {
 
         -- | The result of the formula computation
         , result :: Formula
+
+#ifdef _DEBUG
+        -- | Used for debugging, can print everything
+        , trace :: [(String, Formula)]
+#endif /* _DEBUG */
     }
 
 -- | Here we go, our evaluation monad.
@@ -59,7 +73,23 @@ emptyContext = EqTransformInfo {
       , assertions = []
       , errorList = []
       , result = Block 0 0 0
+#ifdef _DEBUG
+      , trace = []
+#endif /* _DEBUG */
     }
+
+#ifdef _DEBUG
+addTrace :: (String,Formula) -> EqContext ()
+addTrace newTrace = EqContext $ \c ->
+    (c { trace = newTrace : trace c }, ())
+
+printTrace :: Handle -> EqTransformInfo -> IO ()
+printTrace f inf = mapM_ showIt $ trace inf
+    where showIt (str, formula) = do
+              hPutStrLn f "=========================================="
+              hPutStrLn f str
+              hPutStrLn f $ formatFormula formula
+#endif /* _DEBUG */
 
 -- | Keep a track of current context, keep previous context clean
 pushContext :: EqContext ()
