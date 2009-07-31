@@ -1,0 +1,1 @@
+derivate( atan(x), x )

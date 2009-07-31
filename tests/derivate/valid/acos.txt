@@ -1,0 +1,1 @@
+derivate( acos(x), x )

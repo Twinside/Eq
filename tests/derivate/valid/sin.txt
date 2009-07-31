@@ -1,0 +1,1 @@
+derivate( sin(x), x )

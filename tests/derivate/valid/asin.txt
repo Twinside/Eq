@@ -1,0 +1,1 @@
+derivate( asin(x), x )
