@@ -127,7 +127,7 @@ d (UnOp OpCosh f) var = do
 
 d (UnOp OpTanh f) var = do
     f' <- d f var
-    return $ f' * (int 1)
+    return $ f' * (UnOp OpTanh f) ** 2
 
 d (UnOp OpASinh f) var = do
     f' <- d f var
