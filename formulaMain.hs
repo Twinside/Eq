@@ -14,6 +14,7 @@ import Data.List( find )
 import EqManips.Algorithm.Eval
 import EqManips.Algorithm.Derivative
 import EqManips.EvaluationContext
+import Preprocessor
 
 data Flag =
       Output
@@ -60,6 +61,23 @@ printErrors :: [(Formula, String)] -> IO ()
 printErrors =
     mapM_ (\(f,s) -> do putStrLn s
                         putStrLn $ formatFormula f) 
+
+preprocessCommand :: [String] -> IO Bool
+preprocessCommand args = do
+    formulaText <- input
+    let formula = runParser expr () "FromFile" formulaText
+    output <- outputFile
+    either (\err -> do print "Error : "
+                       print err
+                       hClose output
+                       return False)
+           (\formula' -> do 
+                hPutStrLn output. formatFormula $ linkFormula formula'
+                hClose output
+                return True)
+           formula
+     where (opt, left, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt left
 
 transformParseFormula :: (Formula -> EqContext Formula) -> [String]
                       -> IO Bool
@@ -121,6 +139,7 @@ commandList =
     , ("eval", "Try to evaluate/reduce the formula", transformParseFormula reduce, commonOption)
     , ("format", "Load and display the formula in ASCII Art", formatCommand, commonOption)
     , ("help", "Ask specific help for a command, or this", helpCommand, [])
+    , ("preprocess", "Parse a source file and apply inline action in it", preprocessCommand, commonOption)
     ]
 
 reducedCommand :: [(String, [String] -> IO Bool)]

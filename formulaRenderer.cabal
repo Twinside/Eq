@@ -16,4 +16,5 @@ Executable eq
                  , parsec >= 3.0
                  , array
                  , mtl
+                 , filepath
 

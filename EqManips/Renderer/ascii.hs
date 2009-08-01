@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module EqManips.Renderer.Ascii( renderFormula
+                              , formulaTextTable
                               , formatFormula ) where
 
 import Control.Monad( foldM )
@@ -102,7 +103,10 @@ textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 
 -- | Little helper for ready to parse string
 formatFormula :: Formula -> String
-formatFormula f = concat $ intersperse "\n" formulaMatrix
+formatFormula = concat . formulaTextTable
+
+formulaTextTable :: Formula -> [String]
+formulaTextTable f = intersperse "\n" formulaMatrix
     where (f', _tree) = renderFormula f
           formulaMatrix = linesOfArray f'
 

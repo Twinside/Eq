@@ -1,0 +1,14 @@
+digraph preprocessorStates
+{
+    init [label="begin"]
+    init -> init [label="till [ \t]*comment EQ:command"]
+    init -> gatherInput [label="commentFound"]
+
+    gatherInput -> produce [label="end of comment"]
+    gatherInput -> skip [label="found begin mark"]
+
+    skip -> skip [label="end mark not found"]
+    skip -> produce [label="end mark found"]
+
+    produce -> init [label="make shit"]
+}

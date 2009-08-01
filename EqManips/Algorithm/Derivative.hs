@@ -141,10 +141,12 @@ d (UnOp OpATanh f) var = do
     f' <- d f var
     return $ f' * (int 1 / (int 1 - f ** 2))
 
+d fo@(UnOp OpLn f) var = do
+    f' <- d f var
+    return $ f' / fo
+
 d f@(BinOp OpEq _f1 _f2) _var =
     eqFail f " '=' For the moment we don't know what to do with it"
-d f@(UnOp OpLn _f) _var =
-    eqFail f "No position for Ln for now"
 d f@(UnOp OpLog _f) _var =
     eqFail f "No position for Log for now"
 d f@(UnOp OpAbs _f) _var =
