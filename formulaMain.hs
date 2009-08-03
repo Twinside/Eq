@@ -12,7 +12,6 @@ import Data.List( find )
 
 -- Just to be able to compile...
 import EqManips.Algorithm.Eval
-import EqManips.Algorithm.Derivative
 import EqManips.EvaluationContext
 import Preprocessor
 
@@ -29,6 +28,9 @@ commonOption =
     [ Option ['o']  ["output"] (ReqArg ((,) Output) "FILE") "output FILE"
     , Option ['f']  ["file"] (ReqArg ((,) Input) "FILE") "input FILE"
     ]
+
+preprocOptions :: [OptDescr (Flag, String)]
+preprocOptions = commonOption
 
 formatOption :: [OptDescr (Flag, String)]
 formatOption = commonOption
@@ -63,21 +65,17 @@ printErrors =
                         putStrLn $ formatFormula f) 
 
 preprocessCommand :: [String] -> IO Bool
-preprocessCommand args = do
-    formulaText <- input
-    let formula = runParser expr () "FromFile" formulaText
-    output <- outputFile
-    either (\err -> do print "Error : "
-                       print err
-                       hClose output
-                       return False)
-           (\formula' -> do 
-                hPutStrLn output. formatFormula $ linkFormula formula'
-                hClose output
-                return True)
-           formula
-     where (opt, left, _) = getOpt Permute formatOption args
-           (input, outputFile) = getInputOutput opt left
+preprocessCommand args =
+    if inName == ""
+       then do print "Error, no input name given"
+               return False
+       else do
+           outFile <- processFile inName
+           writeFile outName outFile
+           return True
+     where (opts, _, _) = getOpt Permute preprocOptions args
+           inName = maybe "" id (lookup Input opts)
+           outName = maybe inName id (lookup Output opts)
 
 transformParseFormula :: (Formula -> EqContext Formula) -> [String]
                       -> IO Bool

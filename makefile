@@ -16,7 +16,7 @@ copy:
 	cp dist/build/eq/eq.exe .
 
 run:
-	dist/build/eq/eq.exe test.txt out.txt
+	dist/build/eq/eq.exe preprocess -f tests/preprocess/test.cc -o rez.cc
 
 help:
 	dist/build/eq/eq.exe help

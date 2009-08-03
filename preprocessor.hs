@@ -3,6 +3,12 @@ module Preprocessor where
 import System.FilePath
 import Data.List
 
+import EqManips.Types
+import EqManips.Algorithm.Eval
+import EqManips.Renderer.Ascii
+import EqManips.EvaluationContext
+import Text.ParserCombinators.Parsec.Prim( runParser )
+
 data LangDef = LangDef {
           initComm :: String
           , endLineComm :: String
@@ -45,9 +51,27 @@ endResultMark = ">@>"
 ------------------------------------------------------
 ----    Choosing weapons for preprocessing
 ------------------------------------------------------
+processFile :: FilePath -> IO String
+processFile inFile =
+    case langOfFileName inFile of
+         Nothing -> do print "Error unrecognized file type"
+                       return ""
+         Just lang -> do
+             file <- readFile inFile
+             let rez = concat . processLines lang $ lines file
+             return rez
+
 -- temp to avoid nasty warning
-bidule :: FilePath -> String
-bidule = takeExtension
+langOfFileName :: FilePath -> Maybe LangDef
+langOfFileName name = lookup (takeExtension name) kindAssociation
+
+processLines :: LangDef -> [String] -> [String]
+processLines lang lst = reverse . map (++ "\n") $ concat fileLines 
+    where initVal = (PState (begin lang) [], [])
+          updater ((PState f lst'), acc) l =
+              (f l, lst' : acc)
+
+          (_,fileLines) = foldl' updater initVal lst
 
 ------------------------------------------------------
 ----    Processing file's lines
@@ -101,9 +125,27 @@ skip lang info line =
           $ removeBeginComment lang line
 
 produce :: LangDef -> (String, String, [String]) -> [String]
-produce lang (initSpace, command, eqData) = [preLine, endLine]
-    where bmark = initComm lang
-          emark = endLineComm lang
-          preLine = initSpace ++ bmark ++ beginResultMark ++ emark
-          endLine = initSpace ++ bmark ++ endResultMark ++ emark
+produce lang (initSpace, command, eqData) =
+   preLine : process command mayParsedFormla ++ [endLine]
+    where emark = endLineComm lang
+          preLine = initSpace ++ beginResultMark ++ emark
+          endLine = initSpace ++ endResultMark ++ emark
+
+          mayParsedFormla = runParser expr () "Preprocessed" $ concat eqData
+
+          commentLine = initSpace ++ " "
+
+          process _ (Left err) = map (commentLine++) . lines $ show err
+          process "format" (Right f) = printResult f
+          process "eval" (Right f) = 
+            let rez = performTransformation $ reduce f
+            in case (errorList rez) of
+                    [] -> printResult $ result rez
+                    errs@(_:_) -> concat
+                        [ (commentLine ++ txt) : printResult form
+                                    | (form, txt) <- errs ]
+          process _ (Right _) = ["Unknown command " ++ command]
+
+          printResult f =
+              reverse . map (commentLine++) $ formulaTextTable f 
 

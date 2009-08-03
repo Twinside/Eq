@@ -4,7 +4,7 @@ module EqManips.Renderer.Ascii( renderFormula
                               , formatFormula ) where
 
 import Control.Monad( foldM )
-import Data.List( foldl', intersperse )
+import Data.List( foldl' )
 import Data.Array.Unboxed
 import EqManips.Types
 import EqManips.Renderer.Placer
@@ -103,12 +103,10 @@ textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 
 -- | Little helper for ready to parse string
 formatFormula :: Formula -> String
-formatFormula = concat . formulaTextTable
+formatFormula = unlines . formulaTextTable
 
 formulaTextTable :: Formula -> [String]
-formulaTextTable f = intersperse "\n" formulaMatrix
-    where (f', _tree) = renderFormula f
-          formulaMatrix = linesOfArray f'
+formulaTextTable = linesOfArray . fst . renderFormula
 
 -------------------------------------------------------------
 ----                     Rendering                       ----
