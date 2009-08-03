@@ -4,6 +4,7 @@ import System.FilePath
 import Data.List
 
 import EqManips.Types
+import EqManips.Linker
 import EqManips.Algorithm.Eval
 import EqManips.Renderer.Ascii
 import EqManips.EvaluationContext
@@ -66,10 +67,12 @@ langOfFileName :: FilePath -> Maybe LangDef
 langOfFileName name = lookup (takeExtension name) kindAssociation
 
 processLines :: LangDef -> [String] -> [String]
-processLines lang lst = reverse . map (++ "\n") $ concat fileLines 
+processLines lang lst = reverse . map (++ "\n") $ concat fileLines
     where initVal = (PState (begin lang) [], [])
-          updater ((PState f lst'), acc) l =
-              (f l, lst' : acc)
+
+          updater ((PState f _), acc) l = (rez , lst' : acc)
+                where rez = f l
+                      (PState _ lst') = rez
 
           (_,fileLines) = foldl' updater initVal lst
 
@@ -110,23 +113,27 @@ begin lang line =
               
 gatherInput :: LangDef -> (String, String, [String]) -> String -> PreprocessState
 gatherInput lang info@(initSpace, command, eqInfo) line = 
-    maybe (PState (begin lang) $ produce lang info)
+    maybe (PState (begin lang) $ line : produce lang info)
           markSearch
           $ removeBeginComment lang line
         where markSearch (_,line') = 
-                maybe (PState (gatherInput lang (initSpace, command, eqInfo ++ [line])) [line])
+                maybe (PState (gatherInput lang (initSpace, command, eqInfo ++ [line'])) [line])
                       (const $ PState (skip lang info) [])
                       $ stripPrefix beginResultMark line'
 
 skip :: LangDef -> (String, String, [String]) -> String -> PreprocessState
 skip lang info line =
     maybe (PState (skip lang info) [])
-          (const . PState (begin lang) $ produce lang info)
+          endSearch
           $ removeBeginComment lang line
+        where endSearch (_,line') =
+                  maybe (PState (skip lang info) [])
+                        (const . PState (begin lang) $ produce lang info)
+                        $ stripPrefix endResultMark line'
 
 produce :: LangDef -> (String, String, [String]) -> [String]
 produce lang (initSpace, command, eqData) =
-   preLine : process command mayParsedFormla ++ [endLine]
+   endLine : process command mayParsedFormla ++ [preLine]
     where emark = endLineComm lang
           preLine = initSpace ++ beginResultMark ++ emark
           endLine = initSpace ++ endResultMark ++ emark
@@ -136,9 +143,9 @@ produce lang (initSpace, command, eqData) =
           commentLine = initSpace ++ " "
 
           process _ (Left err) = map (commentLine++) . lines $ show err
-          process "format" (Right f) = printResult f
+          process "format" (Right f) = printResult $ linkFormula f
           process "eval" (Right f) = 
-            let rez = performTransformation $ reduce f
+            let rez = performTransformation . reduce $ linkFormula f
             in case (errorList rez) of
                     [] -> printResult $ result rez
                     errs@(_:_) -> concat
