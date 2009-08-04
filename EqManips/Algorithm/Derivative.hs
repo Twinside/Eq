@@ -11,6 +11,8 @@ int = CInteger
 derivate :: Formula -> Variable -> EqContext Formula
 derivate f v = d f v
 
+-- | real function for derivation, d was choosen
+-- because I'm too lasy to type something else :]
 d :: Formula -> String -> EqContext Formula
 d (Variable v) var
     | v == var = return $ int 1
@@ -28,34 +30,34 @@ d (App f [g]) var = do
 d f@(App _ _) _ =
     eqFail f "Ok, now solution for app with multi argument"
 
--- EQ: derivate(f + g, x) = derivate( f, x ) + 
+-- Eq:format derivate(f + g, x) = derivate( f, x ) + 
 --                          derivate( g, x )
 d (BinOp OpAdd  f1 f2) var = do
     f1' <- d f1 var
     f2' <- d f2 var
     return $ f1' + f2'
 
--- EQ: derivate(f - g, x) = derivate( f, x ) - 
+-- Eq:format derivate(f - g, x) = derivate( f, x ) - 
 --                          derivate( g, x )
 d (BinOp OpSub f1 f2) var = do
     f1' <- d f1 var
     f2' <- d f2 var
     return $ f1' + f2'
 
--- EQ: derivate( f * g, x ) =
+-- Eq:format derivate( f * g, x ) =
 --      derivate( f, x ) * g + f + derivate( g, x )
 d (BinOp OpMul f1 f2) var = do
     f1' <- d f1 var
     f2' <- d f2 var
     return $ f1' * f2 + f1 * f2'
 
--- EQ: derivate( 1 / f ) =
+-- Eq:format derivate( 1 / f ) =
 --  -derivate( f, x ) / f ^ 2
 d (BinOp OpDiv (CInteger 1) f) var = do
     f' <- d f var
     return $ (negate f') / f ** (int 2)
 
--- EQ: derivate( f / g, x ) =
+-- Eq:format derivate( f / g, x ) =
 --  (derivate( f, x) * g - f * derivate( g, x )) 
 --              / g ^ 2
 d (BinOp OpDiv f1 f2) var = do
@@ -64,54 +66,54 @@ d (BinOp OpDiv f1 f2) var = do
    return $ (f1' * f2 - f1 * f2') / 
                (f2 ** int 2)
 
--- EQ: derivate( f ^ n, x ) = 
+-- Eq:format derivate( f ^ n, x ) = 
 --  n * derivate( f, x ) * f ^ (n - 1)
 d (BinOp OpPow f1 f2) var = do
   f1' <- d f1 var
   return $ f2 * f1' * f1 ** (f2 - (int 1))
 
--- EQ: derivate( -f, x ) = - derivate( f, x )
+-- Eq:format derivate( -f, x ) = - derivate( f, x )
 d (UnOp OpNegate f) var = do
     f' <- d f var
     return $ negate f'
 
--- EQ: derivate(exp( f ), x) = exp(f) * derivate( f, x )
+-- Eq:format derivate(exp( f ), x) = exp(f) * derivate( f, x )
 d (UnOp OpExp f) var = do
     f' <- d f var
     return $ f' * exp f
 
--- EQ: derivate( sqrt(f),x) = derivate( f, x ) / (2 * sqrt(f))
+-- Eq:format derivate( sqrt(f),x) = derivate( f, x ) / (2 * sqrt(f))
 d (UnOp OpSqrt f) var = do
     f' <- d f var
     return $ f' / (int 2 * sqrt f)
 
--- EQ: derivate(sin(f),x) = derivate(f,x) * cos(f)
+-- Eq:format derivate(sin(f),x) = derivate(f,x) * cos(f)
 d (UnOp OpSin f) var = do
     f' <- d f var
     return $ f' * cos f
 
--- EQ: derivate(cos(f),x) = derivate(f,x) * -sin(f)
+-- Eq:format derivate(cos(f),x) = derivate(f,x) * -sin(f)
 d (UnOp OpCos f) var = do
     f' <- d f var
     return $ f' * negate (sin f)
 
--- EQ: derivate(tan(f),x) = derivate(f,x) * 1 / cos(f) ^ 2
+-- Eq:format derivate(tan(f),x) = derivate(f,x) * 1 / cos(f) ^ 2
 d (UnOp OpTan f) var = do
     f' <- d f var
     return $ f' * (int 1 / cos f ** 2)
 
--- EQ: derivate( asin( f ), x) = derivate(f,x) 
+-- Eq:format derivate( asin( f ), x) = derivate(f,x) 
 --                             * 1/sqrt(1 - f^2)
 d (UnOp OpASin f) var = do
     f' <- d f var
     return $ f' * (int 1 / sqrt (int 1 - f ** int 2))
--- EQ: derivate( acos( f ), x) = - derivate( f, x) *
+-- Eq:format derivate( acos( f ), x) = - derivate( f, x) *
 --          (1/sqrt( 1 - f^2))
 d (UnOp OpACos f) var = do
     f' <- d f var
     return . negate $ f' * (int 1 / sqrt (int 1 - f ** int 2))
 
--- EQ: derivate( atan( f ),x ) = derivate( f, x) * 
+-- Eq:format derivate( atan( f ),x ) = derivate( f, x) * 
 --                                  ( 1 / (1 + f^2) )
 d (UnOp OpATan f) var = do
     f' <- d f var

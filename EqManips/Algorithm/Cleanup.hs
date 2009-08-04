@@ -11,6 +11,7 @@ cleanup = formulaIterate rules
 int :: Int -> Formula
 int = CInteger
 
+-- | List of trivial rules to simplify formula look
 rules :: Formula -> EqContext Formula
 -- Favor positive integer and a negate operator
 -- to be able to pattern match more easily
