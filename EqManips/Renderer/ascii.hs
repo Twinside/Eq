@@ -136,6 +136,22 @@ renderParens (x,y) (w,h) =
        where rightCol = x + w - 1
              lastLine = y + h - 1
 
+-- | One function to render them all!
+-- for one line ( ... )
+-- else we try to render something like that :
+-- |¯      ¯|
+-- |        |
+-- |        |
+-- |_      _|
+renderSquareBracket :: Pos -> Dimension -> [(Pos,Char)]
+renderSquareBracket (x,y) (w,1) = [((x,y), '['), ((x + w - 1, y), ']')]
+renderSquareBracket (x,y) (w,h) =
+    ((x + 1   , y ), '¯' ) : ((x + 1   , lastLine), '_') :
+    ((rightCol - 1, y ), '¯') : ((rightCol - 1, lastLine), '_' ) :
+    concat [ [ ((rightCol, height), '|')
+             , ((x       , height), '|')] | height <- [y .. lastLine] ]
+       where rightCol = x + w - 1
+             lastLine = y + h - 1
 
 charOfOp :: BinOperator -> Char
 charOfOp OpEq = '='
@@ -351,12 +367,9 @@ renderF (Sum ini end what)
                     then -1 else 0
 
 renderF (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
-    vertLine x ++ vertLine (x + w - 1)
+    renderSquareBracket (x,y) (w,h)
     ++ producedList final
-     where vertLine left = 
-            [ ((left,height), '|') | height <- [y + 1.. y + h - 2] ]
-
-           renderLine :: (Int, Int) -> (Formula, (RelativePlacement, SizeTree))
+     where renderLine :: (Int, Int) -> (Formula, (RelativePlacement, SizeTree))
                       -> ListProducer (Pos,Char) (Int,Int)
            renderLine (x', y') (formu, ((base,(w',_)),size)) = do
             let (nodeBase, (nodeWidth, _)) = sizeExtract size
