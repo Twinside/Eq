@@ -50,6 +50,10 @@ reduce (BinOp OpPow f1 f2) =  do
     f2' <- reduce f2
     power f1' f2'
 
+reduce (BinOp OpEq v@(Variable _) f2) = do
+    f2' <- reduce f2
+    return $ BinOp OpEq v f2'
+
 reduce (UnOp op f) = unOpReduce (funOf op) f
     where funOf OpNegate = negate
           funOf OpAbs = abs

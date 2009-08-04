@@ -5,72 +5,79 @@ import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.EvaluationContext
 
-recurse :: Formula -> EqContext Formula
-recurse = formulaIterate cleanup
+cleanup :: Formula -> EqContext Formula
+cleanup = formulaIterate rules
 
 int :: Int -> Formula
 int = CInteger
 
-cleanup :: Formula -> EqContext Formula
+rules :: Formula -> EqContext Formula
+-- Favor positive integer and a negate operator
+-- to be able to pattern match more easily
+rules cf@(CInteger i) | i < 0 = return . negate . CInteger $ negate i
+                      | otherwise = return cf
+-- Same as above but for floats
+rules cf@(CFloat i) | i < 0 = return . negate . CFloat $ negate i
+                    | otherwise = return cf
 -- -(-x) <=> x
-cleanup (UnOp OpNegate (UnOp OpNegate x)) = recurse x
+rules (UnOp OpNegate (UnOp OpNegate x)) = return x
 -- x - (-y) <=> x + y
-cleanup (BinOp OpSub x (UnOp OpNegate y)) = recurse $ x + y
+rules (BinOp OpSub x (UnOp OpNegate y)) = return $ x + y
 -- x + (-y) <=> x - y
-cleanup (BinOp OpAdd x (UnOp OpNegate y)) = recurse $ x - y
+rules (BinOp OpAdd x (UnOp OpNegate y)) = return $ x - y
 
 -- + cases
-cleanup (BinOp OpAdd (CInteger 0) x) = recurse x
-cleanup (BinOp OpAdd x (CInteger 0)) = recurse x
-cleanup (BinOp OpAdd (CInteger i1) (CInteger i2)) =
-    recurse . int $ i1 + i2
-cleanup (BinOp OpAdd (CFloat i1) (CFloat i2)) =
-    recurse . CFloat $ i1 + i2
+rules (BinOp OpAdd (CInteger 0) x) = return x
+rules (BinOp OpAdd x (CInteger 0)) = return x
+rules (BinOp OpAdd (CInteger i1) (CInteger i2)) =
+    return . int $ i1 + i2
+rules (BinOp OpAdd (CFloat i1) (CFloat i2)) =
+    return . CFloat $ i1 + i2
 
 -- - cases
-cleanup (BinOp OpSub x (CInteger 0)) = do recurse x
-cleanup (BinOp OpSub (CInteger i1) (CInteger i2)) =
-    recurse . int $ i1 - i2
-cleanup (BinOp OpSub (CFloat i1) (CFloat i2)) =
-    recurse . CFloat $ i1 - i2
+rules (BinOp OpSub x (CInteger 0)) = return x
+rules (BinOp OpSub (CInteger 0) x) = return $ negate x
+rules (BinOp OpSub (CInteger i1) (CInteger i2)) =
+    return . int $ i1 - i2
+rules (BinOp OpSub (CFloat i1) (CFloat i2)) =
+    return . CFloat $ i1 - i2
 
 -- * cases
 -- 0 * x = 0; x * 0 = 0
-cleanup (BinOp OpMul (CInteger 0) _) = recurse $ int 0
-cleanup (BinOp OpMul _ (CInteger 0)) = recurse $ int 0
+rules (BinOp OpMul (CInteger 0) _) = return $ int 0
+rules (BinOp OpMul _ (CInteger 0)) = return $ int 0
 -- 1 * x = x ; x * 1 = x
-cleanup (BinOp OpMul (CInteger 1) x) = recurse x
-cleanup (BinOp OpMul x (CInteger 1)) = recurse x
+rules (BinOp OpMul (CInteger 1) x) = return x
+rules (BinOp OpMul x (CInteger 1)) = return x
 -- evaluation of constants
-cleanup (BinOp OpMul (CInteger i1) (CInteger i2)) =
-    recurse . int $ i1 * i2
-cleanup (BinOp OpMul (CFloat i1) (CFloat i2)) =
-    recurse . CFloat $ i1 * i2
+rules (BinOp OpMul (CInteger i1) (CInteger i2)) =
+    return . int $ i1 * i2
+rules (BinOp OpMul (CFloat i1) (CFloat i2)) =
+    return . CFloat $ i1 * i2
 
 -- / cases
-cleanup (BinOp OpDiv (CInteger 0) _) = recurse $ int 0
-cleanup (BinOp OpDiv x (CInteger 1)) = recurse x
-cleanup f@(BinOp OpDiv _ (CInteger 0)) = eqFail f "Division by 0, WTF (BBQ)!"
+rules (BinOp OpDiv (CInteger 0) _) = return $ int 0
+rules (BinOp OpDiv x (CInteger 1)) = return x
+rules f@(BinOp OpDiv _ (CInteger 0)) = eqFail f "Division by 0, WTF (BBQ)!"
 
 -- POWER function
-cleanup (BinOp OpPow _ (CInteger 0)) = return $ int 1
-cleanup (BinOp OpPow x (CInteger 1)) = recurse x
+rules (BinOp OpPow _ (CInteger 0)) = return $ int 1
+rules (BinOp OpPow x (CInteger 1)) = return x
 
 -- Some Trigonometric transformations...
-cleanup (UnOp OpSin (CInteger 0)) = return $ int 0
-cleanup (UnOp OpSin (NumEntity Pi)) = return $ int 0
+rules (UnOp OpSin (CInteger 0)) = return $ int 0
+rules (UnOp OpSin (NumEntity Pi)) = return $ int 0
 -- Here we handle the more general case, for 2k * pi + 1
 -- and 2k * pi
-cleanup (UnOp OpSin (BinOp OpMul (NumEntity Pi) (CInteger i))) 
+rules (UnOp OpSin (BinOp OpMul (NumEntity Pi) (CInteger i))) 
     | i `mod` 2 == 0 = return $ int 0
     | otherwise = return $ int 1
-cleanup (UnOp OpSin (BinOp OpMul (CInteger i) (NumEntity Pi))) 
+rules (UnOp OpSin (BinOp OpMul (CInteger i) (NumEntity Pi))) 
     | i `mod` 2 == 0 = return $ int 0
     | otherwise = return $ int 1
 
-cleanup (UnOp OpCos (CInteger 0)) = return $ int 1
-cleanup (UnOp OpCos (NumEntity Pi)) = return $ int (-1)
+rules (UnOp OpCos (CInteger 0)) = return $ int 1
+rules (UnOp OpCos (NumEntity Pi)) = return $ int (-1)
 
-cleanup f | isFormulaLeaf f = return f
-          | otherwise = recurse f
+rules f = return f
 

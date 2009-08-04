@@ -33,16 +33,23 @@ ocamlLang = LangDef { initComm = "(*", endLineComm = "*)" }
 kindAssociation :: [(String, LangDef)]
 kindAssociation =
     [ (".c", cLang)
+    , ( ".C", cppLang)
     , ( ".cc", cppLang)
     , ( ".cpp", cppLang)
     , ( ".h", cLang)
     , ( ".hpp", cppLang)
+    , ( ".java", cppLang)
+    , ( ".cs", cppLang)
 
     , ( ".hs", haskellLang)
     , ( ".lhs", haskellLang)
     , ( ".ml", ocamlLang)
     , ( ".mli", ocamlLang)
+
     , ( ".py", shellLang)
+    , ( ".rb", shellLang)
+    , ( ".sh", shellLang)
+    , ( ".ps1", shellLang)
     ]
 
 beginResultMark, endResultMark :: String
@@ -85,11 +92,17 @@ eatSpaces = eat []
           eat acc ('\t':xs) = eat ('\t':acc) xs
           eat acc xs = (acc, xs)
 
+stripSuffix :: String -> String -> String
+stripSuffix suffix text
+    | isSuffixOf suffix text = take (length text - length suffix) text
+    | otherwise = text
+    
 removeBeginComment :: LangDef -> String -> Maybe (String, String)
 removeBeginComment langDef line = do
         let (iniSpace, restLine) = eatSpaces line
         rest <- stripPrefix (initComm langDef) restLine
-        return (iniSpace ++ (initComm langDef), rest)
+        return ( iniSpace ++ (initComm langDef)
+               , stripSuffix (endLineComm langDef) rest)
 
 word :: String -> (String, String)
 word = w []
@@ -141,6 +154,7 @@ produce lang (initSpace, command, eqData) =
           mayParsedFormla = runParser expr () "Preprocessed" $ concat eqData
 
           commentLine = initSpace ++ " "
+          commentEnd = " " ++ emark
 
           process _ (Left err) = map (commentLine++) . lines $ show err
           process "format" (Right f) = printResult $ linkFormula f
@@ -149,10 +163,10 @@ produce lang (initSpace, command, eqData) =
             in case (errorList rez) of
                     [] -> printResult $ result rez
                     errs@(_:_) -> concat
-                        [ (commentLine ++ txt) : printResult form
+                        [ (commentLine ++ txt ++ commentEnd) : printResult form
                                     | (form, txt) <- errs ]
           process _ (Right _) = ["Unknown command " ++ command]
 
           printResult f =
-              reverse . map (commentLine++) $ formulaTextTable f 
+              reverse . map (\l -> commentLine ++ l ++ commentEnd) $ formulaTextTable f 
 

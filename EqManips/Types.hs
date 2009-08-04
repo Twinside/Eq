@@ -5,16 +5,21 @@ module EqManips.Types( Formula( .. )
                      , prioOfBinaryOperators
                      , prioOfUnaryOperators
                      , expr 
+                     , unparse
                      , isFormulaLeaf
                      , unOpNames
                      ) where
 
+import Control.Applicative( (<$>) )
+
+import Data.Ratio
+import Data.List( intersperse, mapAccumR )
+import Data.Maybe( fromJust )
+
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language( haskellStyle )
-import Data.Ratio
 import qualified Text.ParserCombinators.Parsec.Token as P
-import Control.Applicative( (<$>) )
 
 -- | All Binary operators
 data BinOperator  =
@@ -100,6 +105,16 @@ data Formula =
 
 type Parsed a b = GenParser Char a b
 
+binopDefs :: [(BinOperator, (Int,String))]
+binopDefs =
+	[ (OpEq, (4, "="))
+	, (OpAdd, (3, "+"))
+	, (OpSub, (3, "-"))
+	, (OpMul, (2, "*"))
+	, (OpDiv, (2, "/"))
+	, (OpPow, (1, "^"))
+    ]
+
 -------------------------------------------
 ---- "Language" helpers
 -------------------------------------------
@@ -152,9 +167,86 @@ unOpNames =
     , (OpExp, "exp")
     ]
 
+argListToString :: [Formula] -> String
+argListToString fl = concat $ intersperse "," textArgs
+    where accum _ f = ((), deparse maxPrio False f)
+          (_,textArgs) = mapAccumR accum () fl
+
+maxPrio :: Int
+maxPrio = 15
+
+
+-----------------------------------------------------------
+--          Unprint
+-----------------------------------------------------------
+unparse = deparse maxPrio False
+
+deparse :: Int -> Bool -> Formula -> String
+deparse _ _ (Variable s) = s
+deparse _ _ (NumEntity e) = en e
+    where en Pi = "pi"
+          en Nabla = "nabla"
+deparse _ _ (CInteger i) = show i
+deparse _ _ (CFloat d) = show d
+deparse _ _ (Block i i1 i2) =
+    "block(" ++ show i ++ "," ++ show i1 ++ "," ++ show i2 ++ ")"
+deparse _ _ (App f1 fl) =
+    deparse maxPrio False f1 ++ "(" ++ argListToString fl ++ ")"
+deparse _ _ (Sum i i1 i2) =
+    "sum(" ++ deparse maxPrio False i ++
+        "," ++ deparse maxPrio False i1 ++ 
+        "," ++ deparse maxPrio False i2 ++ ")"
+deparse _ _ (Product i i1 i2) =
+    "product(" ++ deparse maxPrio False i ++ 
+            "," ++ deparse maxPrio False i1 ++ 
+            "," ++ deparse maxPrio False i2 ++ ")"
+deparse _ _ (Derivate i i1) =
+    "derivate(" ++ deparse maxPrio False i ++ 
+            "," ++ deparse maxPrio False i1 ++ ")"
+
+deparse _ _ (Integrate i i1 i2 i3) =
+    "integrate(" ++ deparse maxPrio False i ++ 
+             "," ++ deparse maxPrio False i1 ++
+             "," ++ deparse maxPrio False i2 ++ 
+             "," ++ deparse maxPrio False i3 ++ ")"
+deparse _ _ (UnOp op f) =
+    (fromJust $ lookup op unOpNames) ++ 
+        "(" ++ deparse maxPrio False f ++ ")"
+
+-- Special case... as OpEq is right associative...
+-- we must reverse shit for serialisation
+deparse oldPrio right (BinOp OpEq f1 f2) =
+    let (prio, txt) = fromJust $ lookup OpEq binopDefs
+    in
+    if prio > oldPrio || (not right && prio == oldPrio)
+       then "(" ++ deparse prio False f1 
+                ++ ' ' : txt ++ " " 
+                ++ deparse prio True f2 ++ ")"
+       else deparse prio False f1 
+            ++ ' ' : txt ++ " "
+            ++ deparse prio True f2
+
+deparse oldPrio right (BinOp op f1 f2) =
+    let (prio, txt) = fromJust $ lookup op binopDefs
+    in
+    if prio > oldPrio || (right && prio == oldPrio)
+       then "(" ++ deparse prio False f1 
+                ++ ' ' : txt ++ " " 
+                ++ deparse prio True f2 ++ ")"
+       else deparse prio False f1 
+            ++ ' ' : txt ++ " "
+            ++ deparse prio True f2
+
+deparse _ _ (Matrix n m fl) =
+    "matrix(" ++ show n ++ "," ++ show m ++ "," ++
+            (argListToString $ concat fl) ++ ")"
+
 ----------------------------------------
 ----  Strong and valid instances    ----
 ----------------------------------------
+{-instance Show Formula where-}
+    {-show = deparse maxPrio False-}
+    
 instance Num Formula where
     (+) = BinOp OpAdd
     (-) = BinOp OpSub

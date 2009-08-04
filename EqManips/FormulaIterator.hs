@@ -13,46 +13,46 @@ formulaIterate f d@(CFloat _) = f d
 formulaIterate f e@(NumEntity _) = f e
 
 formulaIterate f (App func args) = do
-    fs <- f func
-    argss <- mapM f args
-    return $ App fs argss
+    fs <- formulaIterate f func
+    argss <- mapM (formulaIterate f) args
+    f $ App fs argss
 
 formulaIterate f (Sum ini end what) = do
-    inis <- f ini
-    ends <- f end
-    whats <- f what
-    return $ Sum inis ends whats
+    inis <- formulaIterate f ini
+    ends <- formulaIterate f end
+    whats <- formulaIterate f what
+    f $ Sum inis ends whats
 
 formulaIterate f (Product ini end what) = do
-    inis <- f ini
-    ends <- f end
-    whats <- f what
-    return $ Product inis ends whats
+    inis <- formulaIterate f ini
+    ends <- formulaIterate f end
+    whats <- formulaIterate f what
+    f $ Product inis ends whats
 
 formulaIterate f (Derivate what var) = do
-    whats <- f what
-    vars <- f var
-    return $ Derivate whats vars
+    whats <- formulaIterate f what
+    vars <- formulaIterate f var
+    f $ Derivate whats vars
 
 formulaIterate f (Integrate ini end what var) = do
-    inis <- f ini
-    ends <- f end
-    whats <- f what
-    vars <- f var
-    return $ Integrate inis ends whats vars
+    inis <- formulaIterate f ini
+    ends <- formulaIterate f end
+    whats <- formulaIterate f what
+    vars <- formulaIterate f var
+    f $ Integrate inis ends whats vars
 
 formulaIterate f (Matrix n m cells) = do
-    cellss <- sequence [mapM f matrixLine | matrixLine <- cells]
-    return $ Matrix n m cellss
+    cellss <- sequence [mapM (formulaIterate f) matrixLine | matrixLine <- cells]
+    f $ Matrix n m cellss
 
 formulaIterate f (UnOp op sub) = do
-    subs <- f sub
-    return $ UnOp op subs
+    subs <- formulaIterate f sub
+    f $ UnOp op subs
 
 formulaIterate f (BinOp op f1 f2) = do
-    f1s <- f f1
-    f2s <- f f2
-    return $ BinOp op f1s f2s
+    f1s <- formulaIterate f f1
+    f2s <- formulaIterate f f2
+    f $ BinOp op f1s f2s
 
 -- Hmm, it's a debug for renderer, we dont really care
 formulaIterate _ b@(Block _ _ _) = return b

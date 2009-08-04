@@ -63,7 +63,7 @@ link (App (Variable "matrix") (CInteger n: CInteger m: exps))
         where splitMatrix  [] = []
               splitMatrix lst =
                 let (matrixLine, matrixRest) = genericSplitAt n lst
-                in matrixLine : splitMatrix matrixRest
+                in map link matrixLine : splitMatrix matrixRest
 
 -- General transformations
 link (App f flst) = App (link f) $ map link flst
