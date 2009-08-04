@@ -1,32 +1,44 @@
-module EqManips.Tests.ContinuousGenerator( formulaGen ) where
+module EqManips.Tests.ContinuousGenerator( ContinuousFormula( .. )
+                                         , formulaGen 
+                                         ) where
 
 import Control.Monad
 import Test.QuickCheck
 import EqManips.Types
 
-instance Arbitrary Entity where
-    arbitrary  = elements [Pi, Nabla] 
+newtype ContinuousBinop = ContinuousBinop BinOperator
+newtype ContinuousUnop = ContiousUnop UnOperator
+newtype ContinuousFormula = ContinousFormula Formula
 
-instance Arbitrary BinOperator where
-    arbitrary  = elements [ OpAdd, OpSub, OpMul, OpDiv, OpPow ]
+instance Arbitrary Entity where
+    arbitrary  = elements [ Pi ] 
+
+instance Arbitrary ContinuousBinop where
+    arbitrary  = elements [ OpAdd, OpSub, OpMul, OpDiv, OpPow ] 
+               >>= return . ContinuousBinop
 
 instance Arbitrary UnOperator where
     arbitrary  = elements [ OpNegate, OpSqrt, OpSin, OpCos, OpTan, OpLn, OpExp ]
+               >>= return . ContiousUnop 
 
-instance Arbitrary Formula where
+instance Arbitrary ContinousFormula where
     arbitrary = formulaGen 5
 
-leafs :: [Gen Formula]
+leafs :: [Gen ContinousFormula]
 leafs = 
-    [ liftM NumEntity arbitrary
-    , liftM CInteger arbitrary
-    , liftM CFloat arbitrary ]
+    [ liftM (ContinuousFormula . NumEntity) arbitrary
+    , liftM (CInteger . ContinuousFormula) arbitrary
+    , liftM (ContinuousFormula . CFloat) arbitrary
+    , return . ContinuousFormula $ Variable "x"
+    ]
 
-formulaGen :: Int -> Gen Formula
-formulaGen 0 = oneof leafs
+formulaGen :: Int -> Gen ContinousFormula
+formulaGen 0 = oneof leafs >>= return . ContinousFormula
 formulaGen n = oneof $
-    leafs ++ [ liftM3 BinOp arbitrary subFormul subFormul
-             , liftM2 UnOp arbitrary subFormul
+    leafs ++ [ liftM3 (ContinuousFormula . BinOp) arbitrary subFormul subFormul
+             , liftM2 (ContinuousFormula . UnOp) arbitrary subFormul
              ]
-      where subFormul = formulaGen (n-1)
+      where subFormul = do
+                ContinuousFormula f <- formulaGen (n-1)
+                return f
 

@@ -5,6 +5,8 @@ import Control.Monad
 import Test.QuickCheck
 import EqManips.Types
 
+-- | To generate variables without clashing everywhere else
+newtype VarLetter = VarLetter Char
 instance Arbitrary Entity where
     arbitrary  = elements [Pi] 
 
@@ -20,10 +22,11 @@ instance Arbitrary UnOperator where
 instance Arbitrary Formula where
     arbitrary = formulaGen 1
 
-instance Arbitrary Char where
+
+instance Arbitrary VarLetter where
     arbitrary = do
         n <- choose (0, 25)
-        return . toEnum $ n + fromEnum 'a'
+        return . VarLetter . toEnum $ n + fromEnum 'a'
 
 leafs :: [Gen Formula]
 leafs = 
@@ -32,7 +35,7 @@ leafs =
     -- Which is absolutely normal...
     {-, liftM CFloat arbitrary-}
     , liftM NumEntity arbitrary
-    , liftM (Variable . (:[])) arbitrary 
+    , liftM (\(VarLetter c) -> Variable [c]) arbitrary 
     ]
 
 formulaGen :: Int -> Gen Formula
