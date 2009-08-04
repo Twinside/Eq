@@ -179,6 +179,7 @@ maxPrio = 15
 -----------------------------------------------------------
 --          Unprint
 -----------------------------------------------------------
+unparse :: Formula -> String
 unparse = deparse maxPrio False
 
 deparse :: Int -> Bool -> Formula -> String
