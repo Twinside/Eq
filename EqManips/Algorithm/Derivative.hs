@@ -51,7 +51,7 @@ d (BinOp OpMul f1 f2) var = do
     f2' <- d f2 var
     return $ f1' * f2 + f1 * f2'
 
--- Eq:format derivate( 1 / f ) =
+-- Eq:format derivate( 1 / f, x ) =
 --  -derivate( f, x ) / f ^ 2
 d (BinOp OpDiv (CInteger 1) f) var = do
     f' <- d f var

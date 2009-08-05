@@ -90,7 +90,7 @@ asciiSizer = Dimensioner
         (mHeight `div` 2, (mWidth + 3, mHeight))
 
     , derivateSize = \(_,(we,he)) (_,(wv, hv)) ->
-        (he + 1, (max we wv + 3, he + hv + 1))
+        (he, (max we wv + 3, he + hv + 1))
 
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     , entitySize = fst . textOfEntity
