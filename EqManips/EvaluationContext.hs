@@ -12,6 +12,7 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  ) where
 
 import EqManips.Types
+import Control.Applicative
 
 #ifdef _DEBUG
 import System.IO
@@ -55,7 +56,14 @@ instance Functor EqContext where
     fmap f m = EqContext $ \c ->
         let (c', a) = runEqTransform m c
         in (c', f a)
-    
+
+instance Applicative EqContext where
+    pure a = EqContext $ \c -> (c,a) 
+    (EqContext ff) <*> (EqContext a) = EqContext $ \c ->
+        let (c' , f) = ff c
+            (c'', a') = a c'
+        in (c'', f a')
+
 instance Monad EqContext where
     {-# INLINE return #-}
     return a = EqContext $ \c -> (c, a)
@@ -79,10 +87,13 @@ emptyContext = EqTransformInfo {
     }
 
 #ifdef _DEBUG
+-- | Function used to add a trace in debug.
+-- don't forget to surround it's use by #ifdef _DEBUG/#endif
 addTrace :: (String,Formula) -> EqContext ()
 addTrace newTrace = EqContext $ \c ->
     (c { trace = newTrace : trace c }, ())
 
+-- | Print all the trace found.
 printTrace :: Handle -> EqTransformInfo -> IO ()
 printTrace f inf = mapM_ showIt $ trace inf
     where showIt (str, formula) = do
@@ -119,6 +130,8 @@ addSymbol varName def = EqContext $ \eqCtxt ->
     let prevSymbol = context eqCtxt
     in ( eqCtxt{ context = (varName,def): prevSymbol }, ())
 
+-- | Check if a symbol is present, and if so, return it's
+-- definition
 symbolLookup :: String -> EqContext (Maybe Formula)
 symbolLookup varName = EqContext $ \eqCtxt ->
     (eqCtxt, lookup varName $ context eqCtxt)

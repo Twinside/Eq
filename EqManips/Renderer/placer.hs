@@ -19,6 +19,7 @@ data SizeTree =
 
 type RelativePlacement = (BaseLine, Dimension)
 
+-- | an "object" which is used to get the placement of all the elements in the equation.
 data Dimensioner = Dimensioner
     { unaryDim :: UnOperator -> RelativePlacement -> RelativePlacement
     , varSize :: String -> RelativePlacement

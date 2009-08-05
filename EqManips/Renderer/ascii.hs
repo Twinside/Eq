@@ -1,4 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+-- | Module in charge of rendering an equation in ASCII
+-- provide sizing information and rendering
 module EqManips.Renderer.Ascii( renderFormula
                               , formulaTextTable
                               , formatFormula ) where
@@ -13,6 +15,9 @@ import Monad.ListProducer
 import CharArray
 type Pos = (Int, Int)
 
+-- | Here is all the rules for sizing of equation for an ascii
+-- rendering. It's a bit harch to look at, but you can look
+-- at the test suite to decipher the more complex ones
 asciiSizer :: Dimensioner
 asciiSizer = Dimensioner
     { unaryDim = \op (base, (w,h)) ->
@@ -96,7 +101,8 @@ asciiSizer = Dimensioner
     , entitySize = fst . textOfEntity
     }
 
-
+-- | Convert entity to text, not much entity for
+-- the moment
 textOfEntity :: Entity -> ((Int,(Int,Int)), [String])
 textOfEntity Pi = ((0,(2,1)),["pi"])
 textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
@@ -105,12 +111,18 @@ textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 formatFormula :: Formula -> String
 formatFormula = unlines . formulaTextTable
 
+-- | The function to call to render a formula.
+-- Return a list of lines containing the formula.
+-- You can indent the lines do whatever you want with it.
 formulaTextTable :: Formula -> [String]
 formulaTextTable = linesOfArray . fst . renderFormula
 
 -------------------------------------------------------------
 ----                     Rendering                       ----
 -------------------------------------------------------------
+
+-- | This function return a char matrix containing the rendered
+-- formula. This function might not stay public in the future...
 renderFormula :: Formula -- ^ Formula to render
               -> (UArray (Int,Int) Char,SizeTree) -- ^ Rendered formula
 renderFormula formula = 
@@ -153,6 +165,7 @@ renderSquareBracket (x,y) (w,h) =
        where rightCol = x + w - 1
              lastLine = y + h - 1
 
+-- | Little association...
 charOfOp :: BinOperator -> Char
 charOfOp OpEq = '='
 charOfOp OpAdd = '+'
@@ -161,6 +174,8 @@ charOfOp OpMul = '*'
 charOfOp OpDiv = '/'
 charOfOp OpPow = '^'
 
+-- | The real rendering function, return a list of position and char
+-- to be used in accumArray function.
 renderF :: Formula -- ^ CurrentNode
         -> SizeTree -- ^ Previously calculated size
         -> Pos -- ^ Where to render
@@ -172,11 +187,12 @@ renderF node (MonoSizeNode True (base, dim) st) (x,y) =
     renderParens (x,y) dim ++ renderF node neoTree (x+1, y) 
         where subSize = (remParens asciiSizer) dim
               neoTree = MonoSizeNode False (base, subSize) st
+-- Parentheses for binop
 renderF node (BiSizeNode True (base, dim) st1 st2) (x,y) =
     renderParens (x,y) dim ++ renderF node neoTree (x+1, y) 
         where subSize = (remParens asciiSizer) dim
               neoTree = BiSizeNode False (base, subSize) st1 st2
-
+-- Parenthesis for something else
 renderF node (SizeNodeList True (base, dim) abase stl) (x,y) =
     renderParens (x,y) dim ++ renderF node neoTree (x+1, y)
         where subSize = (remParens asciiSizer) dim
@@ -378,9 +394,6 @@ renderF (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
             concatFront $ renderF formu size (xStart, yStart)
             return (x' + w' + 1, y')
            
-           renderMatrix :: (Int, Int) 
-                        -> ([Formula], [(RelativePlacement, SizeTree)])
-                        -> ListProducer (Pos, Char) (Int, Int)
            renderMatrix (x', y') (formulas, sizes) = 
                let ((_,(_,height)),_) = head sizes
                in do

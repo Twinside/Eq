@@ -1,13 +1,17 @@
-module EqManips.Algorithm.Derivative( derivate ) where
+module EqManips.Algorithm.Derivative( derivate
+                                    , Variable ) where
 
 import EqManips.Types
 import EqManips.EvaluationContext
 
 type Variable = String
 
+-- | just an helper function
 int :: Int -> Formula
 int = CInteger
 
+-- | Public function to perform a derivation on a
+-- variable.
 derivate :: Formula -> Variable -> EqContext Formula
 derivate f v = d f v
 
@@ -19,7 +23,6 @@ d (Variable v) var
     | otherwise = return $ int 0
 d (CInteger _) _ = return $ int 0
 d (CFloat _) _ = return $ int 0
-d (NumEntity Pi) _ = return $ NumEntity Pi
 d (NumEntity _) _ = return $ int 0
 d (App f [g]) var = do
     f' <- d f var

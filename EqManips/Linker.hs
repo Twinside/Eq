@@ -1,3 +1,5 @@
+-- | This module will link variable names to
+-- symbols.
 module EqManips.Linker( linkFormula ) where
 
 import EqManips.Types
@@ -6,6 +8,9 @@ import Data.List
 linkFormula :: Formula -> Formula
 linkFormula = link
 
+-- | Function associating variables to symbol.
+-- It's a crude way to do it... 
+-- may need to change it to a real symbol table later
 link :: Formula -> Formula
 link (Variable "pi") = NumEntity Pi
 -- Special cases

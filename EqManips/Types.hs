@@ -38,32 +38,20 @@ data BinOperator  =
     | OpEq
     deriving (Eq,Show,Read)
 
+-- | All `unary` operators are in there. some are mathematical
+-- functions. They're present here, because it's easier to pattern
+-- match them this way
 data UnOperator =
-      OpNegate
-    | OpAbs
-    | OpSqrt
+      OpNegate | OpAbs | OpSqrt
 
-    | OpSin
-    | OpSinh
-    | OpASin
-    | OpASinh
+    | OpSin | OpSinh | OpASin | OpASinh
+    | OpCos | OpCosh | OpACos | OpACosh
+    | OpTan | OpTanh | OpATan | OpATanh
 
-    | OpCos
-    | OpCosh
-    | OpACos
-    | OpACosh
-
-    | OpTan
-    | OpTanh
-    | OpATan
-    | OpATanh
-
-    | OpLn
-    | OpLog
-
-    | OpExp
+    | OpLn | OpLog | OpExp
     deriving (Eq, Show, Read)
 
+-- | Some entity which cannot be represented in other mannear
 data Entity =
       Pi
     | Nabla
@@ -105,6 +93,8 @@ data Formula =
 
 type Parsed a b = GenParser Char a b
 
+-- | Priority and textual representation
+-- of binary operators
 binopDefs :: [(BinOperator, (Int,String))]
 binopDefs =
 	[ (OpEq, (4, "="))
@@ -115,31 +105,7 @@ binopDefs =
 	, (OpPow, (1, "^"))
     ]
 
--------------------------------------------
----- "Language" helpers
--------------------------------------------
-isFormulaLeaf :: Formula -> Bool
-isFormulaLeaf (Variable _) = True
-isFormulaLeaf (CInteger _) = True
-isFormulaLeaf (CFloat _) = True
-isFormulaLeaf (NumEntity _) = True
-isFormulaLeaf _ = False
-
-prioOfBinaryOperators :: BinOperator -> Int
-prioOfBinaryOperators = prio
-    where prio OpEq = 4
-          prio OpAdd = 3
-          prio OpSub = 3
-          prio OpMul = 2
-          prio OpDiv = 2
-          prio OpPow = 1
-
-prioOfUnaryOperators :: UnOperator -> Int
-prioOfUnaryOperators = p
-    where p OpNegate = 0
-          p OpExp = 1
-          p _ = 10000
-    
+-- | Textual representation of "unary" operators
 unOpNames :: [(UnOperator, String)]
 unOpNames =
     [ (OpNegate, "-")
@@ -167,21 +133,49 @@ unOpNames =
     , (OpExp, "exp")
     ]
 
+-------------------------------------------
+---- "Language" helpers
+-------------------------------------------
+
+-- | helper function to tell if the current formula
+-- is a leaf (ie if no further recursion is required)
+isFormulaLeaf :: Formula -> Bool
+isFormulaLeaf (Variable _) = True
+isFormulaLeaf (CInteger _) = True
+isFormulaLeaf (CFloat _) = True
+isFormulaLeaf (NumEntity _) = True
+isFormulaLeaf _ = False
+
+prioOfBinaryOperators :: BinOperator -> Int
+prioOfBinaryOperators op = fst . fromJust $ lookup op binopDefs
+
+prioOfUnaryOperators :: UnOperator -> Int
+prioOfUnaryOperators = p
+    where p OpNegate = 0
+          p OpExp = 1
+          p _ = 10000
+    
+-- | used to render functions' arguments
 argListToString :: [Formula] -> String
 argListToString fl = concat $ intersperse "," textArgs
     where accum _ f = ((), deparse maxPrio False f)
           (_,textArgs) = mapAccumR accum () fl
 
+-- | only to avoid a weird constant somewhere
 maxPrio :: Int
 maxPrio = 15
-
 
 -----------------------------------------------------------
 --          Unprint
 -----------------------------------------------------------
+
+-- | Public function to translate a formula back to it's
+-- original notation. NOTE : it's not used as a Show instance...
 unparse :: Formula -> String
 unparse = deparse maxPrio False
 
+-- | Real conversion function, pass down priority
+-- and tree direction
 deparse :: Int -> Bool -> Formula -> String
 deparse _ _ (Variable s) = s
 deparse _ _ (NumEntity e) = en e
@@ -245,9 +239,6 @@ deparse _ _ (Matrix n m fl) =
 ----------------------------------------
 ----  Strong and valid instances    ----
 ----------------------------------------
-{-instance Show Formula where-}
-    {-show = deparse maxPrio False-}
-    
 instance Num Formula where
     (+) = BinOp OpAdd
     (-) = BinOp OpSub
@@ -313,6 +304,8 @@ lexer  = P.makeTokenParser
 -----------------------------------------------------------
 --          Real "grammar"
 -----------------------------------------------------------
+
+-- | Parser for the mini language is defined here
 expr :: Parsed st Formula
 expr = buildExpressionParser operatorDefs term
     <?> "expression"

@@ -12,7 +12,7 @@ import Data.List( foldl' , transpose )
 
 type FormulOperator = Formula -> Formula -> Formula
 
--- General reduction
+-- | General evaluation/reduction function
 reduce :: Formula -> EqContext Formula
 reduce (NumEntity Pi) = return $ CFloat pi
 reduce (Matrix n m mlines) = do
