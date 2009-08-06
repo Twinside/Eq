@@ -1,4 +1,4 @@
-
+{-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
 module EqManips.Tests.FullGenerator( formulaGen ) where
 
 import Control.Monad
@@ -42,7 +42,7 @@ formulaGen :: Int -> Gen Formula
 formulaGen n  
     | n <= 0 = oneof leafs
     | otherwise = oneof $
-        leafs ++ [ liftM3 BinOp arbitrary subFormul subFormul
+        leafs ++ [ liftM2 BinOp arbitrary formulist
                  , liftM2 UnOp arbitrary subFormul
                  , liftM3 Sum subFormul subFormul subFormul
                  , liftM3 Product subFormul subFormul subFormul
@@ -51,6 +51,9 @@ formulaGen n
                  , matrixGenerator (n-1)
                  ]
           where subFormul = formulaGen (n-1)
+                formulist = do f1 <- subFormul
+                               f2 <- subFormul
+                               return [f1, f2]
 
 matrixGenerator :: Int -> Gen Formula
 matrixGenerator deep = do

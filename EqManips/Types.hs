@@ -189,25 +189,22 @@ deparse _ _ (CInteger i) = show i
 deparse _ _ (CFloat d) = show d
 deparse _ _ (Block i i1 i2) =
     "block(" ++ show i ++ "," ++ show i1 ++ "," ++ show i2 ++ ")"
+
 deparse _ _ (App f1 fl) =
     deparse maxPrio False f1 ++ "(" ++ argListToString fl ++ ")"
+
 deparse _ _ (Sum i i1 i2) =
-    "sum(" ++ deparse maxPrio False i ++
-        "," ++ deparse maxPrio False i1 ++ 
-        "," ++ deparse maxPrio False i2 ++ ")"
+    "sum(" ++ argListToString [i, i1, i2]  ++ ")"
+
 deparse _ _ (Product i i1 i2) =
-    "product(" ++ deparse maxPrio False i ++ 
-            "," ++ deparse maxPrio False i1 ++ 
-            "," ++ deparse maxPrio False i2 ++ ")"
+    "product(" ++ argListToString [i, i1, i2]  ++ ")"
+
 deparse _ _ (Derivate i i1) =
-    "derivate(" ++ deparse maxPrio False i ++ 
-            "," ++ deparse maxPrio False i1 ++ ")"
+    "derivate(" ++ argListToString [i, i1] ++ ")"
 
 deparse _ _ (Integrate i i1 i2 i3) =
-    "integrate(" ++ deparse maxPrio False i ++ 
-             "," ++ deparse maxPrio False i1 ++
-             "," ++ deparse maxPrio False i2 ++ 
-             "," ++ deparse maxPrio False i3 ++ ")"
+    "integrate(" ++ argListToString [i, i1, i2, i3] ++ ")"
+
 deparse _ _ (UnOp op f) =
     (fromJust $ lookup op unOpNames) ++ 
         "(" ++ deparse maxPrio False f ++ ")"

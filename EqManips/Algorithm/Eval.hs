@@ -20,39 +20,39 @@ reduce (Matrix n m mlines) = do
     return $ Matrix n m cells
 
 -- All valid Matrix/Matrix operations
-reduce (BinOp OpSub f1@(Matrix _ _ _) f2@(Matrix _ _ _)) =
+reduce (BinOp OpSub [f1@(Matrix _ _ _), f2@(Matrix _ _ _)]) =
     matrixMatrixSimple (-) f1 f2
-reduce (BinOp OpAdd f1@(Matrix _ _ _) f2@(Matrix _ _ _)) =
+reduce (BinOp OpAdd [f1@(Matrix _ _ _), f2@(Matrix _ _ _)]) =
     matrixMatrixSimple (+) f1 f2
-reduce (BinOp OpMul f1@(Matrix _ _ _) f2@(Matrix _ _ _)) =
+reduce (BinOp OpMul [f1@(Matrix _ _ _), f2@(Matrix _ _ _)]) =
     matrixMatrixMul f1 f2
 
 -- All valid Matrix/Scalar operations
-reduce (BinOp OpMul m@(Matrix _ _ _) s) = matrixScalar (*) m s
-reduce (BinOp OpMul s m@(Matrix _ _ _)) = matrixScalar (*) m s
-reduce (BinOp OpDiv m@(Matrix _ _ _) s) = matrixScalar (/) m s
-reduce (BinOp OpDiv s m@(Matrix _ _ _)) = matrixScalar (/) m s
+reduce (BinOp OpMul [m@(Matrix _ _ _), s]) = matrixScalar (*) m s
+reduce (BinOp OpMul [s,m@(Matrix _ _ _)]) = matrixScalar (*) m s
+reduce (BinOp OpDiv [m@(Matrix _ _ _),s]) = matrixScalar (/) m s
+reduce (BinOp OpDiv [s,m@(Matrix _ _ _)]) = matrixScalar (/) m s
 
 -- Everything else covering Matrix is Bullshit
-reduce f@(BinOp _ (Matrix _ _ _) _) = eqFail f "Error invalid operation on Matrix"
-reduce f@(BinOp _ _ (Matrix _ _ _)) = eqFail f "Error invalid operation on Matrix"
+reduce f@(BinOp _ ((Matrix _ _ _):_)) = eqFail f "Error invalid operation on Matrix"
+reduce f@(BinOp _ (_:(Matrix _ _ _):_)) = eqFail f "Error invalid operation on Matrix"
 
-reduce (BinOp OpAdd f1 f2) = binOpReduce (+) f1 f2
-reduce (BinOp OpSub f1 f2) = binOpReduce (-) f1 f2
-reduce (BinOp OpMul f1 f2) = binOpReduce (*) f1 f2
-reduce (BinOp OpDiv f1 f2) = do
+reduce (BinOp OpAdd [f1, f2]) = binOpReduce (+) f1 f2
+reduce (BinOp OpSub [f1, f2]) = binOpReduce (-) f1 f2
+reduce (BinOp OpMul [f1, f2]) = binOpReduce (*) f1 f2
+reduce (BinOp OpDiv [f1, f2]) = do
     f1' <- reduce f1
     f2' <- reduce f2
     division f2 f1' f2'
 
-reduce (BinOp OpPow f1 f2) =  do
+reduce (BinOp OpPow [f1,f2]) =  do
     f1' <- reduce f1
     f2' <- reduce f2
     power f1' f2'
 
-reduce (BinOp OpEq v@(Variable _) f2) = do
+reduce (BinOp OpEq [v@(Variable _),f2]) = do
     f2' <- reduce f2
-    return $ BinOp OpEq v f2'
+    return $ BinOp OpEq [v,f2']
 
 reduce (UnOp op f) = unOpReduce (funOf op) f
     where funOf OpNegate = negate
@@ -80,13 +80,13 @@ reduce (Derivate what (Variable s)) =
 reduce f@(Derivate _ _) =
     eqFail f "Sorry your derivation doesn't have a good variable specification"
 
-reduce (Sum (BinOp OpEq (Variable v) (CInteger initi))
+reduce (Sum (BinOp OpEq [Variable v, CInteger initi])
             (CInteger endi) 
             f) = iterateFormula (+) v initi endi f
 
 reduce f@(Sum _ _ _) = eqFail f "Sorry, your sum don't have the good form to be evaluated."
 
-reduce (Product (BinOp OpEq (Variable v) (CInteger initi))
+reduce (Product (BinOp OpEq [Variable v, CInteger initi])
                 (CInteger endi) 
                 f) = iterateFormula (*) v initi endi f
 reduce f@(Product _ _ _) = eqFail f "Sorry, your product don't have the good form to be evaluated."
@@ -187,7 +187,7 @@ matrixScalar _ _ _ = error "matrixScalar - Should be impossible"
 -- | Multiplication between two matrix. Check for matrix sizes.
 matrixMatrixMul :: Formula -> Formula -> EqContext Formula
 matrixMatrixMul m1@(Matrix n _ mlines) m2@(Matrix n' m' mlines')
-    | n /= m' = eqFail (BinOp OpMul m1 m2)
+    | n /= m' = eqFail (BinOp OpMul [m1, m2])
                        "Error can't multiply matrix, m2 has wrong height"
     | otherwise = cellLine >>= return . Matrix n n'
         where cellLine = sequence
