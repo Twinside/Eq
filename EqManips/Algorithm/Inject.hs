@@ -33,8 +33,8 @@ injectIntern f = scope $ reBoundVar f
 -- The pattern is explicitely exaustive to be sure
 -- to get the compiler shout if a change is made.
 reBoundVar :: Formula -> Maybe String
-reBoundVar (Product (BinOp OpEq (Variable v) _) _ _) = Just v
-reBoundVar (Sum (BinOp OpEq (Variable v) _) _ _) = Just v
+reBoundVar (Product (BinOp OpEq (Variable v:_)) _ _) = Just v
+reBoundVar (Sum (BinOp OpEq (Variable v: _)) _ _) = Just v
 
 reBoundVar (Variable _) = Nothing
 reBoundVar (NumEntity _) = Nothing
@@ -44,7 +44,7 @@ reBoundVar (App _ _) = Nothing
 reBoundVar (Derivate _ _) = Nothing
 reBoundVar (Integrate _ _ _ _) = Nothing
 reBoundVar (UnOp _ _) = Nothing
-reBoundVar (BinOp _ _ _) = Nothing
+reBoundVar (BinOp _ _) = Nothing
 reBoundVar (Matrix _ _ _) = Nothing
 reBoundVar (Block _ _ _) = Nothing
 reBoundVar (Product _ _ _) = Nothing
