@@ -35,17 +35,13 @@ d f@(App _ _) _ =
 
 -- Eq:format derivate(f + g, x) = derivate( f, x ) + 
 --                          derivate( g, x )
-d (BinOp OpAdd  f1 f2) var = do
-    f1' <- d f1 var
-    f2' <- d f2 var
-    return $ f1' + f2'
+d (BinOp OpAdd formulas) var =
+    mapM (flip d var) formulas >>= return . BinOp OpAdd
 
 -- Eq:format derivate(f - g, x) = derivate( f, x ) - 
 --                          derivate( g, x )
-d (BinOp OpSub f1 f2) var = do
-    f1' <- d f1 var
-    f2' <- d f2 var
-    return $ f1' + f2'
+d (BinOp OpSub formulas) var =
+    mapM (flip d var) formulas >>= return . BinOp OpSub
 
 -- Eq:format derivate( f * g, x ) =
 --      derivate( f, x ) * g + f + derivate( g, x )

@@ -209,7 +209,10 @@ renderF (NumEntity e) _ (x,y) = concat
     [ [((x + xi,y + yi),c) | (xi, c) <- zip [0..] elines]
         | (yi, elines) <- zip [0..] $ snd $ textOfEntity e]
 
-renderF (BinOp OpPow f1 f2) (BiSizeNode False _ t1 t2) (x,y) =
+renderF (BinOp _ []) _ _ = error "renderF - rendering BinOp with no operand."
+renderF (BinOp _ [_]) _ _ = error "renderF - rendering BinOp with only one operand."
+
+renderF (BinOp OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =
     leftRender ++ rightRender
     where leftRender = renderF f1 t1 (x, y + rh)
           rightRender = renderF f2 t2 (x + lw, y)
@@ -217,7 +220,7 @@ renderF (BinOp OpPow f1 f2) (BiSizeNode False _ t1 t2) (x,y) =
           (_, rh) = sizeOfTree t2
 
 -- Division is of another kind :]
-renderF (BinOp OpDiv f1 f2) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
+renderF (BinOp OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
     [ ((xi,y + lh), '-') | xi <- [x .. x + w - 1]] 
     ++ renderF f1 t1 (leftBegin , y)
     ++ renderF f2 t2 (rightBegin, y + lh + 1)
@@ -226,7 +229,7 @@ renderF (BinOp OpDiv f1 f2) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
               leftBegin = x + (w - lw) `div` 2
               rightBegin = x + (w - rw) `div` 2
 
-renderF (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) (x,y) =
+renderF (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
   ((x + lw + 1, y + base),opChar) : (leftRender ++ rightRender)
     where (lw, _) = sizeOfTree t1
           leftBase = baseLineOfTree t1
@@ -240,6 +243,9 @@ renderF (BinOp op f1 f2) (BiSizeNode False (base,_) t1 t2) (x,y) =
 
           leftRender = renderF f1 t1 (x, leftTop)
           rightRender = renderF f2 t2 (x + lw + 3, rightTop)
+
+renderF (BinOp op (f1:f2:fx)) node pos =
+    renderF (BinOp op [f1, BinOp op $ f2:fx]) node pos
 
 renderF (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) (x,y) =
     ((x, y+1), '\\') : ((x + 1, y + 1), '/')

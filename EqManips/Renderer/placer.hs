@@ -76,13 +76,17 @@ sizeOfFormula sizer _ _ (UnOp op f) =
               subFormula = sizeOfFormula sizer True prio f
               sizeDim = (unaryDim sizer) op (sizeExtract subFormula)
 
+sizeOfFormula _ _ _ (BinOp _ [_]) =
+    error "Denormalized Formula, binop with only one operand (sizeOfFormula)"
+sizeOfFormula _ _ _ (BinOp _ []) =
+    error "Denormalized Formula, binop with no operands (sizeOfFormula)"
 
 -- do something like that :
 --      ####
 --     ------
 --       #
 --       #
-sizeOfFormula sizer _ _ (BinOp OpDiv f1 f2) = 
+sizeOfFormula sizer _ _ (BinOp OpDiv [f1,f2]) = 
   BiSizeNode False sizeDim nodeLeft nodeRight
     where nodeLeft = sizeOfFormula sizer False maxPrio f1
           nodeRight = sizeOfFormula sizer True maxPrio f2
@@ -93,7 +97,7 @@ sizeOfFormula sizer _ _ (BinOp OpDiv f1 f2) =
 --         %%%%%%%
 --  #### ^ 
 --  ####
-sizeOfFormula sizer _isRight _prevPrio (BinOp OpPow f1 f2) =
+sizeOfFormula sizer _isRight _prevPrio (BinOp OpPow [f1,f2]) =
   BiSizeNode False sizeDim nodeLeft nodeRight
     where nodeLeft = sizeOfFormula sizer False prioOfPow f1
           nodeRight = sizeOfFormula sizer True prioOfPow f2
@@ -102,7 +106,7 @@ sizeOfFormula sizer _isRight _prevPrio (BinOp OpPow f1 f2) =
 
 -- add 3 char : ###### ! #######
 -- we add spaces around operators
-sizeOfFormula sizer isRight prevPrio (BinOp op formula1 formula2) =
+sizeOfFormula sizer isRight prevPrio (BinOp op [formula1, formula2]) =
   BiSizeNode needParenthesis sizeDim nodeLeft nodeRight
     where prio = prioOfBinaryOperators op
 
@@ -117,6 +121,9 @@ sizeOfFormula sizer isRight prevPrio (BinOp op formula1 formula2) =
           sizeDim = if needParenthesis
                 then (base, addParens sizer s)
                 else (base, s)
+
+sizeOfFormula sizer r p (BinOp op (f1:f2:fs)) = 
+    sizeOfFormula sizer r p $ BinOp op [f1, BinOp op $ f2 : fs]
 
 sizeOfFormula sizer _isRight _prevPrio (Integrate inite end what dx) =
     SizeNodeList False sizeDim 0 trees
