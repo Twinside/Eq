@@ -2,6 +2,7 @@
 build:
 	runhaskell Setup.hs build
 	cp dist/build/eq/eq.exe .
+	cp dist/build/iotest/iotest.exe .
 
 clean:
 	runhaskell Setup.hs clean
@@ -14,12 +15,6 @@ doc:
 
 conf:
 	runhaskell Setup.hs configure
-
-copy:
-	cp dist/build/eq/eq.exe .
-
-buildtest:
-	ghc -O2 --make -o iotest.exe -cpp .\EqManips\Tests\iotestSuite.hs
 
 test:
 	./iotest
