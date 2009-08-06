@@ -1,4 +1,5 @@
 import EqManips.Tests.FullGenerator
+import EqManips.Tests.ContinuousGenerator
 import Control.Monad
 import Test.QuickCheck
 import EqManips.Types
@@ -16,9 +17,5 @@ prop_showBack formula = case eitherformula of
           eitherformula = runParser expr () "FromFile" text
 
 main = do
-    quickCheck prop_showBack
-    quickCheck prop_showBack
-    quickCheck prop_showBack
-    quickCheck prop_showBack
     quickCheck prop_showBack
 

@@ -6,7 +6,7 @@ import EqManips.FormulaIterator
 import EqManips.EvaluationContext
 
 cleanup :: Formula -> EqContext Formula
-cleanup = formulaIterate rules
+cleanup = depthFirstFormula rules
 
 int :: Int -> Formula
 int = CInteger

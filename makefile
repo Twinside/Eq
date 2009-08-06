@@ -6,6 +6,9 @@ build:
 clean:
 	runhaskell Setup.hs clean
 
+showdoc:
+	echo dist\doc\html\FormulaRenderer\eq\index.html
+
 doc:
 	runhaskell Setup.hs haddock --executables
 

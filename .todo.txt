@@ -1,6 +1,6 @@
 3:Worry about scope of variables, it can become _VERY_ messy quickly
+4:Test why preprocessor in subfolder fail
 3:Make some validation about definition domain
 1:Make some HLSL/GLSL output
 1:Make some C output (quid matrix?)
 0:Make some LaTeX output
-4:Test why preprocessor in subfolder fail

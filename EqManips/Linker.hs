@@ -12,6 +12,7 @@ linkFormula = link
 -- It's a crude way to do it... 
 -- may need to change it to a real symbol table later
 link :: Formula -> Formula
+link (Variable "infinite") = NumEntity Infinite
 link (Variable "pi") = NumEntity Pi
 -- Special cases
 link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 

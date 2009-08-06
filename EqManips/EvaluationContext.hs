@@ -1,7 +1,7 @@
 module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , EqContext
                                  , performTransformation 
-                                 , addSymbol
+                                 , addSymbol, delSymbol 
                                  , eqFail
                                  , symbolLookup
                                  , pushContext, popContext
@@ -12,6 +12,7 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  ) where
 
 import EqManips.Types
+import Data.List
 import Control.Applicative
 
 #ifdef _DEBUG
@@ -123,6 +124,13 @@ popContext = EqContext $ \c ->
 performTransformation :: EqContext Formula -> EqTransformInfo
 performTransformation m = ctxt { result = formula }
     where (ctxt, formula) = runEqTransform m emptyContext
+
+-- | Remove a variable from the context
+delSymbol :: String -> EqContext ()
+delSymbol s = EqContext $ \ctxt ->
+    let newContext = deleteBy (\_ (v,_) -> v == s) ("", CInteger 0)
+                   $ context ctxt
+    in (ctxt { context = newContext }, ())
 
 -- | Add a variable into the context
 addSymbol :: String -> Formula -> EqContext ()

@@ -201,5 +201,6 @@ if __name__ == '__main__':
     print( "" )
     myNum = exp(sin( FormulaMascarade( "x", 1.0 ) )) + 2
     myNum.writeFormula( sys.stdout )
+    print( "" )
 
 

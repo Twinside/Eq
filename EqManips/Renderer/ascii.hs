@@ -105,6 +105,7 @@ asciiSizer = Dimensioner
 -- the moment
 textOfEntity :: Entity -> ((Int,(Int,Int)), [String])
 textOfEntity Pi = ((0,(2,1)),["pi"])
+textOfEntity Infinite = ((0,(length "infinite",1)), ["infinite"])
 textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 
 -- | Little helper for ready to parse string

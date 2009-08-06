@@ -55,6 +55,7 @@ data UnOperator =
 data Entity =
       Pi
     | Nabla
+    | Infinite
     deriving (Eq, Show, Read)
 
 -- | Main type manipulated by the software.
@@ -181,6 +182,7 @@ deparse _ _ (Variable s) = s
 deparse _ _ (NumEntity e) = en e
     where en Pi = "pi"
           en Nabla = "nabla"
+          en Infinite = "infinite"
 deparse _ _ (CInteger i) = show i
 deparse _ _ (CFloat d) = show d
 deparse _ _ (Block i i1 i2) =
