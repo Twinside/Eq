@@ -83,7 +83,7 @@ data Formula =
     | UnOp UnOperator Formula
 
     -- | f1 op f2
-    | BinOp BinOperator Formula Formula
+    | BinOp BinOperator [Formula]
 
     -- | Width, Height, all formulas
     | Matrix Int Int [[Formula]]
@@ -178,6 +178,8 @@ unparse = deparse maxPrio False
 -- | Real conversion function, pass down priority
 -- and tree direction
 deparse :: Int -> Bool -> Formula -> String
+deparse _ _ (BinOp _ []) =
+    error "The formula is denormalized : a binary operator without any operands"
 deparse _ _ (Variable s) = s
 deparse _ _ (NumEntity e) = en e
     where en Pi = "pi"
@@ -212,7 +214,7 @@ deparse _ _ (UnOp op f) =
 
 -- Special case... as OpEq is right associative...
 -- we must reverse shit for serialisation
-deparse oldPrio right (BinOp OpEq f1 f2) =
+deparse oldPrio right (BinOp OpEq [f1,f2]) =
     let (prio, txt) = fromJust $ lookup OpEq binopDefs
     in
     if prio > oldPrio || (not right && prio == oldPrio)
@@ -223,7 +225,7 @@ deparse oldPrio right (BinOp OpEq f1 f2) =
             ++ ' ' : txt ++ " "
             ++ deparse prio True f2
 
-deparse oldPrio right (BinOp op f1 f2) =
+deparse oldPrio right (BinOp op [f1,f2]) =
     let (prio, txt) = fromJust $ lookup op binopDefs
     in
     if prio > oldPrio || (right && prio == oldPrio)
@@ -234,6 +236,17 @@ deparse oldPrio right (BinOp op f1 f2) =
             ++ ' ' : txt ++ " "
             ++ deparse prio True f2
 
+deparse oldPrio right (BinOp op (f1:xs)) =
+    let (prio, txt) = fromJust $ lookup op binopDefs
+    in
+    if prio > oldPrio || (right && prio == oldPrio)
+       then "(" ++ deparse prio False f1 
+                ++ ' ' : txt ++ " " 
+                ++ deparse prio False (BinOp op xs) ++ ")"
+       else deparse prio False f1 
+            ++ ' ' : txt ++ " "
+            ++ deparse prio False (BinOp op xs)
+
 deparse _ _ (Matrix n m fl) =
     "matrix(" ++ show n ++ "," ++ show m ++ "," ++
             (argListToString $ concat fl) ++ ")"
@@ -242,9 +255,9 @@ deparse _ _ (Matrix n m fl) =
 ----  Strong and valid instances    ----
 ----------------------------------------
 instance Num Formula where
-    (+) = BinOp OpAdd
-    (-) = BinOp OpSub
-    (*) = BinOp OpMul
+    a + b = BinOp OpAdd [a,b]
+    a - b = BinOp OpSub [a,b]
+    a * b = BinOp OpMul [a,b]
     negate = UnOp OpNegate
     abs = UnOp OpAbs
     signum (CInteger n) = CInteger (signum n)
@@ -253,10 +266,10 @@ instance Num Formula where
     fromInteger = CInteger . fromInteger
 
 instance Fractional Formula where
-    (/) = BinOp OpDiv 
-    recip = BinOp OpDiv (CInteger 1)
-    fromRational a = BinOp OpDiv (int $ numerator a) 
-                                 (int $ denominator a)
+    a / b = BinOp OpDiv [a,b]
+    recip b = BinOp OpDiv [CInteger 1, b]
+    fromRational a = BinOp OpDiv [ int $ numerator a
+                                 , int $ denominator a]
             where int = CInteger . fromInteger
     
 instance Floating Formula where
@@ -264,7 +277,7 @@ instance Floating Formula where
     exp = UnOp OpExp
     sqrt = UnOp OpSqrt
     log = UnOp OpLn
-    (**) = BinOp OpPow
+    a ** b = BinOp OpPow [a,b]
     sin = UnOp OpSin
     cos = UnOp OpCos
     tan = UnOp OpTan
@@ -334,12 +347,15 @@ binary  name fun assoc = Infix (do{ reservedOp name; return fun }) assoc
 prefix :: String -> (a -> a) -> Operator Char st a
 prefix  name fun       = Prefix (do{ reservedOp name; return fun })
 
+binop :: BinOperator -> Formula -> Formula -> Formula
+binop op left right = BinOp op [left, right]
+
 operatorDefs :: OperatorTable Char st Formula
 operatorDefs = 
     [ [prefix "-" (UnOp OpNegate) ]
-    , [binary "^" (BinOp OpPow) AssocLeft]
-    , [binary "/" (BinOp OpDiv) AssocLeft, binary "*" (BinOp OpMul) AssocLeft]
-    , [binary "+" (BinOp OpAdd) AssocLeft, binary "-" (BinOp OpSub) AssocLeft]
-    , [binary "=" (BinOp OpEq) AssocRight]
+    , [binary "^" (binop OpPow) AssocLeft]
+    , [binary "/" (binop OpDiv) AssocLeft, binary "*" (binop OpMul) AssocLeft]
+    , [binary "+" (binop OpAdd) AssocLeft, binary "-" (binop OpSub) AssocLeft]
+    , [binary "=" (binop OpEq) AssocRight]
     ]
 

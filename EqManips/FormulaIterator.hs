@@ -1,6 +1,7 @@
 module EqManips.FormulaIterator where
 
 import EqManips.Types
+import Control.Monad( mapM )
 
 -- | Depth first traversal of formula.
 -- the function is applied to each subformula when
@@ -72,11 +73,10 @@ depthFormulaTraversal pre post formula@(UnOp op sub) = do
     subs <- depthFormulaTraversal pre post sub
     post $ UnOp op subs
 
-depthFormulaTraversal pre post formula@(BinOp op f1 f2) = do
+depthFormulaTraversal pre post formula@(BinOp op fs) = do
     pre formula
-    f1s <- depthFormulaTraversal pre post f1
-    f2s <- depthFormulaTraversal pre post f2
-    post $ BinOp op f1s f2s
+    fs' <- mapM (depthFormulaTraversal pre post) fs
+    post $ BinOp op fs'
 
 -- Hmm, it's a debug for renderer, we dont really care
 depthFormulaTraversal _ _ b@(Block _ _ _) = return b

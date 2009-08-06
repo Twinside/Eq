@@ -74,6 +74,6 @@ link (App (Variable "matrix") (CInteger n: CInteger m: exps))
 -- General transformations
 link (App f flst) = App (link f) $ map link flst
 link (UnOp op f) = UnOp op $ link f
-link (BinOp op f1 f2) = BinOp op (link f1) (link f2)
+link (BinOp op fs) = BinOp op [link f | f <- fs]
 link x = x
 
