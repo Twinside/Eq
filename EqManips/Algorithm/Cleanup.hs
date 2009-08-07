@@ -1,15 +1,13 @@
 module EqManips.Algorithm.Cleanup ( cleanup ) where
 
-import Control.Applicative
-{-import Control.Monad.State-}
+import Data.Maybe
 import EqManips.Types
 import EqManips.FormulaIterator
-import EqManips.EvaluationContext
 
 type BiRuler = Formula -> Formula -> Either Formula (Formula, Formula)
 
-cleanup :: Formula -> EqContext Formula
-cleanup = depthFirstFormula rules
+cleanup :: Formula -> Formula
+cleanup = fromJust . depthFirstFormula (Just . rules)
 
 int :: Int -> Formula
 int = CInteger
@@ -76,18 +74,15 @@ power x y = Right (x,y)
 ----------------------------------------------
 ----                '/'
 ----------------------------------------------
-divide :: Formula -> Formula -> EqContext (Either Formula (Formula,Formula))
--- | List of trivial rules to simplify formula look
-divide (CInteger 0) _ = return . Left $ int 0
-divide x (CInteger 1) = return $ Left x
-divide f (CInteger 0) = do
-    eqFail (BinOp OpDiv [f, int 0]) "Division by 0, WTF (BBQ)!"
-    return . Left $ Block 1 1 1
-divide x y = return $ Right (x,y)
+divide :: Formula -> Formula -> Either Formula (Formula,Formula)
+divide (CInteger 0) _ = Left $ int 0
+divide x (CInteger 1) = Left x
+divide x y = Right (x,y)
 
 ----------------------------------------------
 ----                'sinus'
 ----------------------------------------------
+sinus :: Formula -> Formula
 sinus (CInteger 0) = int 0
 sinus (NumEntity Pi) = int 0
 -- Here we handle the more general case, for 2k * pi + 1
@@ -98,41 +93,44 @@ sinus (BinOp OpMul [NumEntity Pi, CInteger i])
 sinus (BinOp OpMul [CInteger i, NumEntity Pi])
     | i `mod` 2 == 0 = int 0
     | otherwise = int 1
+sinus i = sin i
 
 ----------------------------------------------
 ----                'cosinus'
 ----------------------------------------------
+cosinus :: Formula -> Formula
 cosinus (CInteger 0) = int 1
 cosinus (NumEntity Pi) = int (-1)
+cosinus i = cos i
 
 ---------------------------------------------
 ---- Linking all the rules together
 ---------------------------------------------
-rules :: Formula -> EqContext Formula
-rules (UnOp OpSin f) = return $ sinus f
-rules (UnOp OpCos f) = return $ cosinus f
-rules (BinOp OpAdd fs) = return . BinOp OpAdd $ biAssoc add fs
-rules (BinOp OpSub fs) = return . BinOp OpSub $ biAssoc sub fs
-rules (BinOp OpDiv fs) = return . BinOp OpDiv $ biAssoc divide fs
-rules (BinOp OpPow fs) = return . BinOp OpPow $ biAssoc power fs
+rules :: Formula -> Formula
+rules (UnOp OpSin f) = sinus f
+rules (UnOp OpCos f) = cosinus f
+rules (BinOp OpAdd fs) = BinOp OpAdd $ biAssoc add fs
+rules (BinOp OpSub fs) = BinOp OpSub $ biAssoc sub fs
+rules (BinOp OpDiv fs) = BinOp OpDiv $ biAssoc divide fs
+rules (BinOp OpPow fs) = BinOp OpPow $ biAssoc power fs
 rules (BinOp OpMul fs)
     -- 0 * x or x * 0 in a multiplication result in 0
-    | any zero fs = return $ int 0
-    | otherwise = return . BinOp OpMul $ biAssoc mul fs
+    | any zero fs = int 0
+    | otherwise = BinOp OpMul $ biAssoc mul fs
 
 -- Favor positive integer and a negate operator
 -- to be able to pattern match more easily
-rules cf@(CInteger i) | i < 0 = return . negate . CInteger $ negate i
-                      | otherwise = return cf
+rules cf@(CInteger i) | i < 0 = negate . CInteger $ negate i
+                      | otherwise = cf
 -- Same as above but for floats
-rules cf@(CFloat i) | i < 0 = return . negate . CFloat $ negate i
-                    | otherwise = return cf
+rules cf@(CFloat i) | i < 0 = negate . CFloat $ negate i
+                    | otherwise = cf
 -- -(-x) = x
-rules (UnOp OpNegate (UnOp OpNegate x)) = return x
+rules (UnOp OpNegate (UnOp OpNegate x)) = x
 
 -- -(0) = 0
-rules (UnOp OpNegate f) | zero f = return $ int 0
+rules (UnOp OpNegate f) | zero f = int 0
 
 
-rules f = return f
+rules f = f
 

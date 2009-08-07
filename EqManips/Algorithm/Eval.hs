@@ -75,7 +75,7 @@ reduce (UnOp op f) = unOpReduce (funOf op) f
           funOf OpExp = exp
 
 reduce (Derivate what (Variable s)) =
-    derivate what s >>= cleanup
+    derivate what s >>= return . cleanup
 
 reduce f@(Derivate _ _) =
     eqFail f "Sorry your derivation doesn't have a good variable specification"
