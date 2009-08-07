@@ -5,3 +5,5 @@
 1:Make some C output (quid matrix?)
 1:Make some HLSL/GLSL output
 0:Make some LaTeX output
+2:Test recursive sum...
+2:Add derivate_n function
