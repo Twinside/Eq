@@ -10,6 +10,7 @@ import Data.List( foldl' )
 import Data.Array.Unboxed
 import EqManips.Types
 import EqManips.Renderer.Placer
+import EqManips.Algorithm.Utils
 import Monad.ListProducer
 
 import CharArray
@@ -244,8 +245,7 @@ renderF (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
           leftRender = renderF f1 t1 (x, leftTop)
           rightRender = renderF f2 t2 (x + lw + 3, rightTop)
 
-renderF (BinOp op (f1:f2:fx)) node pos =
-    renderF (BinOp op [f1, BinOp op $ f2:fx]) node pos
+renderF f@(BinOp _ _) node pos = renderF (treeIfyBinOp f) node pos
 
 renderF (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) (x,y) =
     ((x, y+1), '\\') : ((x + 1, y + 1), '/')
