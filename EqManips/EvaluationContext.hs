@@ -96,7 +96,7 @@ addTrace newTrace = EqContext $ \c ->
 
 -- | Print all the trace found.
 printTrace :: Handle -> EqTransformInfo -> IO ()
-printTrace f inf = mapM_ showIt $ trace inf
+printTrace f inf = mapM_ showIt . reverse $ trace inf
     where showIt (str, formula) = do
               hPutStrLn f "=========================================="
               hPutStrLn f str

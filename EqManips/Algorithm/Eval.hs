@@ -189,11 +189,17 @@ iterateFormula op ivar initi endi what = do
     rez <- mapM combiner [initi .. endi]
     popContext
     case rez of
-         [x] -> eval x
-         _  -> eval $ op rez
+         [x] -> do v <- eval x
+                   addTrace ("unik", v)
+                   return v
+         _  -> do v <- eval $ op rez
+                  addTrace ("", v)
+                  return v
      where combiner i = do
                addSymbol ivar (CInteger i)
-               inject what
+               v <- inject what
+               addTrace ("", v)
+               return v
 
 
 --------------------------------------------------------------

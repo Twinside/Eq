@@ -90,14 +90,15 @@ transformParseFormula operation args = do
                let rez = performTransformation 
                                 . operation 
                                 $ linkFormula formula'
-               printErrors $ errorList rez
-               hPutStr finalFile . formatFormula $ result rez
-
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########"
 #endif
+
+               print $ result rez
+               printErrors $ errorList rez
+               hPutStr finalFile . formatFormula $ result rez
 
                return . null $ errorList rez)
            formula
