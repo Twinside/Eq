@@ -34,6 +34,7 @@ d f@(App _ _) _ =
 
 d f@(BinOp _ []) _ = eqFail f "Binary op with no param"
 d f@(BinOp _ [_]) _ = eqFail f "Binary op with only one param"
+d f@(BinOp OpEq _) _ = eqFail f "Can't derivate expression with a '='"
 
 -- Eq:format derivate(f + g, x) = derivate( f, x ) + 
 --                          derivate( g, x )
@@ -137,9 +138,4 @@ d f@(Matrix _ _ _formulas) _var =
 
 d (Block _ _ _) _var =
     eqFail (Block 0 1 1)
-         $ "hmm, you are trying to derivate a function used\n"
-        ++ "to debug the equation renderer. Here is the result :\n"
-        ++ "@\n"
-        ++ "\n"
-        ++ "Yes, it doesn't mean anything"
-
+         $ "Deriving a debug block"

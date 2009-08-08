@@ -4,9 +4,11 @@ module EqManips.Algorithm.Utils ( EmptyMonad( .. )
                                 , biAssoc
                                 , asAMonad
                                 , fromEmptyMonad 
+                                , treeIfyBinOp 
                                 ) where
 
 import Control.Applicative
+import EqManips.Types
 
 newtype EmptyMonad a = EmptyMonad a
 
@@ -26,6 +28,14 @@ fromEmptyMonad (EmptyMonad a) = a
 
 asAMonad :: (forall m. (Monad m) => (a -> m b) -> a -> m b) -> (a -> b) -> a -> b
 asAMonad f a = fromEmptyMonad . f (EmptyMonad . a)
+
+treeIfyBinOp :: Formula -> Formula
+treeIfyBinOp (BinOp _ []) = error "Impossible to treeIfy"
+treeIfyBinOp f@(BinOp _ [_,_]) = f
+treeIfyBinOp (BinOp op (f1:f2:fs)) = innerNode $ assocOfBinOp op
+        where innerNode OpAssocLeft = BinOp op $ (BinOp op [f1, f2]) : fs
+              innerNode OpAssocRight = BinOp op [f1, BinOp op $ f2 : fs]
+treeIfyBinOp _ = error "treeIfy of non binop formula"
 
 biAssoc :: (a -> a -> Either a (a,a)) -> [a] -> [a]
 biAssoc _ [] = []

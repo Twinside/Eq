@@ -93,20 +93,26 @@ cosinus (CInteger 0) = int 1
 cosinus (NumEntity Pi) = int (-1)
 cosinus i = cos i
 
+
+reOp :: BinOperator -> [Formula] -> Formula
+reOp _ [] = error "reOp Empty formula? WTF"
+reOp _ [x] = x
+reOp op lst = BinOp op lst
+
 ---------------------------------------------
 ---- Linking all the rules together
 ---------------------------------------------
 rules :: Formula -> Formula
 rules (UnOp OpSin f) = sinus f
 rules (UnOp OpCos f) = cosinus f
-rules (BinOp OpAdd fs) = BinOp OpAdd $ biAssoc add fs
-rules (BinOp OpSub fs) = BinOp OpSub $ biAssoc sub fs
-rules (BinOp OpDiv fs) = BinOp OpDiv $ biAssoc divide fs
-rules (BinOp OpPow fs) = BinOp OpPow $ biAssoc power fs
+rules (BinOp OpAdd fs) = reOp OpAdd $ biAssoc add fs
+rules (BinOp OpSub fs) = reOp OpSub $ biAssoc sub fs
+rules (BinOp OpDiv fs) = reOp OpDiv $ biAssoc divide fs
+rules (BinOp OpPow fs) = reOp OpPow $ biAssoc power fs
 rules (BinOp OpMul fs)
     -- 0 * x or x * 0 in a multiplication result in 0
     | any zero fs = int 0
-    | otherwise = BinOp OpMul $ biAssoc mul fs
+    | otherwise = reOp OpMul $ biAssoc mul fs
 
 -- Favor positive integer and a negate operator
 -- to be able to pattern match more easily
