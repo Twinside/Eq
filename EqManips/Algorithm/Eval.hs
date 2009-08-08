@@ -157,15 +157,20 @@ eval (Derivate what (Variable s)) =
 eval f@(Derivate _ _) =
     eqFail f "Sorry your derivation doesn't have a good variable specification"
 
-eval (Sum (BinOp OpEq [Variable v, CInteger initi])
-            (CInteger endi) 
-            f) = iterateFormula (BinOp OpAdd) v initi endi f
+eval formu@(Sum (BinOp OpEq [Variable v, CInteger initi])
+                (CInteger endi) 
+                f) 
+     | initi <= endi = iterateFormula (BinOp OpAdd) v initi endi f
+     | otherwise = eqFail formu "Sorry, your sum as wrong bounds, can't evaluate"
 
 eval f@(Sum _ _ _) = eqFail f "Sorry, your sum don't have the good form to be evaluated."
 
-eval (Product (BinOp OpEq [Variable v, CInteger initi])
-                (CInteger endi) 
-                f) = iterateFormula (BinOp OpMul) v initi endi f
+eval formu@(Product (BinOp OpEq [Variable v, CInteger initi])
+                    (CInteger endi) 
+                    f)
+     | initi <= endi = iterateFormula (BinOp OpMul) v initi endi f
+     | otherwise = eqFail formu "Sorry, your product as wrong bounds, can't evaluate"
+
 eval f@(Product _ _ _) = eqFail f "Sorry, your product don't have the good form to be evaluated."
 
 eval f@(Integrate _ _ _ _) =
