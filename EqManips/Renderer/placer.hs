@@ -123,7 +123,9 @@ sizeOfFormula sizer isRight prevPrio (BinOp op [formula1, formula2]) =
                 else (base, s)
 
 sizeOfFormula sizer r p (BinOp op (f1:f2:fs)) = 
-    sizeOfFormula sizer r p $ BinOp op [f1, BinOp op $ f2 : fs]
+    sizeOfFormula sizer r p . innerNode $ assocOfBinOp op
+        where innerNode OpAssocLeft = BinOp op $ (BinOp op [f1, f2]) : fs
+              innerNode OpAssocRight = BinOp op [f1, BinOp op $ f2 : fs]
 
 sizeOfFormula sizer _isRight _prevPrio (Integrate inite end what dx) =
     SizeNodeList False sizeDim 0 trees

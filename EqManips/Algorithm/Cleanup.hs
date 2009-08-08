@@ -1,6 +1,5 @@
 module EqManips.Algorithm.Cleanup ( cleanup ) where
 
-import Data.Maybe
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.Algorithm.Utils
@@ -8,7 +7,7 @@ import EqManips.Algorithm.Utils
 type BiRuler = Formula -> Formula -> Either Formula (Formula, Formula)
 
 cleanup :: Formula -> Formula
-cleanup = fromJust . depthFirstFormula (Just . rules)
+cleanup = depthFirstFormula `asAMonad` rules
 
 int :: Int -> Formula
 int = CInteger

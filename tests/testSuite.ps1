@@ -13,6 +13,7 @@ function performTestSuite( [string]$where, [bool]$isValid, [string]$command, [bo
     echo $toSearch
 
     ls $($toSearch) | % {
+        echo $_.FullName
         $rez = ../eq $command -f $($testPath + $_.name)
         if ( $showAll ) {
             echo "`n==========================================================="

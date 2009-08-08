@@ -2,6 +2,8 @@ module EqManips.Types( Formula( .. )
                      , BinOperator( .. )
                      , UnOperator( .. )
                      , Entity( .. )
+                     , OpAssoc( .. )
+                     , assocOfBinOp
                      , prioOfBinaryOperators
                      , prioOfUnaryOperators
                      , expr 
@@ -92,6 +94,9 @@ data Formula =
     | Block Int Int Int
     deriving (Eq, Show, Read)
 
+data OpAssoc = OpAssocLeft | OpAssocRight
+    deriving (Eq, Show)
+
 type Parsed a b = GenParser Char a b
 
 -- | Priority and textual representation
@@ -105,6 +110,10 @@ binopDefs =
 	, (OpDiv, (2, "/"))
 	, (OpPow, (1, "^"))
     ]
+
+assocOfBinOp :: BinOperator -> OpAssoc
+assocOfBinOp OpEq = OpAssocRight
+assocOfBinOp _ = OpAssocLeft
 
 -- | Textual representation of "unary" operators
 unOpNames :: [(UnOperator, String)]

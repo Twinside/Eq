@@ -1,5 +1,31 @@
-module EqManips.Algorithm.Utils ( biAssoc
+{-# LANGUAGE Rank2Types #-}
+module EqManips.Algorithm.Utils ( EmptyMonad( .. )
+                                , biAssocM 
+                                , biAssoc
+                                , asAMonad
+                                , fromEmptyMonad 
                                 ) where
+
+import Control.Applicative
+
+newtype EmptyMonad a = EmptyMonad a
+
+instance Functor EmptyMonad where
+    fmap f (EmptyMonad a) = EmptyMonad $ f a 
+    
+instance Applicative EmptyMonad where
+    pure = EmptyMonad 
+    (EmptyMonad f) <*> (EmptyMonad a) = EmptyMonad $ f a
+
+instance Monad EmptyMonad where
+    return  = EmptyMonad 
+    (EmptyMonad a) >>= b = b a
+
+fromEmptyMonad :: EmptyMonad a -> a
+fromEmptyMonad (EmptyMonad a) = a
+
+asAMonad :: (forall m. (Monad m) => (a -> m b) -> a -> m b) -> (a -> b) -> a -> b
+asAMonad f a = fromEmptyMonad . f (EmptyMonad . a)
 
 biAssoc :: (a -> a -> Either a (a,a)) -> [a] -> [a]
 biAssoc _ [] = []
@@ -10,4 +36,15 @@ biAssoc f [x,y] = case f x y of
 biAssoc f (x:y:xs) = case f x y of
     Left v -> biAssoc f (v:xs)
     Right (v1, v2) -> v1 : biAssoc f (v2:xs)
+
+biAssocM :: (Monad m) => (a -> a -> m (Either a (a,a))) -> [a] -> m [a]
+biAssocM f lst = assocInner lst
+    where assocInner [] = return []
+          assocInner [x] = return [x]
+          assocInner [x,y] = f x y >>= \val -> case val of
+              Left v -> return [v]
+              Right (v1, v2) -> return [v1, v2]
+          assocInner (x:y:xs) = f x y >>= \val -> case val of
+              Left v -> assocInner (v:xs)
+              Right (v1, v2) -> assocInner (v2:xs) >>= return . (v1:) 
 
