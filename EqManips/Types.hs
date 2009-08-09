@@ -1,15 +1,19 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 module EqManips.Types( Formula( .. )
                      , BinOperator( .. )
                      , UnOperator( .. )
                      , Entity( .. )
-                     , OpAssoc( .. )
-                     , assocOfBinOp
                      , prioOfBinaryOperators
                      , prioOfUnaryOperators
                      , expr 
                      , unparse
                      , isFormulaLeaf
                      , unOpNames
+
+                     , AssocSide(..)-- ^ To query associativity side
+                     , OpAssoc( .. )-- ^ Return type for associativity side
+
+                     , OpProp( .. ) 
                      ) where
 
 import Control.Applicative( (<$>) )
@@ -17,6 +21,8 @@ import Control.Applicative( (<$>) )
 import Data.Ratio
 import Data.List( intersperse, mapAccumR )
 import Data.Maybe( fromJust )
+
+import EqManips.Propreties
 
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
@@ -94,9 +100,38 @@ data Formula =
     | Block Int Int Int
     deriving (Eq, Show, Read)
 
+-- | Used to retrieve association property of operators.
+-- It's only a type token
+data AssocSide = AssocSide
+    deriving (Eq)
+
+-- | The implementation of property operators
 data OpAssoc = OpAssocLeft | OpAssocRight
     deriving (Eq, Show)
 
+-- | Help to query operator associativity
+instance Property BinOperator AssocSide OpAssoc where
+    getProps OpEq = [(AssocSide, OpAssocRight)] 
+    getProps _  = [(AssocSide, OpAssocLeft)]
+
+-- | Some use full informations which can be used for$
+-- transformation based on operators
+data OpProp = Associativ -- ^ if (a . b) . c <=> a . (b . c)
+    | Distributiv        -- ^ if a . (b ! c) <=> a . b ! a . c
+    | Commutativ         -- ^ if a . b = b . a
+    deriving (Eq, Show)
+
+emptyProps :: [p] -> [(p,())]
+emptyProps = map $ flip (,) ()
+
+instance Property BinOperator OpProp () where
+    getProps OpEq = []
+    getProps OpPow = []
+    getProps OpSub = []
+    getProps OpAdd = emptyProps [Associativ, Commutativ]
+    getProps OpMul = emptyProps [Associativ, Commutativ, Distributiv]
+    getProps OpDiv = emptyProps [Distributiv]
+    
 type Parsed a b = GenParser Char a b
 
 -- | Priority and textual representation
@@ -110,10 +145,6 @@ binopDefs =
 	, (OpDiv, (2, "/"))
 	, (OpPow, (1, "^"))
     ]
-
-assocOfBinOp :: BinOperator -> OpAssoc
-assocOfBinOp OpEq = OpAssocRight
-assocOfBinOp _ = OpAssocLeft
 
 -- | Textual representation of "unary" operators
 unOpNames :: [(UnOperator, String)]

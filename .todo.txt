@@ -1,9 +1,9 @@
 4:Test why preprocessor in subfolder fail
-4:transform Binop to list of Op
-3:Make some validation about definition domain
 3:Worry about scope of variables, it can become _VERY_ messy quickly
-1:Make some C output (quid matrix?)
-1:Make some HLSL/GLSL output
-0:Make some LaTeX output
-2:Test recursive sum...
+3:Make some validation about definition domain
 2:Add derivate_n function
+2:Test recursive sum...
+2:add multi-expr expression and application
+1:Make some HLSL/GLSL output
+1:Make some C output (quid matrix?)
+0:Make some LaTeX output

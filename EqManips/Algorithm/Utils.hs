@@ -5,9 +5,11 @@ module EqManips.Algorithm.Utils ( EmptyMonad( .. )
                                 , asAMonad
                                 , fromEmptyMonad 
                                 , treeIfyBinOp 
+                                , listifyBinOp 
                                 ) where
 
 import Control.Applicative
+import EqManips.Propreties
 import EqManips.Types
 
 newtype EmptyMonad a = EmptyMonad a
@@ -29,10 +31,26 @@ fromEmptyMonad (EmptyMonad a) = a
 asAMonad :: (forall m. (Monad m) => (a -> m b) -> a -> m b) -> (a -> b) -> a -> b
 asAMonad f a = fromEmptyMonad . f (EmptyMonad . a)
 
+listifyBinOp :: Formula -> Formula
+listifyBinOp (BinOp op fl) = BinOp op $ concatMap translate fl
+    where translate = flatten (op `obtainProp` AssocSide)
+          flatten OpAssocRight = rightLister
+          flatten OpAssocLeft = leftLister []
+
+          leftLister acc (BinOp op' [f1@(BinOp op'' _), f2])
+                | op == op' && op' == op'' = leftLister (f2 : acc) f1
+          leftLister acc f = f : acc
+
+          rightLister (BinOp op' [f1, f2@(BinOp op'' _)])
+                | op == op' && op' == op'' = f1 : flatten OpAssocRight f2 
+          rightLister f = [f]
+
+listifyBinOp a = a
+
 treeIfyBinOp :: Formula -> Formula
 treeIfyBinOp (BinOp _ []) = error "Impossible to treeIfy"
 treeIfyBinOp f@(BinOp _ [_,_]) = f
-treeIfyBinOp (BinOp op (f1:f2:fs)) = innerNode $ assocOfBinOp op
+treeIfyBinOp (BinOp op (f1:f2:fs)) = innerNode $ op `obtainProp` AssocSide
         where innerNode OpAssocLeft = BinOp op $ (BinOp op [f1, f2]) : fs
               innerNode OpAssocRight = BinOp op [f1, BinOp op $ f2 : fs]
 treeIfyBinOp _ = error "treeIfy of non binop formula"
