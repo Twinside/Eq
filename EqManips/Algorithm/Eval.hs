@@ -109,8 +109,8 @@ power f1 (CInteger i2) | i2 < 0 = return . Left $ CInteger 1 / (f1 ** CInteger (
 power f1 f2 = return . Right $ (f1, f2)
 
 -- | Evaluate a binary operator
-binEval :: BinOperator -> EvalOp -> [Formula] -> EqContext Formula
-binEval op f formulaList = biAssocM f formulaList >>= rez
+binEval :: BinOperator -> EvalOp -> EvalOp -> [Formula] -> EqContext Formula
+binEval op f inv formulaList = biAssocM f inv formulaList >>= rez
     where rez [x] = return x
           rez lst = return $ BinOp op lst
 
@@ -121,11 +121,12 @@ eval (Matrix n m mlines) = do
     cells <- sequence [mapM eval line | line <- mlines]
     return $ Matrix n m cells
 
-eval (BinOp OpAdd fs) = binEval OpAdd add =<< mapM eval fs
-eval (BinOp OpSub fs) = binEval OpSub sub =<< mapM eval fs
-eval (BinOp OpMul fs) = binEval OpMul mul =<< mapM eval fs
-eval (BinOp OpPow fs) = binEval OpPow power =<< mapM eval fs
-eval (BinOp OpDiv fs) = binEval OpDiv division =<< mapM eval fs
+eval (BinOp OpAdd fs) = binEval OpAdd add add =<< mapM eval fs
+eval (BinOp OpSub fs) = binEval OpSub sub add =<< mapM eval fs
+eval (BinOp OpMul fs) = binEval OpMul mul mul =<< mapM eval fs
+-- | Todo fix this, it's incorrect
+eval (BinOp OpPow fs) = binEval OpPow power power =<< mapM eval fs
+eval (BinOp OpDiv fs) = binEval OpDiv division mul =<< mapM eval fs
 
 eval (BinOp OpEq [v@(Variable _),f2]) = do
     f2' <- eval f2

@@ -125,18 +125,22 @@ instance Property BinOperator AssocSide OpAssoc where
 data OpProp = Associativ -- ^ if (a . b) . c <=> a . (b . c)
     | Distributiv        -- ^ if a . (b ! c) <=> a . b ! a . c
     | Commutativ         -- ^ if a . b = b . a
+    | InverseOp          -- ^ Inverse operation
     deriving (Eq, Show)
 
-emptyProps :: [p] -> [(p,())]
-emptyProps = map $ flip (,) ()
+emptyProps :: e -> [p] -> [(p,e)]
+emptyProps e = map $ flip (,) e
 
-instance Property BinOperator OpProp () where
-    getProps OpEq = []
+instance Property BinOperator OpProp BinOperator where
+    getProps OpEq  = []
     getProps OpPow = []
-    getProps OpSub = []
-    getProps OpAdd = emptyProps [Associativ, Commutativ]
-    getProps OpMul = emptyProps [Associativ, Commutativ, Distributiv]
-    getProps OpDiv = emptyProps [Distributiv]
+    getProps OpSub = [(InverseOp, OpAdd)]
+    getProps OpAdd =
+        (InverseOp, OpSub) : emptyProps OpAdd [Associativ, Commutativ]
+    getProps OpMul =
+        (InverseOp, OpDiv) : emptyProps OpMul [Associativ, Commutativ, Distributiv]
+    getProps OpDiv = 
+        (InverseOp, OpMul) : emptyProps OpDiv [Distributiv]
 
 -----------------------------------------------------------
 --          Priority Property
