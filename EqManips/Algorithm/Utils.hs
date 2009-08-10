@@ -6,11 +6,14 @@ module EqManips.Algorithm.Utils ( EmptyMonad( .. )
                                 , fromEmptyMonad 
                                 , treeIfyBinOp 
                                 , listifyBinOp 
+                                , parseFormula
                                 ) where
-
+import Text.Parsec.Error( ParseError )
+import Text.ParserCombinators.Parsec.Prim( runParser )
 import Control.Applicative
 import EqManips.Propreties
 import EqManips.Types
+import EqManips.Linker
 
 newtype EmptyMonad a = EmptyMonad a
 
@@ -30,6 +33,17 @@ fromEmptyMonad (EmptyMonad a) = a
 
 asAMonad :: (forall m. (Monad m) => (a -> m b) -> a -> m b) -> (a -> b) -> a -> b
 asAMonad f a = fromEmptyMonad . f (EmptyMonad . a)
+
+
+-----------------------------------------------------------
+--          Parsing formula
+-----------------------------------------------------------
+parseFormula :: String -> Either ParseError Formula
+parseFormula text = rez
+    where parsed = runParser expr () "FromFile" text
+          rez = case parsed of
+             Left _ -> parsed
+             Right f -> Right . listifyBinOp $ linkFormula f
 
 listifyBinOp :: Formula -> Formula
 listifyBinOp (BinOp op fl) = BinOp op $ concatMap translate fl

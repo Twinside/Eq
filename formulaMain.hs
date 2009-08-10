@@ -1,8 +1,7 @@
 import System.Environment
 import EqManips.Types
-import EqManips.Linker
+import EqManips.Algorithm.Utils
 import EqManips.Renderer.Ascii
-import Text.ParserCombinators.Parsec.Prim( runParser )
 
 import System.Exit
 import System.IO
@@ -45,14 +44,14 @@ getInputOutput opts args = (inputFile, outputFile)
 formatCommand :: [String] -> IO Bool
 formatCommand args = do
     formulaText <- input
-    let formula = runParser expr () "FromFile" formulaText
+    let formula = parseFormula formulaText
     output <- outputFile
     either (\err -> do print "Error : "
                        print err
                        hClose output
                        return False)
            (\formula' -> do 
-                hPutStrLn output. formatFormula $ linkFormula formula'
+                hPutStrLn output $ formatFormula formula'
                 hClose output
                 return True)
            formula
@@ -82,14 +81,13 @@ transformParseFormula :: (Formula -> EqContext Formula) -> [String]
 transformParseFormula operation args = do
     formulaText <- input
     finalFile <- outputFile
-    let formula = runParser expr () "FromFile" formulaText
+    let formula = parseFormula formulaText
     either (\err -> do print "Error : " 
                        print err
                        return False)
            (\formula' -> do
                let rez = performTransformation 
-                                . operation 
-                                $ linkFormula formula'
+                                . operation $ formula'
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
