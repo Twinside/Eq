@@ -3,12 +3,10 @@ module Preprocessor where
 import System.FilePath
 import Data.List
 
-import EqManips.Types
-import EqManips.Linker
 import EqManips.Algorithm.Eval
+import EqManips.Algorithm.Utils
 import EqManips.Renderer.Ascii
 import EqManips.EvaluationContext
-import Text.ParserCombinators.Parsec.Prim( runParser )
 
 data LangDef = LangDef {
           initComm :: String
@@ -151,15 +149,15 @@ produce lang (initSpace, command, eqData) =
           preLine = initSpace ++ beginResultMark ++ emark
           endLine = initSpace ++ endResultMark ++ emark
 
-          mayParsedFormla = runParser expr () "Preprocessed" $ concat eqData
+          mayParsedFormla = parseFormula $ concat eqData
 
           commentLine = initSpace ++ " "
           commentEnd = " " ++ emark
 
           process _ (Left err) = map (commentLine++) . lines $ show err
-          process "format" (Right f) = printResult $ linkFormula f
+          process "format" (Right f) = printResult f
           process "eval" (Right f) = 
-            let rez = performTransformation . reduce $ linkFormula f
+            let rez = performTransformation $ reduce f
             in case (errorList rez) of
                     [] -> printResult $ result rez
                     errs@(_:_) -> concat

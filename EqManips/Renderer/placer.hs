@@ -3,8 +3,9 @@ module EqManips.Renderer.Placer where
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import Data.List( foldl', transpose )
+import EqManips.Propreties
 
-type Priority = Int
+type OpPriority = Int
 type BaseLine = Int
 type Dimension = (Int, Int)
 
@@ -61,7 +62,7 @@ maxPrio = 100
 
 -- | Compute a size tree for a formula.
 -- This size-tree can be used for a following render
-sizeOfFormula :: Dimensioner -> Bool -> Priority -> Formula -> SizeTree
+sizeOfFormula :: Dimensioner -> Bool -> OpPriority -> Formula -> SizeTree
 -- Simply the size of rendered text
 sizeOfFormula sizer _ _ (Variable v) = EndNode $ varSize sizer $ v
 sizeOfFormula sizer _ _ (CInteger n) = EndNode $ intSize sizer $ n
@@ -73,7 +74,7 @@ sizeOfFormula sizer _ _ (Block i1 i2 i3) =
 -- Simply put a minus in front of the rest of the formula
 sizeOfFormula sizer _ _ (UnOp op f) =
     MonoSizeNode False sizeDim subFormula
-        where prio = prioOfUnaryOperators op
+        where prio = op `obtainProp` Priority
               subFormula = sizeOfFormula sizer True prio f
               sizeDim = (unaryDim sizer) op (sizeExtract subFormula)
 
@@ -102,15 +103,14 @@ sizeOfFormula sizer _isRight _prevPrio (BinOp OpPow [f1,f2]) =
   BiSizeNode False sizeDim nodeLeft nodeRight
     where nodeLeft = sizeOfFormula sizer False prioOfPow f1
           nodeRight = sizeOfFormula sizer True prioOfPow f2
-          prioOfPow = prioOfBinaryOperators OpPow
+          prioOfPow = OpPow `obtainProp` Priority
           sizeDim = (powSize sizer) (sizeExtract nodeLeft) (sizeExtract nodeRight)
 
 -- add 3 char : ###### ! #######
 -- we add spaces around operators
 sizeOfFormula sizer isRight prevPrio (BinOp op [formula1, formula2]) =
   BiSizeNode needParenthesis sizeDim nodeLeft nodeRight
-    where prio = prioOfBinaryOperators op
-
+    where prio = op `obtainProp` Priority
           needParenthesis = if isRight then prio >= prevPrio
                                        else prio > prevPrio
 

@@ -11,6 +11,7 @@ import Data.Array.Unboxed
 import EqManips.Types
 import EqManips.Renderer.Placer
 import EqManips.Algorithm.Utils
+import EqManips.Propreties
 import Monad.ListProducer
 
 import CharArray
@@ -32,7 +33,7 @@ asciiSizer = Dimensioner
 
             s oper = (h `div` 2, (w + opLength + 2, h))
                 where opLength = 
-                       case lookup oper unOpNames of
+                       case oper `getProp` OperatorText of
                            Just name -> length name
                            Nothing -> error "Unknown operator name"
         in s op
@@ -284,9 +285,7 @@ renderF (UnOp op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
                     [EndNode(0,(length opName,1)) ,subSize])
             (x,y) 
         where (b,_) = sizeExtract subSize
-              opName = case lookup op unOpNames of
-                        Just name -> name
-                        _ -> error "Wrong lookup"
+              opName = op `obtainProp` OperatorText
 
 renderF (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
         (x,y) =

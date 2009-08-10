@@ -13,6 +13,7 @@ import Text.ParserCombinators.Parsec.Prim( runParser )
 import Control.Applicative
 import EqManips.Propreties
 import EqManips.Types
+import EqManips.FormulaIterator
 import EqManips.Linker
 
 newtype EmptyMonad a = EmptyMonad a
@@ -43,21 +44,30 @@ parseFormula text = rez
     where parsed = runParser expr () "FromFile" text
           rez = case parsed of
              Left _ -> parsed
-             Right f -> Right . listifyBinOp $ linkFormula f
+             Right f -> Right . listifyFormula $ linkFormula f
+
+listifyFormula :: Formula -> Formula
+listifyFormula = depthFirstFormula `asAMonad` listifyBinOp 
 
 listifyBinOp :: Formula -> Formula
-listifyBinOp (BinOp op fl) = BinOp op $ concatMap translate fl
+listifyBinOp f@(BinOp op _) = BinOp op $ translate f
     where translate = flatten (op `obtainProp` AssocSide)
           flatten OpAssocRight = rightLister
-          flatten OpAssocLeft = leftLister []
+          flatten OpAssocLeft 
+                | op `hasProp` Associativ = rightLister . BinOp op . leftLister []
+                | otherwise = leftLister []
 
-          leftLister acc (BinOp op' [f1@(BinOp op'' _), f2])
-                | op == op' && op' == op'' = leftLister (f2 : acc) f1
-          leftLister acc f = f : acc
+          leftLister acc (BinOp op' (f1@(BinOp op'' _): f2))
+                | op' == op'' = leftLister (f2 ++ acc) f1
+          leftLister acc (BinOp op' fl)
+                | op' == op = fl ++ acc
+          leftLister acc final = final : acc
 
           rightLister (BinOp op' [f1, f2@(BinOp op'' _)])
-                | op == op' && op' == op'' = f1 : flatten OpAssocRight f2 
-          rightLister f = [f]
+                | op' == op'' = f1 : flatten OpAssocRight f2 
+          rightLister (BinOp op' fl)
+                | op' == op = fl
+          rightLister final = [final]
 
 listifyBinOp a = a
 

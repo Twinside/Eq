@@ -1,19 +1,19 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module EqManips.Types( Formula( .. )
                      , BinOperator( .. )
                      , UnOperator( .. )
                      , Entity( .. )
-                     , prioOfBinaryOperators
-                     , prioOfUnaryOperators
+
                      , expr 
                      , unparse
-                     , isFormulaLeaf
-                     , unOpNames
 
                      , AssocSide(..)-- ^ To query associativity side
                      , OpAssoc( .. )-- ^ Return type for associativity side
+                     , Priority(.. )-- ^ Gain access to operator's priority
 
                      , OpProp( .. ) 
+                     , OperatorText(..)
                      ) where
 
 import Control.Applicative( (<$>) )
@@ -100,6 +100,9 @@ data Formula =
     | Block Int Int Int
     deriving (Eq, Show, Read)
 
+-----------------------------------------------------------
+--          Side Associativity
+-----------------------------------------------------------
 -- | Used to retrieve association property of operators.
 -- It's only a type token
 data AssocSide = AssocSide
@@ -114,6 +117,9 @@ instance Property BinOperator AssocSide OpAssoc where
     getProps OpEq = [(AssocSide, OpAssocRight)] 
     getProps _  = [(AssocSide, OpAssocLeft)]
 
+-----------------------------------------------------------
+--          General operator property
+-----------------------------------------------------------
 -- | Some use full informations which can be used for$
 -- transformation based on operators
 data OpProp = Associativ -- ^ if (a . b) . c <=> a . (b . c)
@@ -131,6 +137,45 @@ instance Property BinOperator OpProp () where
     getProps OpAdd = emptyProps [Associativ, Commutativ]
     getProps OpMul = emptyProps [Associativ, Commutativ, Distributiv]
     getProps OpDiv = emptyProps [Distributiv]
+
+-----------------------------------------------------------
+--          Priority Property
+-----------------------------------------------------------
+data Priority = Priority deriving Eq
+
+instance Property BinOperator Priority Int where
+    getProps op = [(Priority, fst . fromJust $ lookup op binopDefs)]
+    
+instance Property UnOperator Priority Int where
+    getProps OpNegate = [(Priority, 0)]
+    getProps OpExp = [(Priority, 1)]
+    getProps _ = [(Priority, 1000)]
+
+-----------------------------------------------------------
+--          Leaf Property
+-----------------------------------------------------------
+data LeafNode = LeafNode deriving Eq
+
+instance Property Formula LeafNode Bool where
+    getProps (Variable _) = [(LeafNode, True)]
+    getProps (CInteger _) = [(LeafNode, True)]
+    getProps (CFloat _) = [(LeafNode, True)]
+    getProps (NumEntity _) = [(LeafNode, True)]
+    getProps _ = [(LeafNode, False)]
+
+    hasProp (Variable _) _ = True
+    hasProp (CInteger _) _ = True
+    hasProp (CFloat _) _ = True
+    hasProp (NumEntity _) _ = True
+    hasProp _ _ = False
+
+-----------------------------------------------------------
+--          Text
+-----------------------------------------------------------
+data OperatorText = OperatorText deriving Eq
+
+instance Property UnOperator OperatorText String where
+    getProps op = [(OperatorText, fromJust $ lookup op unOpNames)]
     
 type Parsed a b = GenParser Char a b
 
@@ -177,24 +222,6 @@ unOpNames =
 -------------------------------------------
 ---- "Language" helpers
 -------------------------------------------
-
--- | helper function to tell if the current formula
--- is a leaf (ie if no further recursion is required)
-isFormulaLeaf :: Formula -> Bool
-isFormulaLeaf (Variable _) = True
-isFormulaLeaf (CInteger _) = True
-isFormulaLeaf (CFloat _) = True
-isFormulaLeaf (NumEntity _) = True
-isFormulaLeaf _ = False
-
-prioOfBinaryOperators :: BinOperator -> Int
-prioOfBinaryOperators op = fst . fromJust $ lookup op binopDefs
-
-prioOfUnaryOperators :: UnOperator -> Int
-prioOfUnaryOperators = p
-    where p OpNegate = 0
-          p OpExp = 1
-          p _ = 10000
     
 -- | used to render functions' arguments
 argListToString :: [Formula] -> String
