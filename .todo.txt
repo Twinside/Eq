@@ -1,9 +1,9 @@
 4:Test why preprocessor in subfolder fail
-3:Worry about scope of variables, it can become _VERY_ messy quickly
 3:Make some validation about definition domain
-2:Add derivate_n function
-2:Test recursive sum...
 2:add multi-expr expression and application
-1:Make some HLSL/GLSL output
+2:Add derivate_n function
+2:Standard library?
+2:Test recursive sum...
 1:Make some C output (quid matrix?)
+1:Make some HLSL/GLSL output
 0:Make some LaTeX output
