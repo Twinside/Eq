@@ -5,13 +5,13 @@ module EqManips.Types( Formula( .. )
                      , UnOperator( .. )
                      , Entity( .. )
 
-                     , expr 
-                     , unparse
+                     , program  -- if you want to define some definition before
+                     , expr     -- if you want to evaluate just an expression
+                     , unparse  -- regurgitation in parsed language.
 
                      , AssocSide(..)-- ^ To query associativity side
                      , OpAssoc( .. )-- ^ Return type for associativity side
                      , Priority(.. )-- ^ Gain access to operator's priority
-
                      , OpProp( .. ) 
                      , OperatorText(..)
                      ) where
@@ -387,6 +387,8 @@ lexer  = P.makeTokenParser
 -----------------------------------------------------------
 --          Real "grammar"
 -----------------------------------------------------------
+program :: Parsed st [Formula]
+program = sepBy expr $ (char ';' >> whiteSpace)
 
 -- | Parser for the mini language is defined here
 expr :: Parsed st Formula

@@ -1,6 +1,9 @@
 module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , EqContext
                                  , performTransformation 
+                                 , performLastTransformation 
+                                 , obtainEqResult 
+                                 , cleanErrorList 
                                  , addSymbol, delSymbol 
                                  , eqFail
                                  , symbolLookup
@@ -119,11 +122,23 @@ popContext = EqContext $ \c ->
     in
     (c { contextStack = stack, context = oldContext }, ())
 
+-- | Cleanup error list, useful in cases of
+-- threaded computation
+cleanErrorList :: EqContext ()
+cleanErrorList = EqContext $ \c -> (c { errorList = [] }, ())
+
 -- | Public function of the API to retrieve the result of
 -- a formula transformation. The type is opaque otherwise.
 performTransformation :: EqContext Formula -> EqTransformInfo
 performTransformation m = ctxt { result = formula }
     where (ctxt, formula) = runEqTransform m emptyContext
+
+performLastTransformation :: EqContext [Formula] -> EqTransformInfo
+performLastTransformation m = ctxt { result = last formula }
+    where (ctxt, formula) = runEqTransform m emptyContext
+
+obtainEqResult :: EqContext a -> a
+obtainEqResult m = snd $ runEqTransform m emptyContext
 
 -- | Remove a variable from the context
 delSymbol :: String -> EqContext ()

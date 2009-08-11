@@ -34,6 +34,7 @@ preprocOptions = commonOption
 formatOption :: [OptDescr (Flag, String)]
 formatOption = commonOption
 
+-- | Helper function to get file names for input/output
 getInputOutput :: [(Flag, String)] -> [String] -> (IO String, IO Handle)
 getInputOutput opts args = (inputFile, outputFile)
    where outputFile = maybe (return stdout) (\name -> openFile name WriteMode)
@@ -41,6 +42,8 @@ getInputOutput opts args = (inputFile, outputFile)
          inputFile = maybe (return $ args !! 0) readFile
                            (lookup Input opts)
 
+-- | Command which just format an equation
+-- without affecting it's form.
 formatCommand :: [String] -> IO Bool
 formatCommand args = do
     formulaText <- input
@@ -81,13 +84,11 @@ transformParseFormula :: (Formula -> EqContext Formula) -> [String]
 transformParseFormula operation args = do
     formulaText <- input
     finalFile <- outputFile
-    let formula = parseFormula formulaText
-    either (\err -> do print "Error : " 
-                       print err
-                       return False)
-           (\formula' -> do
-               let rez = performTransformation 
-                                . operation $ formula'
+    let formulaList = parseProgramm formulaText
+    either (\err -> print "Error : " >> print err >> return False)
+           (\formulal -> do
+               let rez = performLastTransformation $
+                                mapM operation formulal
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
@@ -99,7 +100,7 @@ transformParseFormula operation args = do
                hPutStr finalFile . formatFormula $ result rez
 
                return . null $ errorList rez)
-           formula
+           formulaList
 
      where (opt, left, _) = getOpt Permute formatOption args
            (input, outputFile) = getInputOutput opt left

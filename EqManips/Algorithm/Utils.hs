@@ -6,6 +6,7 @@ module EqManips.Algorithm.Utils ( biAssocM
                                 , treeIfyBinOp 
                                 , listifyBinOp 
                                 , parseFormula
+                                , parseProgramm 
                                 ) where
 import Text.Parsec.Error( ParseError )
 import Text.ParserCombinators.Parsec.Prim( runParser )
@@ -26,6 +27,13 @@ parseFormula text = rez
           rez = case parsed of
              Left _ -> parsed
              Right f -> Right . listifyFormula $ linkFormula f
+
+parseProgramm :: String -> Either ParseError [Formula]
+parseProgramm text = rez
+    where parsed = runParser program () "FromFile" text
+          rez = case parsed of
+                 Left _ -> parsed
+                 Right f -> Right $ map (listifyFormula . linkFormula) f
 
 -- | listify a whole formula
 listifyFormula :: Formula -> Formula
