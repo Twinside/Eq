@@ -66,6 +66,15 @@ data Entity =
     | Infinite
     deriving (Eq, Show, Read)
 
+data MetaOperation =
+    -- | Avoid an evaluation, replace itself by the
+    -- without touching it.
+      Hold
+    -- | Inverse of hold, whenever encountered in
+    -- evaluation, should force an evaluation.
+    | Force
+    deriving (Eq, Show)
+
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types
 -- are provided for ease of use
@@ -98,6 +107,11 @@ data Formula =
 
     -- | Used for debug
     | Block Int Int Int
+
+    -- | A meta operation is an operation used
+    -- by the sysem, but that don't appear in the
+    -- normal output.
+    | Meta MetaOperation Formula
     deriving (Eq, Show, Read)
 
 -----------------------------------------------------------
