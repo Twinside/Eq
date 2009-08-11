@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.Eval( reduce ) where
+module EqManips.Algorithm.Eval( reduce, runProgramm ) where
 
 import EqManips.Types
 import EqManips.EvaluationContext
@@ -7,6 +7,8 @@ import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Inject
 import EqManips.Algorithm.Derivative
 import EqManips.Algorithm.Utils
+
+import EqManips.Algorithm.Unification
 
 import Data.List( foldl' , transpose )
 
@@ -22,6 +24,56 @@ left = return . Left
 
 right :: (Monad m) => b -> m (Either a b)
 right = return . Right
+
+runProgramm :: [Formula] -> EqContext [Formula]
+runProgramm = mapM generalOp
+
+addLambda :: String -> [Formula] -> Formula -> EqContext ()
+addLambda varName args body = do
+    symb <- symbolLookup varName
+    case symb of
+      Nothing -> addSymbol varName $ Lambda [(args, body)]
+      Just (Lambda clauses@((prevArg,_):_)) -> do
+          if length prevArg /= length args
+            then do
+             eqFail (Variable varName) "Warning definition with different argument count"
+             return ()
+            else
+             updateSymbol varName . Lambda $ clauses ++ [(args, body)]
+          
+      Just _ -> do
+         eqFail (Variable varName) $ varName ++ " already defined as not a function"
+         return ()
+
+addVar :: String -> Formula -> EqContext ()
+addVar varName body = do
+    symb <- symbolLookup varName
+    case symb of
+      Nothing -> addSymbol varName body
+      Just _ -> do
+         eqFail (Variable varName) $ varName ++ " is already defined"
+         return ()
+
+generalOp :: Formula -> EqContext Formula
+generalOp (BinOp OpEq [ (App (Variable funName) argList)
+                      , body ]) = do
+    pushContext
+    body' <- reduce body
+    popContext
+    addLambda funName argList body'
+    return $ (BinOp OpEq [(App (Variable funName) argList), body'])
+generalOp (BinOp OpEq [(Variable varName), body]) = do
+    pushContext
+    body' <- reduce body
+    popContext
+    addVar varName body'
+    return $ (BinOp OpEq [(Variable varName), body'])
+
+generalOp e = do
+    pushContext
+    a <- reduce e
+    popContext
+    return a
 
 -----------------------------------------------
 ----            '+'
@@ -120,6 +172,8 @@ eval (NumEntity Pi) = return $ CFloat pi
 eval (Matrix n m mlines) = do
     cells <- sequence [mapM eval line | line <- mlines]
     return $ Matrix n m cells
+-- TODO 4 make something here
+eval (BinOp OpEq [App (Variable v) args, body]) = return $ Block 1 1 1
 
 eval (BinOp OpAdd fs) = binEval OpAdd add add =<< mapM eval fs
 eval (BinOp OpSub fs) = binEval OpSub sub add =<< mapM eval fs

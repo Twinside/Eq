@@ -90,6 +90,12 @@ data Formula =
     -- | -1 for example
     | UnOp UnOperator Formula
 
+    -- | Represent a function. a function
+    -- can have many definitions. The applied
+    -- one must be the first in the list which
+    -- unify with the applied parameters.
+    | Lambda [([Formula], Formula)]
+
     -- | f1 op f2
     | BinOp BinOperator [Formula]
 
@@ -252,6 +258,7 @@ deparse :: Int -> Bool -> Formula -> String
 deparse _ _ (BinOp _ []) =
     error "The formula is denormalized : a binary operator without any operands"
 deparse _ _ (Variable s) = s
+deparse _ _ (Lambda _) = "" -- NINJA HIDDEN!
 deparse _ _ (NumEntity e) = en e
     where en Pi = "pi"
           en Nabla = "nabla"

@@ -136,6 +136,9 @@ d f@(Integrate _i _e _w _v) _var =
 d f@(Matrix _ _ _formulas) _var =
     eqFail f "Deriving a Matrix, what to do?"
 
+d f@(Lambda _) _ =
+    eqFail f "Deriving lambdas"
+
 d (Block _ _ _) _var =
     eqFail (Block 0 1 1)
          $ "Deriving a debug block"

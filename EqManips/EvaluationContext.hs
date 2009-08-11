@@ -4,7 +4,7 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , performLastTransformation 
                                  , obtainEqResult 
                                  , cleanErrorList 
-                                 , addSymbol, delSymbol 
+                                 , addSymbol, delSymbol, updateSymbol 
                                  , eqFail
                                  , symbolLookup
                                  , pushContext, popContext
@@ -146,6 +146,11 @@ delSymbol s = EqContext $ \ctxt ->
     let newContext = deleteBy (\_ (v,_) -> v == s) ("", CInteger 0)
                    $ context ctxt
     in (ctxt { context = newContext }, ())
+
+updateSymbol :: String -> Formula -> EqContext ()
+updateSymbol varName def = do
+    delSymbol varName
+    addSymbol varName def
 
 -- | Add a variable into the context
 addSymbol :: String -> Formula -> EqContext ()
