@@ -201,6 +201,8 @@ renderF node (SizeNodeList True (base, dim) abase stl) (x,y) =
         where subSize = (remParens asciiSizer) dim
               neoTree = SizeNodeList False (base, subSize) abase stl
 
+renderF (Lambda _) _ pos = [(pos, '\\')]
+
 -- Here we make the "simple" rendering, just a conversion.
 renderF (Block _ w h) _ (x,y) =
     [ ((xw, yh), '#') | xw <- [x .. x + w - 1], yh <- [y .. y + h - 1]]

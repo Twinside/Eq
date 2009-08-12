@@ -18,7 +18,7 @@ scopePreserver :: Formula -> EqContext ()
 scopePreserver f = keepSafe $ reBoundVar f
     where keepSafe Nothing = return ()
           keepSafe (Just v) = do
-              pushContext "scopePreserver.Just"
+              pushContext
               delSymbol v
 
 injectIntern :: Formula -> EqContext Formula
@@ -27,7 +27,7 @@ injectIntern f@(Variable v) =
 
 injectIntern f = scope $ reBoundVar f
     where scope Nothing = return f
-          scope _ = popContext "injectIntern" >> return f
+          scope _ = popContext >> return f
                  
 -- | Tell if a node change the scope.
 -- The pattern is explicitely exaustive to be sure

@@ -38,17 +38,13 @@ addLambda :: String -> [Formula] -> Formula -> EqContext ()
 addLambda varName args body = do
     symb <- symbolLookup varName
     case symb of
-      Nothing -> do
-          addTrace ("Created a lambda: " ++ varName, Variable "lambda:")
-          addSymbol varName $ Lambda [(args, body)]
+      Nothing -> addSymbol varName $ Lambda [(args, body)]
       Just (Lambda clauses@((prevArg,_):_)) -> do
           if length prevArg /= length args
             then do
              eqFail (Variable varName) "Warning definition with different argument count"
              return ()
-            else do
-             addTrace ("updated a lambda: " ++ varName, Variable "lambda:")
-             updateSymbol varName . Lambda $ clauses ++ [(args, body)]
+            else updateSymbol varName . Lambda $ clauses ++ [(args, body)]
           
       Just _ -> do
          eqFail (Variable varName) $ varName ++ " already defined as not a function"
@@ -72,16 +68,16 @@ evalGlobalStatement (BinOp OpEq [ (App (Variable funName) argList)
     return $ (BinOp OpEq [(App (Variable funName) argList), body])
 
 evalGlobalStatement (BinOp OpEq [(Variable varName), body]) = do
-    pushContext "evalGlobal"
+    pushContext
     body' <- reduce body
-    popContext "evalGlobal"
+    popContext
     addVar varName body'
     return $ (BinOp OpEq [(Variable varName), body'])
 
 evalGlobalStatement e = do
-    pushContext "evalGlobal"
+    pushContext
     a <- reduce e
-    popContext "evalGlobal"
+    popContext
     return a
 
 -----------------------------------------------
@@ -185,27 +181,20 @@ eval (Matrix n m mlines) = do
 eval (Variable v) = symbolLookup v
     >>= return . fromMaybe (Variable v)
 
-eval f@(App def var) = do
+eval (App def var) = do
     redDef <- eval def
     redVar <- mapM eval var
-    addTrace ("In an application", f) 
-    traceContext 
     needApply redDef redVar
    where needApply (Lambda funArgs) args' =
            case getFirstUnifying funArgs args' of
-                Nothing -> do addTrace (show funArgs ++ "\n" ++ show args', Variable "the lambda")
-                              eqFail (App def var) "Error can't apply function"
+                Nothing -> eqFail (App def var) "Error can't apply function"
                 Just (body, subst) -> do
-                    addTrace ("OK subst accepted", body)
-                    addTrace (show funArgs, Variable "the lambda")
-                    pushContext "eval.App"
+                    pushContext
                     setContext subst
                     body' <- inject body
-                    popContext "eval.App"
-                    traceContext 
+                    popContext
                     eval body'
          needApply def' args = do
-             addTrace ("DU?", def')
              return $ App def' args
 
 eval (BinOp OpAdd fs) = binEval OpAdd add add =<< mapM eval fs
@@ -269,9 +258,9 @@ eval end = return end
 iterateFormula :: ([Formula] -> Formula) -> String -> Int -> Int -> Formula
                -> EqContext Formula
 iterateFormula op ivar initi endi what = do
-    pushContext "iterate"
+    pushContext
     rez <- mapM combiner [initi .. endi]
-    popContext "iterate"
+    popContext
     case rez of
          [x] -> eval x
          _  -> eval $ op rez

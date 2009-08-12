@@ -63,7 +63,7 @@ maxPrio = 100
 -- | Compute a size tree for a formula.
 -- This size-tree can be used for a following render
 sizeOfFormula :: Dimensioner -> Bool -> OpPriority -> Formula -> SizeTree
-sizeOfFormula _ _ _ (Lambda _) = error "Lambda shouldn't be displayed"
+sizeOfFormula _ _ _ (Lambda _) = EndNode (0,(1,1))
 -- Simply the size of rendered text
 sizeOfFormula sizer _ _ (Variable v) = EndNode $ varSize sizer $ v
 sizeOfFormula sizer _ _ (CInteger n) = EndNode $ intSize sizer $ n

@@ -112,20 +112,20 @@ traceContext = EqContext $ \c ->
 #endif /* _DEBUG */
 
 -- | Keep a track of current context, keep previous context clean
-pushContext :: String -> EqContext ()
-pushContext s = EqContext $ \c ->
-    (c { trace = (s, Variable "pushContext") : trace c, contextStack = context c : contextStack c }, ())
+pushContext :: EqContext ()
+pushContext = EqContext $ \c ->
+    (c { contextStack = context c : contextStack c }, ())
 
 -- | Discard the current deep context and restore the one
 -- which was previously "pushed" by pushContext. If no
 -- context was there, an empty one is put in place
-popContext :: String -> EqContext ()
-popContext s = EqContext $ \c ->
+popContext :: EqContext ()
+popContext = EqContext $ \c ->
     let safeHeadTail (x:xs) = (x, xs)
         safeHeadTail     [] = ([], [])
         (oldContext, stack) = safeHeadTail $ contextStack c
     in
-    (c { trace = (s, Variable "popContext") : trace c, contextStack = stack, context = oldContext }, ())
+    (c { contextStack = stack, context = oldContext }, ())
 
 setContext :: [(String, Formula)] -> EqContext ()
 setContext newContext = EqContext $ \c -> (c { context = newContext }, ())
