@@ -251,6 +251,9 @@ eval (UnOp op f) = unOpReduce (funOf op) f
           funOf OpLn = log
           funOf OpLog = \n -> log n / log 10.0
           funOf OpExp = exp
+          funOf OpFloor = fromIntegral . (floor :: Double -> Int)
+          funOf OpFrac = snd . (properFraction :: Double -> (Int, Double))
+          funOf OpCeil = fromIntegral . (ceiling :: Double -> Int)
           funOf OpFactorial = error "Should not happen here"
 
 eval (Derivate what (Variable s)) =

@@ -127,6 +127,10 @@ d (UnOp OpACosh f) var = (\f' -> f' * (int 1 / sqrt (f ** 2 - 1))) <$> d f var
 d (UnOp OpATanh f) var = (\f' -> f' * (int 1 / (int 1 - f ** 2))) <$> d f var
 d fo@(UnOp OpLn f) var = (\f' -> f' / fo) <$> d f var
 
+d f@(UnOp OpFloor _) _ = eqFail f "The floor function is not continuous"
+d f@(UnOp OpCeil _) _ = eqFail f "The ceil function in not continuous"
+d f@(UnOp OpFrac _) _ = eqFail f "I don't know how to derivate the fractional part"
+
 d f@(UnOp OpLog _f) _var =
     eqFail f "No position for Log for now"
 d f@(UnOp OpAbs _f) _var =

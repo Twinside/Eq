@@ -63,6 +63,7 @@ data UnOperator =
 
     | OpLn | OpLog | OpExp
     | OpFactorial
+    | OpCeil | OpFloor | OpFrac
     deriving (Eq, Show, Read)
 
 -- | Some entity which cannot be represented in other mannear
@@ -256,6 +257,9 @@ unOpNames =
     , (OpLog, "log")
 
     , (OpExp, "exp")
+    , (OpCeil, "ceil")
+    , (OpFloor, "floor")
+    , (OpFrac, "frac")
     ]
 
 -------------------------------------------
