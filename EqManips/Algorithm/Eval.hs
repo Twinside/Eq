@@ -1,6 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
 module EqManips.Algorithm.Eval( reduce
-                              , metaEval
                               , runProgramm
                               , evalGlobalStatement 
                               ) where
@@ -11,8 +10,9 @@ import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Inject
-import {-# SOURCE #-} EqManips.Algorithm.Derivative
+import EqManips.Algorithm.Derivative
 import EqManips.Algorithm.Utils
+import EqManips.Algorithm.MetaEval
 
 import EqManips.Algorithm.Unification
 
@@ -174,12 +174,6 @@ binEval :: BinOperator -> EvalOp -> EvalOp -> [Formula] -> EqContext Formula
 binEval op f inv formulaList = biAssocM f inv formulaList >>= rez
     where rez [x] = return x
           rez lst = return $ BinOp op lst
-
-metaEval :: MetaOperation -> Formula -> EqContext Formula
-metaEval Force f = eval f
-metaEval Hold f = return f
-metaEval Listify f = return $ listifyBinOp f
-metaEval Treefy f = return $ treeIfyBinOp f
 
 -- | General evaluation/reduction function
 eval :: Formula -> EqContext Formula

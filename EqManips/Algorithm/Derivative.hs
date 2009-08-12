@@ -5,7 +5,7 @@ import Control.Applicative
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.FormulaIterator
-import EqManips.Algorithm.Eval
+import EqManips.Algorithm.MetaEval
 
 type Var = String
 
