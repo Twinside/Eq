@@ -24,6 +24,7 @@ import Control.Applicative( (<$>) )
 import Data.Ratio
 import Data.List( intersperse, mapAccumR )
 import Data.Maybe( fromJust )
+import Data.Monoid( Monoid( .. ) )
 
 import EqManips.Propreties
 
@@ -125,6 +126,13 @@ data Formula =
     | Meta MetaOperation Formula
     deriving (Eq, Show, Read)
 
+-----------------------------------------------------------
+--          Monoid def
+-----------------------------------------------------------
+instance Monoid Formula where
+    mempty = CInteger 0
+    mappend  = (+) 
+    
 -----------------------------------------------------------
 --          Side Associativity
 -----------------------------------------------------------

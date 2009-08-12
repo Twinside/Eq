@@ -87,3 +87,40 @@ depthFormulaTraversal pre post formula@(BinOp op fs) = do
 -- Hmm, it's a debug for renderer, we dont really care
 depthFormulaTraversal _ _ b@(Block _ _ _) = return b
 
+foldf :: (Formula -> b -> b) -> b -> Formula -> b
+foldf f acc m@(Meta _ fo) = f m $ foldf f acc fo
+foldf f acc fo@(UnOp _ sub) = f fo $ foldf f acc sub
+foldf f acc fo@(App def args) =
+    foldf f (foldf f listAcc def) fo
+     where listAcc = foldr f acc args
+
+foldf f acc fo@(BinOp _ args) =
+    f fo $ foldr f acc args
+
+foldf f acc fo@(Sum ini end what) = f fo endAcc
+        where whatAcc = foldf f acc what
+              iniAcc = foldf f whatAcc ini
+              endAcc = foldf f iniAcc end
+
+foldf f acc fo@(Product ini end what) = f fo endAcc
+        where whatAcc = foldf f acc what
+              iniAcc = foldf f whatAcc ini
+              endAcc = foldf f iniAcc end
+
+foldf f acc fo@(Integrate ini end what var) = f fo varAcc
+        where whatAcc = foldf f acc what
+              iniAcc = foldf f whatAcc ini
+              endAcc = foldf f iniAcc end
+              varAcc = foldf f endAcc var
+
+foldf f acc fo@(Derivate what var) = f fo varAcc
+        where whatAcc = foldf f acc what
+              varAcc = foldf f whatAcc var
+
+foldf f acc fo = f fo acc
+{-fFoldingM pre post formula@(Matrix n m cells) = do-}
+    {-pre formula-}
+    {-cellss <- sequence [ mapM (fFoldingM pre post) matrixLine-}
+                            {-| matrixLine <- cells]-}
+    {-post $ Matrix n m cellss-}
+
