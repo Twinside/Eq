@@ -49,3 +49,4 @@ reBoundVar (Matrix _ _ _) = Nothing
 reBoundVar (Block _ _ _) = Nothing
 reBoundVar (Product _ _ _) = Nothing
 reBoundVar (Sum _ _ _) = Nothing
+reBoundVar (Meta _ _) = Nothing

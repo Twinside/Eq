@@ -184,6 +184,9 @@ renderF :: Formula -- ^ CurrentNode
         -> Pos -- ^ Where to render
         -> [(Pos,Char)] -- ^ Result to be used in accumArray
 
+-- INVISIBLE META NINJA
+renderF (Meta _ f) node pos = renderF f node pos
+
 -- In the following matches, we render parenthesis and
 -- then recurse to the normal flow for the regular render.
 renderF node (MonoSizeNode True (base, dim) st) (x,y) =

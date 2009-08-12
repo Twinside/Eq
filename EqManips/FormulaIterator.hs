@@ -27,6 +27,10 @@ depthFormulaTraversal _ f v@(Variable _) = f v
 depthFormulaTraversal _ f i@(CInteger _) = f i
 depthFormulaTraversal _ f d@(CFloat _) = f d
 depthFormulaTraversal _ f e@(NumEntity _) = f e
+depthFormulaTraversal pre post meta@(Meta op f) = do
+    pre meta
+    f' <- depthFormulaTraversal pre post f
+    post $ Meta op f'
 
 depthFormulaTraversal pre post formula@(App func args) = do
     pre formula
