@@ -232,7 +232,7 @@ eval (BinOp OpEq [v@(Variable _),f2]) = do
     return $ BinOp OpEq [v,f2']
 
 eval (UnOp OpFactorial f) = factorial =<< eval f 
-eval (UnOp op f) = unOpReduce (funOf op) f
+eval (UnOp op f) = unOpReduce (funOf op) =<< eval f
     where funOf OpNegate = negate
           funOf OpAbs = abs
           funOf OpSqrt = sqrt
