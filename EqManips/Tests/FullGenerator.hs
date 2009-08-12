@@ -17,7 +17,8 @@ instance Arbitrary UnOperator where
     arbitrary  = elements [ OpNegate, OpAbs, OpSqrt, OpSin, OpSinh
                           , OpASin, OpASinh, OpCos, OpCosh, OpACos
                           , OpACosh, OpTan, OpTanh, OpATan, OpATanh
-                          , OpLn, OpLog, OpExp]
+                          , OpLn, OpLog, OpExp, OpFactorial
+                          ]
 
 instance Arbitrary Formula where
     arbitrary = formulaGen 1

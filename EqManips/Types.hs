@@ -20,6 +20,7 @@ module EqManips.Types( Formula( .. )
                      ) where
 
 import Control.Applicative( (<$>) )
+import Control.Monad.Identity
 
 import Data.Ratio
 import Data.List( intersperse, mapAccumR )
@@ -28,10 +29,10 @@ import Data.Monoid( Monoid( .. ) )
 
 import EqManips.Propreties
 
-import Text.ParserCombinators.Parsec
-import Text.ParserCombinators.Parsec.Expr
-import Text.ParserCombinators.Parsec.Language( haskellStyle )
-import qualified Text.ParserCombinators.Parsec.Token as P
+import Text.Parsec.Expr
+import Text.Parsec
+import Text.Parsec.Language( haskellStyle )
+import qualified Text.Parsec.Token as P
 
 -- | All Binary operators
 data BinOperator  =
@@ -61,6 +62,7 @@ data UnOperator =
     | OpTan | OpTanh | OpATan | OpATanh
 
     | OpLn | OpLog | OpExp
+    | OpFactorial
     deriving (Eq, Show, Read)
 
 -- | Some entity which cannot be represented in other mannear
@@ -184,8 +186,9 @@ instance Property BinOperator Priority Int where
     getProps op = [(Priority, fst . fromJust $ lookup op binopDefs)]
     
 instance Property UnOperator Priority Int where
-    getProps OpNegate = [(Priority, 0)]
-    getProps OpExp = [(Priority, 1)]
+    getProps OpFactorial = [(Priority, 0)]
+    getProps OpNegate = [(Priority, 1)]
+    getProps OpExp = [(Priority, 2)]
     getProps _ = [(Priority, 1000)]
 
 -----------------------------------------------------------
@@ -214,24 +217,23 @@ data OperatorText = OperatorText deriving Eq
 instance Property UnOperator OperatorText String where
     getProps op = [(OperatorText, fromJust $ lookup op unOpNames)]
     
-type Parsed a b = GenParser Char a b
-
 -- | Priority and textual representation
 -- of binary operators
 binopDefs :: [(BinOperator, (Int,String))]
 binopDefs =
-	[ (OpEq, (4, "="))
-	, (OpAdd, (3, "+"))
-	, (OpSub, (3, "-"))
-	, (OpMul, (2, "*"))
-	, (OpDiv, (2, "/"))
-	, (OpPow, (1, "^"))
+	[ (OpEq, (5, "="))
+	, (OpAdd, (4, "+"))
+	, (OpSub, (4, "-"))
+	, (OpMul, (3, "*"))
+	, (OpDiv, (3, "/"))
+	, (OpPow, (2, "^"))
     ]
 
 -- | Textual representation of "unary" operators
 unOpNames :: [(UnOperator, String)]
 unOpNames =
     [ (OpNegate, "-")
+    , (OpFactorial, "!")
     , (OpAbs, "abs")
     , (OpSqrt, "sqrt")
 
@@ -312,6 +314,7 @@ deparse _ _ (Derivate i i1) =
 deparse _ _ (Integrate i i1 i2 i3) =
     "integrate(" ++ argListToString [i, i1, i2, i3] ++ ")"
 
+deparse _ _ (UnOp OpFactorial f) = "(" ++ deparse maxPrio False f ++ ")!"
 deparse _ _ (UnOp op f) =
     (fromJust $ lookup op unOpNames) ++ 
         "(" ++ deparse maxPrio False f ++ ")"
@@ -398,31 +401,33 @@ instance Floating Formula where
 -----------------------------------------------------------
 --          Lexing defs
 -----------------------------------------------------------
-float :: CharParser st Double
+float :: Parsed st Double
 float = P.float lexer
 
-identifier :: CharParser st String
+identifier :: Parsed st String
 identifier = P.identifier lexer
 
-reservedOp :: String -> CharParser st ()
+reservedOp :: String -> Parsed st ()
 reservedOp= P.reservedOp lexer
 
-integer :: CharParser st Integer
+integer :: Parsed st Integer
 integer = P.integer lexer
 
-parens :: CharParser st a -> CharParser st a
+parens :: ParsecT String u Identity a -> ParsecT String u Identity a
 parens = P.parens lexer
 
-whiteSpace :: CharParser st ()
+whiteSpace :: Parsed st ()
 whiteSpace = P.whiteSpace lexer
 
-lexer :: P.TokenParser st
+lexer :: P.GenTokenParser String st Identity
 lexer  = P.makeTokenParser 
-         (haskellStyle { P.reservedOpNames = ["*","/","+","-","^","="] } )
+         (haskellStyle { P.reservedOpNames = ["*","/","+","-","^","=","!",":"] } )
 
 -----------------------------------------------------------
 --          Real "grammar"
 -----------------------------------------------------------
+type Parsed st b = ParsecT String st Identity b
+
 program :: Parsed st [Formula]
 program = sepBy expr $ (char ';' >> whiteSpace)
 
@@ -447,18 +452,22 @@ term = parens expr
    <|> CInteger . fromInteger <$> integer
    <?> "Term error"
 
-binary :: String -> (a -> a -> a) -> Assoc -> Operator Char st a
+binary :: String -> (a -> a -> a) -> Assoc -> Operator String st Identity a
 binary  name fun assoc = Infix (do{ reservedOp name; return fun }) assoc
 
-prefix :: String -> (a -> a) -> Operator Char st a
+prefix :: String -> (a -> a) -> Operator String st Identity a
 prefix  name fun       = Prefix (do{ reservedOp name; return fun })
+
+postfix :: String -> (a -> a) -> Operator String st Identity a
+postfix name fun = Postfix (do{ reservedOp name; return fun })
 
 binop :: BinOperator -> Formula -> Formula -> Formula
 binop op left right = BinOp op [left, right]
 
-operatorDefs :: OperatorTable Char st Formula
+operatorDefs :: OperatorTable String st Identity Formula
 operatorDefs = 
-    [ [prefix "-" (UnOp OpNegate) ]
+    [ [postfix "!" (UnOp OpFactorial)]
+    , [prefix "-" (UnOp OpNegate) ]
     , [binary "^" (binop OpPow) AssocLeft]
     , [binary "/" (binop OpDiv) AssocLeft, binary "*" (binop OpMul) AssocLeft]
     , [binary "+" (binop OpAdd) AssocLeft, binary "-" (binop OpSub) AssocLeft]

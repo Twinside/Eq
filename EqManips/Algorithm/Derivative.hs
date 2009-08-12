@@ -80,6 +80,8 @@ d (BinOp OpPow [f1,f2]) var =
 d (BinOp op (x:x2:xs)) var =
     d (BinOp op [x, BinOp op $ x2:xs]) var
 
+d f@(UnOp OpFactorial _) _ = eqFail f "Can't derivate factorials"
+
 -- Eq:format derivate( -f, x ) = - derivate( f, x )
 d (UnOp OpNegate f) var = negate <$> d f var
 

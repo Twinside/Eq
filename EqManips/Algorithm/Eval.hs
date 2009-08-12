@@ -169,12 +169,30 @@ power (CInteger i1) (CInteger i2) = return . Left . CInteger $ i1 ^ i2
 power f1 (CInteger i2) | i2 < 0 = return . Left $ CInteger 1 / (f1 ** CInteger (-i2))
 power f1 f2 = return . Right $ (f1, f2)
 
+-----------------------------------------------
+----        '!'
+-----------------------------------------------
+factorial :: Formula -> EqContext Formula
+factorial f@(CFloat _) = eqFail f "Can't apply factorial to real number"
+factorial (CInteger 0) = return $ CInteger 1
+factorial f@(CInteger i) | i > 0 = return . CInteger $ product [1 .. i]
+                         | otherwise = eqFail f "No factorial of negative numbers"
+factorial f@(Matrix _ _ _) = eqFail f "No factorial of matrix"
+factorial a = return $ UnOp OpFactorial a
+
+
+-----------------------------------------------
+----        lalalal operators
+-----------------------------------------------
 -- | Evaluate a binary operator
 binEval :: BinOperator -> EvalOp -> EvalOp -> [Formula] -> EqContext Formula
 binEval op f inv formulaList = biAssocM f inv formulaList >>= rez
     where rez [x] = return x
           rez lst = return $ BinOp op lst
 
+-----------------------------------------------
+----        General evaluation
+-----------------------------------------------
 -- | General evaluation/reduction function
 eval :: Formula -> EqContext Formula
 eval (Meta m f) = metaEval m f
@@ -213,6 +231,7 @@ eval (BinOp OpEq [v@(Variable _),f2]) = do
     f2' <- eval f2
     return $ BinOp OpEq [v,f2']
 
+eval (UnOp OpFactorial f) = factorial =<< eval f 
 eval (UnOp op f) = unOpReduce (funOf op) f
     where funOf OpNegate = negate
           funOf OpAbs = abs
@@ -232,6 +251,7 @@ eval (UnOp op f) = unOpReduce (funOf op) f
           funOf OpLn = log
           funOf OpLog = \n -> log n / log 10.0
           funOf OpExp = exp
+          funOf OpFactorial = error "Should not happen here"
 
 eval (Derivate what (Variable s)) =
     derivate what s >>= return . cleanup

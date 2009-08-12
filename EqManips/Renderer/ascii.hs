@@ -24,6 +24,7 @@ asciiSizer :: Dimensioner
 asciiSizer = Dimensioner
     { unaryDim = \op (base, (w,h)) ->
         let s OpNegate = (base, (w + 1, h))
+            s OpFactorial = (base, (w + 1, h))
             s OpAbs = (base, (w + 2, h))
             s OpSqrt = if h == 1
                 then (base + 1, (w + 2, h + 1))
@@ -273,8 +274,11 @@ renderF (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
               halfScreen = y + h `div` 2 + 1
               midEnd = h `div` 2 - 2 + h `mod` 2
 
-renderF (UnOp OpNegate f) (MonoSizeNode _ _ s) (x,y) =
-    ((x,y), '-') : renderF f s (x+1,y)
+renderF (UnOp OpFactorial f) (MonoSizeNode _ (b,(w,_)) s) (x,y) =
+    ((x + w - 1, y + b), '!') : renderF f s (x,y)
+
+renderF (UnOp OpNegate f) (MonoSizeNode _ (b,_) s) (x,y) =
+    ((x,y + b), '-') : renderF f s (x,y)
 
 renderF (UnOp OpExp f) (MonoSizeNode _ (_,(_,h)) s) (x,y) =
     ((x, y + h - 1), 'e') : renderF f s (x + 1, y)
