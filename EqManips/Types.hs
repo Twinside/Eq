@@ -9,9 +9,10 @@ module EqManips.Types( Formula( .. )
                      , expr     -- if you want to evaluate just an expression
                      , unparse  -- regurgitation in parsed language.
 
-                     , AssocSide(..)-- ^ To query associativity side
-                     , OpAssoc( .. )-- ^ Return type for associativity side
-                     , Priority(.. )-- ^ Gain access to operator's priority
+                     , AssocSide(..) -- To query associativity side
+                     , OpAssoc( .. ) -- Return type for associativity side
+                     , Priority(.. ) -- Gain access to operator's priority
+                     , LeafNode( .. )
                      , OpProp( .. ) 
                      , OperatorText(..)
                      ) where

@@ -7,10 +7,11 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , addSymbol, delSymbol, updateSymbol 
                                  , eqFail
                                  , symbolLookup
-                                 , pushContext, popContext
+                                 , pushContext, popContext, setContext 
 #ifdef _DEBUG
                                  , addTrace
                                  , printTrace
+                                 , traceContext 
 #endif /* _DEBUG */
                                  ) where
 
@@ -104,23 +105,30 @@ printTrace f inf = mapM_ showIt . reverse $ trace inf
               hPutStrLn f "=========================================="
               hPutStrLn f str
               hPutStrLn f $ formatFormula formula
+
+traceContext :: EqContext ()
+traceContext = EqContext $ \c ->
+    (c { trace = (show $ contextStack c, Variable ""): (show $ context c, Variable "") : trace c }, ())
 #endif /* _DEBUG */
 
 -- | Keep a track of current context, keep previous context clean
-pushContext :: EqContext ()
-pushContext = EqContext $ \c ->
-    (c { contextStack = context c : contextStack c }, ())
+pushContext :: String -> EqContext ()
+pushContext s = EqContext $ \c ->
+    (c { trace = (s, Variable "pushContext") : trace c, contextStack = context c : contextStack c }, ())
 
 -- | Discard the current deep context and restore the one
 -- which was previously "pushed" by pushContext. If no
 -- context was there, an empty one is put in place
-popContext :: EqContext ()
-popContext = EqContext $ \c ->
+popContext :: String -> EqContext ()
+popContext s = EqContext $ \c ->
     let safeHeadTail (x:xs) = (x, xs)
         safeHeadTail     [] = ([], [])
         (oldContext, stack) = safeHeadTail $ contextStack c
     in
-    (c { contextStack = stack, context = oldContext }, ())
+    (c { trace = (s, Variable "popContext") : trace c, contextStack = stack, context = oldContext }, ())
+
+setContext :: [(String, Formula)] -> EqContext ()
+setContext newContext = EqContext $ \c -> (c { context = newContext }, ())
 
 -- | Cleanup error list, useful in cases of
 -- threaded computation

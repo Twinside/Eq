@@ -89,6 +89,8 @@ transformParseFormula operation args = do
            (\formulal -> do
                let rez = performLastTransformation $
                                 mapM operation formulal
+               mapM (\a->do hPutStr finalFile $ show a
+                            hPutStr finalFile "\n\n") formulal
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
@@ -134,7 +136,7 @@ helpCommand (x:_) = case find (\(x',_,_,_) -> x' == x) commandList of
 commandList :: [(String, String, [String] -> IO Bool, [OptDescr (Flag, String)])]
 commandList = 
     [ ("cleanup", "Perform trivial simplification on formula", transformParseFormula reduce, commonOption)
-    , ("eval", "Try to evaluate/reduce the formula", transformParseFormula reduce, commonOption)
+    , ("eval", "Try to evaluate/reduce the formula", transformParseFormula evalGlobalStatement, commonOption)
     , ("format", "Load and display the formula in ASCII Art", formatCommand, commonOption)
     , ("help", "Ask specific help for a command, or this", helpCommand, [])
     , ("preprocess", "Parse a source file and apply inline action in it", preprocessCommand, commonOption)

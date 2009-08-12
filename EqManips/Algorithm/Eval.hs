@@ -1,5 +1,7 @@
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.Eval( reduce, runProgramm ) where
+module EqManips.Algorithm.Eval( reduce, runProgramm, evalGlobalStatement ) where
+
+import Data.Maybe
 
 import EqManips.Types
 import EqManips.EvaluationContext
@@ -26,25 +28,33 @@ right :: (Monad m) => b -> m (Either a b)
 right = return . Right
 
 runProgramm :: [Formula] -> EqContext [Formula]
-runProgramm = mapM generalOp
+runProgramm = mapM evalGlobalStatement
 
+-----------------------------------------------
+----        Top level evaluation
+-----------------------------------------------
+-- | Add a function into the symbol table.
 addLambda :: String -> [Formula] -> Formula -> EqContext ()
 addLambda varName args body = do
     symb <- symbolLookup varName
     case symb of
-      Nothing -> addSymbol varName $ Lambda [(args, body)]
+      Nothing -> do
+          addTrace ("Created a lambda: " ++ varName, Variable "lambda:")
+          addSymbol varName $ Lambda [(args, body)]
       Just (Lambda clauses@((prevArg,_):_)) -> do
           if length prevArg /= length args
             then do
              eqFail (Variable varName) "Warning definition with different argument count"
              return ()
-            else
+            else do
+             addTrace ("updated a lambda: " ++ varName, Variable "lambda:")
              updateSymbol varName . Lambda $ clauses ++ [(args, body)]
           
       Just _ -> do
          eqFail (Variable varName) $ varName ++ " already defined as not a function"
          return ()
 
+-- | Add a "value" into the symbol table
 addVar :: String -> Formula -> EqContext ()
 addVar varName body = do
     symb <- symbolLookup varName
@@ -54,25 +64,24 @@ addVar varName body = do
          eqFail (Variable varName) $ varName ++ " is already defined"
          return ()
 
-generalOp :: Formula -> EqContext Formula
-generalOp (BinOp OpEq [ (App (Variable funName) argList)
-                      , body ]) = do
-    pushContext
+-- | Evaluate top level declarations
+evalGlobalStatement :: Formula -> EqContext Formula
+evalGlobalStatement (BinOp OpEq [ (App (Variable funName) argList)
+                                , body ]) = do
+    addLambda funName argList body
+    return $ (BinOp OpEq [(App (Variable funName) argList), body])
+
+evalGlobalStatement (BinOp OpEq [(Variable varName), body]) = do
+    pushContext "evalGlobal"
     body' <- reduce body
-    popContext
-    addLambda funName argList body'
-    return $ (BinOp OpEq [(App (Variable funName) argList), body'])
-generalOp (BinOp OpEq [(Variable varName), body]) = do
-    pushContext
-    body' <- reduce body
-    popContext
+    popContext "evalGlobal"
     addVar varName body'
     return $ (BinOp OpEq [(Variable varName), body'])
 
-generalOp e = do
-    pushContext
+evalGlobalStatement e = do
+    pushContext "evalGlobal"
     a <- reduce e
-    popContext
+    popContext "evalGlobal"
     return a
 
 -----------------------------------------------
@@ -172,8 +181,30 @@ eval (NumEntity Pi) = return $ CFloat pi
 eval (Matrix n m mlines) = do
     cells <- sequence [mapM eval line | line <- mlines]
     return $ Matrix n m cells
--- TODO 4 make something here
-eval (BinOp OpEq [App (Variable v) args, body]) = return $ Block 1 1 1
+
+eval (Variable v) = symbolLookup v
+    >>= return . fromMaybe (Variable v)
+
+eval f@(App def var) = do
+    redDef <- eval def
+    redVar <- mapM eval var
+    addTrace ("In an application", f) 
+    traceContext 
+    needApply redDef redVar
+   where needApply (Lambda funArgs) args' =
+           case getFirstUnifying funArgs args' of
+                Nothing -> eqFail (App def var) "Error can't apply function"
+                Just (body, subst) -> do
+                    addTrace ("OK subst accepted", body)
+                    pushContext "eval.App"
+                    setContext subst
+                    body' <- inject body
+                    popContext "eval.App"
+                    traceContext 
+                    eval body'
+         needApply def' args = do
+             addTrace ("DU?", def')
+             return $ App def' args
 
 eval (BinOp OpAdd fs) = binEval OpAdd add add =<< mapM eval fs
 eval (BinOp OpSub fs) = binEval OpSub sub add =<< mapM eval fs
@@ -218,23 +249,14 @@ eval formu@(Sum (BinOp OpEq [Variable v, CInteger initi])
      | initi <= endi = iterateFormula (BinOp OpAdd) v initi endi f
      | otherwise = eqFail formu "Sorry, your sum as wrong bounds, can't evaluate"
 
-eval f@(Sum _ _ _) = eqFail f "Sorry, your sum don't have the good form to be evaluated."
-
 eval formu@(Product (BinOp OpEq [Variable v, CInteger initi])
                     (CInteger endi) 
                     f)
      | initi <= endi = iterateFormula (BinOp OpMul) v initi endi f
      | otherwise = eqFail formu "Sorry, your product as wrong bounds, can't evaluate"
 
-eval f@(Product _ _ _) = eqFail f "Sorry, your product don't have the good form to be evaluated."
-
 eval f@(Integrate _ _ _ _) =
     eqFail f "No algorithm to integrate your function, sorry"
-
-eval (App def var) = do
-    redDef <- eval def
-    redVar <- mapM eval var
-    return $ App redDef redVar
 
 eval f@(Block _ _ _) = eqFail f "Block cannot be evaluated"
 eval end = return end
@@ -245,9 +267,9 @@ eval end = return end
 iterateFormula :: ([Formula] -> Formula) -> String -> Int -> Int -> Formula
                -> EqContext Formula
 iterateFormula op ivar initi endi what = do
-    pushContext
+    pushContext "iterate"
     rez <- mapM combiner [initi .. endi]
-    popContext
+    popContext "iterate"
     case rez of
          [x] -> eval x
          _  -> eval $ op rez

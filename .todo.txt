@@ -2,8 +2,6 @@
 3:Matrix multiplication order problem!
 3:Make some validation about definition domain
 2:Standard library?
-2:Add derivate_n function
-2:Test recursive sum...
 2:add multi-expr expression and application
 2:make an expand algorithm
 1:Make some C output (quid matrix?)
