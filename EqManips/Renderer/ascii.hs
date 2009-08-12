@@ -31,6 +31,9 @@ asciiSizer = Dimensioner
                 else (base + 1, (w + (h * 3) `div` 2, h + 1))
 
             s OpExp = (h, (1 + w, 1 + h))
+            s OpCeil = (base + 1, (2 + w, 1 + h))
+            s OpFloor = (base, (2 + w, 1 + h))
+            s OpFrac = (base + 1, (1 + w, 1 + h))
 
             s oper = (h `div` 2, (w + opLength + 2, h))
                 where opLength = 
@@ -159,15 +162,18 @@ renderParens (x,y) (w,h) =
 -- |        |
 -- |        |
 -- |_      _|
-renderSquareBracket :: Pos -> Dimension -> [(Pos,Char)]
-renderSquareBracket (x,y) (w,1) = [((x,y), '['), ((x + w - 1, y), ']')]
-renderSquareBracket (x,y) (w,h) =
-    ((x + 1   , y ), '¯' ) : ((x + 1   , lastLine), '_') :
-    ((rightCol - 1, y ), '¯') : ((rightCol - 1, lastLine), '_' ) :
+renderSquareBracket :: Pos -> Dimension -> Bool -> Bool -> [(Pos,Char)]
+renderSquareBracket (x,y) (w,1) True True = [((x,y), '['), ((x + w - 1, y), ']')]
+renderSquareBracket (x,y) (w,h) top bottom =
+    upper ++ downer ++
     concat [ [ ((rightCol, height), '|')
-             , ((x       , height), '|')] | height <- [y .. lastLine] ]
+             , ((x       , height), '|')] | height <- [y .. lastLine]]
        where rightCol = x + w - 1
              lastLine = y + h - 1
+             topSymbols s = [((x + 1   , y ), s), ((rightCol - 1, y ), s)] 
+             bottomSymbols s = [((x + 1, lastLine), s), ((rightCol - 1, lastLine ), s)] 
+             upper = if top then topSymbols '¯' else []
+             downer = if bottom then bottomSymbols '_' else []
 
 -- | Little association...
 charOfOp :: BinOperator -> Char
@@ -273,6 +279,12 @@ renderF (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
               middleMark = leftBegin - h
               halfScreen = y + h `div` 2 + 1
               midEnd = h `div` 2 - 2 + h `mod` 2
+
+renderF (UnOp OpCeil f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
+    renderSquareBracket (x,y) (w,h) True False ++ renderF f s (x + 1,y + 1)
+
+renderF (UnOp OpFloor f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
+    renderSquareBracket (x,y) (w,h) False True ++ renderF f s (x + 1,y)
 
 renderF (UnOp OpFactorial f) (MonoSizeNode _ (b,(w,_)) s) (x,y) =
     ((x + w - 1, y + b), '!') : renderF f s (x,y)
@@ -398,7 +410,7 @@ renderF (Sum ini end what)
                     then -1 else 0
 
 renderF (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
-    renderSquareBracket (x,y) (w,h)
+    renderSquareBracket (x,y) (w,h) True True
     ++ producedList final
      where renderLine :: (Int, Int) -> (Formula, (RelativePlacement, SizeTree))
                       -> ListProducer (Pos,Char) (Int,Int)

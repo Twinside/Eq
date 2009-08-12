@@ -33,6 +33,10 @@ link (App (Variable "sum") [ini, what]) =
 link (App (Variable "sum") [what]) = 
     Sum (Variable "") (Variable "") (link what)
 
+link (App (Variable "ceil") [x]) = UnOp OpCeil $ link x
+link (App (Variable "floor") [x]) = UnOp OpFloor $ link x
+link (App (Variable "frac") [x]) = UnOp OpFrac $ link x
+
 link (App (Variable "sin") [x]) = UnOp OpSin $ link x
 link (App (Variable "sinh") [x]) = UnOp OpSinh $ link x
 link (App (Variable "asin") [x]) = UnOp OpASin $ link x
