@@ -18,6 +18,7 @@ instance Arbitrary UnOperator where
                           , OpASin, OpASinh, OpCos, OpCosh, OpACos
                           , OpACosh, OpTan, OpTanh, OpATan, OpATanh
                           , OpLn, OpLog, OpExp, OpFactorial
+                          , OpCeil, OpFloor, OpFrac
                           ]
 
 instance Arbitrary Formula where
