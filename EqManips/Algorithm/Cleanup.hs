@@ -108,8 +108,7 @@ rules (UnOp OpCos f) = cosinus f
 rules (BinOp OpAdd fs) = reOp OpAdd $ biAssoc add add fs
 rules (BinOp OpSub fs) = reOp OpSub $ biAssoc sub add fs
 rules (BinOp OpDiv fs) = reOp OpDiv $ biAssoc divide mul fs
--- TODO : fix power case, it's not correct
-rules (BinOp OpPow fs) = reOp OpPow $ biAssoc power power fs
+rules (BinOp OpPow fs) = reOp OpPow $ biAssoc power mul fs
 rules (BinOp OpMul fs)
     -- 0 * x or x * 0 in a multiplication result in 0
     | any zero fs = int 0
