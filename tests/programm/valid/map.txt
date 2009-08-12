@@ -1,0 +1,8 @@
+map( f, x + y ) = map( f, x ) + f( y );
+map( f, x - y ) = map( f, x ) - f( y );
+map( f, z ) = f(z);
+
+mul( x ) = x * 2;
+
+map( mul, x + y - z + w - k + m )
+

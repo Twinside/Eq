@@ -1,11 +1,13 @@
 module EqManips.Algorithm.Derivative( derivate
-                                    , Variable ) where
+                                    , Var ) where
 
 import Control.Applicative
 import EqManips.Types
 import EqManips.EvaluationContext
+import EqManips.FormulaIterator
+import EqManips.Algorithm.Eval
 
-type Variable = String
+type Var = String
 
 -- | just an helper function
 int :: Int -> Formula
@@ -13,12 +15,13 @@ int = CInteger
 
 -- | Public function to perform a derivation on a
 -- variable.
-derivate :: Formula -> Variable -> EqContext Formula
+derivate :: Formula -> Var -> EqContext Formula
 derivate f v = d f v
 
 -- | real function for derivation, d was choosen
 -- because I'm too lasy to type something else :]
 d :: Formula -> String -> EqContext Formula
+d (Meta m f) var = metaEval m f >>= flip d var
 d (Variable v) var
     | v == var = return $ int 1
     | otherwise = return $ int 0
@@ -60,8 +63,14 @@ d (BinOp OpDiv [(CInteger 1),f]) var =
 --  (derivate( f, x) * g - f * derivate( g, x )) 
 --              / g ^ 2
 d (BinOp OpDiv [f1,f2]) var =
-   (\f1' f2' -> (f1' * f2 - f1 * f2') / (f2 ** int 2))
-        <$> d f1 var <*> d f2 var
+    if derivableDenumerator
+       then (\f1' f2' -> (f1' * f2 - f1 * f2') / (f2 ** int 2))
+               <$> d f1 var <*> d f2 var
+        else (\f1' -> f1' / f2) <$> d f1 var
+ where derivableDenumerator = foldf notConst False f2
+       notConst (Variable v) acc = v == var || acc
+       notConst _ acc = acc
+
 
 -- Eq:format derivate( f ^ n, x ) = 
 --  n * derivate( f, x ) * f ^ (n - 1)

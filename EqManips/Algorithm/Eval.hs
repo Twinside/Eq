@@ -1,5 +1,9 @@
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.Eval( reduce, runProgramm, evalGlobalStatement ) where
+module EqManips.Algorithm.Eval( reduce
+                              , metaEval
+                              , runProgramm
+                              , evalGlobalStatement 
+                              ) where
 
 import Data.Maybe
 
@@ -7,7 +11,7 @@ import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Inject
-import EqManips.Algorithm.Derivative
+import {-# SOURCE #-} EqManips.Algorithm.Derivative
 import EqManips.Algorithm.Utils
 
 import EqManips.Algorithm.Unification
@@ -171,13 +175,15 @@ binEval op f inv formulaList = biAssocM f inv formulaList >>= rez
     where rez [x] = return x
           rez lst = return $ BinOp op lst
 
+metaEval :: MetaOperation -> Formula -> EqContext Formula
+metaEval Force f = eval f
+metaEval Hold f = return f
+metaEval Listify f = return $ listifyBinOp f
+metaEval Treefy f = return $ treeIfyBinOp f
+
 -- | General evaluation/reduction function
 eval :: Formula -> EqContext Formula
-eval (Meta Force f) = eval f
-eval (Meta Hold f) = return f
-eval (Meta Listify f) = return $ listifyBinOp f
-eval (Meta Treefy f) = return $ treeIfyBinOp f
-
+eval (Meta m f) = metaEval m f
 eval (NumEntity Pi) = return $ CFloat pi
 eval (Matrix n m mlines) = do
     cells <- sequence [mapM eval line | line <- mlines]
