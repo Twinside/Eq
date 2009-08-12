@@ -15,6 +15,8 @@ module EqManips.Types( Formula( .. )
                      , LeafNode( .. )
                      , OpProp( .. ) 
                      , OperatorText(..)
+
+                     , MetaOperation( .. )
                      ) where
 
 import Control.Applicative( (<$>) )
@@ -67,6 +69,17 @@ data Entity =
     | Infinite
     deriving (Eq, Show, Read)
 
+data MetaOperation =
+    -- | Avoid an evaluation, replace itself by the
+    -- without touching it.
+      Hold
+    -- | Inverse of hold, whenever encountered in
+    -- evaluation, should force an evaluation.
+    | Force
+    | Listify
+    | Treefy
+    deriving (Eq, Show, Read)
+
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types
 -- are provided for ease of use
@@ -105,6 +118,11 @@ data Formula =
 
     -- | Used for debug
     | Block Int Int Int
+
+    -- | A meta operation is an operation used
+    -- by the sysem, but that doesn't appear in the
+    -- normal output.
+    | Meta MetaOperation Formula
     deriving (Eq, Show, Read)
 
 -----------------------------------------------------------
@@ -256,6 +274,8 @@ unparse = deparse maxPrio False
 -- | Real conversion function, pass down priority
 -- and tree direction
 deparse :: Int -> Bool -> Formula -> String
+-- INVISIBLE META NINJA !!
+deparse i r (Meta _ f) = deparse i r f
 deparse _ _ (BinOp _ []) =
     error "The formula is denormalized : a binary operator without any operands"
 deparse _ _ (Variable s) = s

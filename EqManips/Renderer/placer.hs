@@ -64,6 +64,8 @@ maxPrio = 100
 -- This size-tree can be used for a following render
 sizeOfFormula :: Dimensioner -> Bool -> OpPriority -> Formula -> SizeTree
 sizeOfFormula _ _ _ (Lambda _) = EndNode (0,(1,1))
+-- INVISIBLE META NINJA
+sizeOfFormula sizer a b (Meta _ f) = sizeOfFormula sizer a b f
 -- Simply the size of rendered text
 sizeOfFormula sizer _ _ (Variable v) = EndNode $ varSize sizer $ v
 sizeOfFormula sizer _ _ (CInteger n) = EndNode $ intSize sizer $ n

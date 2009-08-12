@@ -173,6 +173,11 @@ binEval op f inv formulaList = biAssocM f inv formulaList >>= rez
 
 -- | General evaluation/reduction function
 eval :: Formula -> EqContext Formula
+eval (Meta Force f) = eval f
+eval (Meta Hold f) = return f
+eval (Meta Listify f) = return $ listifyBinOp f
+eval (Meta Treefy f) = return $ treeIfyBinOp f
+
 eval (NumEntity Pi) = return $ CFloat pi
 eval (Matrix n m mlines) = do
     cells <- sequence [mapM eval line | line <- mlines]

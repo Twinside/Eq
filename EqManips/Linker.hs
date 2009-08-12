@@ -14,6 +14,12 @@ linkFormula = link
 link :: Formula -> Formula
 link (Variable "infinite") = NumEntity Infinite
 link (Variable "pi") = NumEntity Pi
+-- Meta cases
+link (App (Variable "Hold") [f]) = Meta Hold f
+link (App (Variable "Force") [f]) = Meta Force f
+link (App (Variable "Listify") [f]) = Meta Listify f
+link (App (Variable "Treefy") [f]) = Meta Treefy f
+
 -- Special cases
 link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
     Block i1 i2 i3
