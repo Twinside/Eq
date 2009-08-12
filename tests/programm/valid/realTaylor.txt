@@ -1,0 +1,5 @@
+derivaten( 0, f, x ) = f;
+derivaten( 1, f, x ) = derivate( f, x );
+derivaten( n, f, x ) = derivate( derivaten( n-1, f, x ) , x );
+derivaten( 3, sin(x), x )
+

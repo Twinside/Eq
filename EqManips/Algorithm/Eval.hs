@@ -193,9 +193,11 @@ eval f@(App def var) = do
     needApply redDef redVar
    where needApply (Lambda funArgs) args' =
            case getFirstUnifying funArgs args' of
-                Nothing -> eqFail (App def var) "Error can't apply function"
+                Nothing -> do addTrace (show funArgs ++ "\n" ++ show args', Variable "the lambda")
+                              eqFail (App def var) "Error can't apply function"
                 Just (body, subst) -> do
                     addTrace ("OK subst accepted", body)
+                    addTrace (show funArgs, Variable "the lambda")
                     pushContext "eval.App"
                     setContext subst
                     body' <- inject body

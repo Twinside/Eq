@@ -17,7 +17,8 @@ type UnificationContext a = State [(String, Formula)] a
 (=~=) :: Formula -> Formula -> UnificationContext Bool
 a =~= b = unifyFormula a b
 
-getFirstUnifying :: [([Formula], Formula)] -> [Formula] -> Maybe (Formula,[(String,Formula)])
+getFirstUnifying :: [([Formula], Formula)] -> [Formula]
+                 -> Maybe (Formula,[(String,Formula)])
 getFirstUnifying matches toMatch = unif matches
     where unif [] = Nothing
           unif ((args, body):xs) =
@@ -48,6 +49,10 @@ unifyFormula (CFloat i1) (CFloat i2) =
 
 unifyFormula (NumEntity e1) (NumEntity e2) =
     return $ e1 == e2
+
+unifyFormula (BinOp op1 l1) (BinOp op2 l2)
+    | op1 == op2 && length l1 == length l2 = unifyList l1 l2
+    | otherwise = return False
 
 unifyFormula (UnOp op1 f1) (UnOp op2 f2) =
     ((&&) $ op1 == op2) <$> (f1 =~= f2)
