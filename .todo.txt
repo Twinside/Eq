@@ -1,8 +1,10 @@
+4:Find a way to execute a real taylor serie
 4:Test why preprocessor in subfolder fail
-3:Matrix multiplication order problem!
 3:Make some validation about definition domain
-2:Standard library?
+3:Matrix multiplication order problem!
 2:make an expand algorithm
+2:Write formula sorting blah lah blah
+2:Standard library?
 1:Make some C output (quid matrix?)
 1:Make some HLSL/GLSL output
 0:Make some LaTeX output

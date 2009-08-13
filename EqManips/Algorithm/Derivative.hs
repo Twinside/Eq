@@ -2,6 +2,7 @@ module EqManips.Algorithm.Derivative( derivate
                                     , Var ) where
 
 import Control.Applicative
+import Data.Monoid( Monoid( .. ), Any( .. ) )
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.FormulaIterator
@@ -67,8 +68,8 @@ d (BinOp OpDiv [f1,f2]) var =
        then (\f1' f2' -> (f1' * f2 - f1 * f2') / (f2 ** int 2))
                <$> d f1 var <*> d f2 var
         else (\f1' -> f1' / f2) <$> d f1 var
- where derivableDenumerator = foldf notConst False f2
-       notConst (Variable v) acc = v == var || acc
+ where derivableDenumerator = getAny $ foldf notConst (Any False) f2
+       notConst (Variable v) acc = Any (v == var) `mappend` acc
        notConst _ acc = acc
 
 

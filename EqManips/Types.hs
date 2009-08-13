@@ -25,7 +25,6 @@ import Control.Monad.Identity
 import Data.Ratio
 import Data.List( intersperse, mapAccumR )
 import Data.Maybe( fromJust )
-import Data.Monoid( Monoid( .. ) )
 
 import EqManips.Propreties
 
@@ -71,7 +70,7 @@ data Entity =
       Pi
     | Nabla
     | Infinite
-    deriving (Eq, Show, Read)
+    deriving (Eq, Show, Read, Ord)
 
 data MetaOperation =
     -- | Avoid an evaluation, replace itself by the
@@ -130,12 +129,44 @@ data Formula =
     deriving (Eq, Show, Read)
 
 -----------------------------------------------------------
---          Monoid def
+--  Ord def, used to sort-out '+' list for exemples
 -----------------------------------------------------------
-instance Monoid Formula where
-    mempty = CInteger 0
-    mappend  = (+) 
+instance Ord Formula where
+    -- Ignoring meta in comparisons
+    compare (Meta _ f) f2 = compare f f2
+    compare f (Meta _ f2) = compare f f2
+
+    compare (NumEntity e1) (NumEntity e2) = compare e1 e2
+    compare (CInteger i) (CInteger i2) = compare i i2
+    compare (CFloat f) (CFloat f2) = compare f f2
+    compare (CInteger i) (CFloat f) = compare (fromIntegral i) f
+    compare (CFloat f) (CInteger i) = compare f $ fromIntegral i
+    compare (Variable v) (Variable v1) = compare v v1
+
+    compare (BinOp OpPow [Variable v1, p1])
+            (BinOp OpPow [Variable v2, p2])
+            | v1 == v2 = compare p1 p2
+            | otherwise = compare v1 v2
+    compare (BinOp op [, _])
+            (BinOp op' [BinOp OpPow [Variable v2, p2], _])
+        | op == op' && v1 == v2
+         && (op == OpMul || op == OpDiv) = compare p1 p2
+        | otherwise =
+
+
+    -- To avoid some hypothetical problems :-S
+    compare (Matrix _ _ _) (Matrix _ _ _) = EQ
     
+    compare f (Block _ _ _) = LT
+    compare f (CInteger _) = GT
+    compare f (CFloat _) = GT
+    compare f (NumEntity _) = GT
+
+    compare (Block _ _ _) f = GT
+    compare (CInteger _) f = LT
+    compare (CFloat _) f = LT
+    compare (NumEntity _) f = LT
+
 -----------------------------------------------------------
 --          Side Associativity
 -----------------------------------------------------------
