@@ -180,6 +180,22 @@ factorial f@(CInteger i) | i > 0 = return . CInteger $ product [1 .. i]
 factorial f@(Matrix _ _ _) = eqFail f "No factorial of matrix"
 factorial a = return $ UnOp OpFactorial a
 
+floorEval :: Formula -> EqContext Formula
+floorEval i@(CInteger _) = return i
+floorEval (CFloat f) = return . CInteger $ floor f
+floorEval f = return $ UnOp OpFloor f
+
+-- frac
+fracEval :: Formula -> EqContext Formula
+fracEval (CInteger _) = return $ CInteger 0
+fracEval (CFloat f) = return . CFloat . snd $ (properFraction f :: (Int,Double))
+fracEval f = return $ UnOp OpFrac f
+
+-- ceil
+ceilEval :: Formula -> EqContext Formula
+ceilEval i@(CInteger _) = return i
+ceilEval (CFloat f) = return . CInteger $ ceiling f
+ceilEval f = return $ UnOp OpCeil f
 
 -----------------------------------------------
 ----        lalalal operators
@@ -207,6 +223,7 @@ eval (Variable v) = symbolLookup v
 eval (App def var) = do
     redDef <- eval def
     redVar <- mapM eval var
+    addTrace ("erf |", App redDef redVar)
     needApply redDef redVar
    where needApply (Lambda funArgs) args' =
            case getFirstUnifying funArgs args' of
@@ -214,7 +231,10 @@ eval (App def var) = do
                 Just (body, subst) -> do
                     pushContext
                     setContext subst
+                    {-traceContext-}
+                    addTrace ("hmm | " ++ show subst, body)
                     body' <- inject body
+                    addTrace ("WTF | " ++ show body', Variable "")
                     popContext
                     eval body'
          needApply def' args = do
@@ -232,8 +252,12 @@ eval (BinOp OpEq [v@(Variable _),f2]) = do
     return $ BinOp OpEq [v,f2']
 
 eval (UnOp OpFactorial f) = factorial =<< eval f 
+eval (UnOp OpFloor f) = floorEval =<< eval f
+eval (UnOp OpCeil f) = ceilEval =<< eval f
+eval (UnOp OpFrac f) = fracEval =<< eval f
 eval (UnOp op f) = unOpReduce (funOf op) =<< eval f
-    where funOf OpNegate = negate
+    where funOf :: Floating a => UnOperator -> (a -> a)
+          funOf OpNegate = negate
           funOf OpAbs = abs
           funOf OpSqrt = sqrt
           funOf OpSin = sin
@@ -251,13 +275,19 @@ eval (UnOp op f) = unOpReduce (funOf op) =<< eval f
           funOf OpLn = log
           funOf OpLog = \n -> log n / log 10.0
           funOf OpExp = exp
-          funOf OpFloor = fromIntegral . (floor :: Double -> Int)
-          funOf OpFrac = snd . (properFraction :: Double -> (Int, Double))
-          funOf OpCeil = fromIntegral . (ceiling :: Double -> Int)
+          funOf OpFloor = error "floor - unop - should not happen here"
+          funOf OpFrac =  error "frac - unop - should not happen here"
+          funOf OpCeil = error "ceil - unop - should not happen here"
           funOf OpFactorial = error "Should not happen here"
 
-eval (Derivate what (Variable s)) =
-    derivate what s >>= return . cleanup
+eval (Derivate f@(Meta op _) var) = do
+    evalued <- metaEval op f
+    eval (Derivate evalued var)
+
+eval (Derivate what (Variable s)) = do
+    addTrace ("Derivation ", what)
+    derived <- derivate what s
+    return $ cleanup derived
 
 eval f@(Derivate _ _) =
     eqFail f "Sorry your derivation doesn't have a good variable specification"
@@ -300,10 +330,10 @@ iterateFormula op ivar initi endi what = do
 --------------------------------------------------------------
 ---- Scalar related function
 --------------------------------------------------------------
-unOpReduce :: (Double -> Double) -> Formula -> EqContext Formula
+unOpReduce :: (forall a. (Floating a) => a -> a) -> Formula -> EqContext Formula
 unOpReduce f (CInteger i) = unOpReduce f . CFloat $ toEnum i
 unOpReduce f (CFloat num) = return . CFloat $ f num
-unOpReduce _ formula = eval formula
+unOpReduce f formula = return . f =<< eval formula
 
 --------------------------------------------------------------
 ---- Matrix related functions

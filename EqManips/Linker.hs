@@ -15,10 +15,10 @@ link :: Formula -> Formula
 link (Variable "infinite") = NumEntity Infinite
 link (Variable "pi") = NumEntity Pi
 -- Meta cases
-link (App (Variable "Hold") [f]) = Meta Hold f
-link (App (Variable "Force") [f]) = Meta Force f
-link (App (Variable "Listify") [f]) = Meta Listify f
-link (App (Variable "Treefy") [f]) = Meta Treefy f
+link (App (Variable "Hold") [f]) = Meta Hold $ link f
+link (App (Variable "Force") [f]) = Meta Force $ link f
+link (App (Variable "Listify") [f]) = Meta Listify $ link f
+link (App (Variable "Treefy") [f]) = Meta Treefy $ link f
 
 -- Special cases
 link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
@@ -85,5 +85,16 @@ link (App (Variable "matrix") (CInteger n: CInteger m: exps))
 link (App f flst) = App (link f) $ map link flst
 link (UnOp op f) = UnOp op $ link f
 link (BinOp op fs) = BinOp op [link f | f <- fs]
-link x = x
+link (Meta m fs) = Meta m $ link fs
+link a@(CFloat _) = a
+link a@(CInteger _) = a
+link a@(NumEntity _) = a
+link a@(Block _ _ _) = a
+link v@(Variable _) = v
+link (Lambda l) = Lambda [ (map link fl, link f)| (fl, f) <- l]
+link (Matrix n m ll) = Matrix n m [map link rows | rows <- ll]
+link (Derivate a b) = Derivate (link a) (link b)
+link (Sum a b c) = Sum (link a) (link b) (link c)
+link (Product a b c) = Sum (link a) (link b) (link c)
+link (Integrate a b c d) = Integrate (link a) (link b) (link c) (link d)
 
