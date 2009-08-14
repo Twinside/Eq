@@ -33,7 +33,7 @@ asciiSizer = Dimensioner
             s OpExp = (h, (1 + w, 1 + h))
             s OpCeil = (base + 1, (2 + w, 1 + h))
             s OpFloor = (base, (2 + w, 1 + h))
-            s OpFrac = (base + 1, (1 + w, 1 + h))
+            s OpFrac = (base, (2 + w, h))
 
             s oper = (h `div` 2, (w + opLength + 2, h))
                 where opLength = 
@@ -141,10 +141,12 @@ renderFormula formula =
 -- | One function to render them all! (parenthesis)
 -- for one line ( ... )
 -- else we try to render something like that :
+-- @
 -- /        \
 -- |        |
 -- |        |
 -- \        /
+-- @
 renderParens :: Pos -> Dimension -> [(Pos, Char)]
 renderParens (x,y) (w,1) = [((x,y), '('), ((x + w - 1, y), ')')]
 renderParens (x,y) (w,h) =
@@ -158,10 +160,12 @@ renderParens (x,y) (w,h) =
 -- | One function to render them all!
 -- for one line ( ... )
 -- else we try to render something like that :
+-- @
 -- |¯      ¯|
 -- |        |
 -- |        |
 -- |_      _|
+-- @
 renderSquareBracket :: Pos -> Dimension -> Bool -> Bool -> [(Pos,Char)]
 renderSquareBracket (x,y) (w,1) True True = [((x,y), '['), ((x + w - 1, y), ']')]
 renderSquareBracket (x,y) (w,h) top bottom =
@@ -174,6 +178,58 @@ renderSquareBracket (x,y) (w,h) top bottom =
              bottomSymbols s = [((x + 1, lastLine), s), ((rightCol - 1, lastLine ), s)] 
              upper = if top then topSymbols '¯' else []
              downer = if bottom then bottomSymbols '_' else []
+
+
+-- | Hope to render this :
+-- @
+--
+--  /
+--  |   /   /   {   {
+--  |   /   {   {
+--  /   \   \
+--  \   \
+--  |
+--  |
+--  \
+--  @
+renderBraces :: Pos -> Dimension -> Bool -> Bool -> [(Pos, Char)]
+renderBraces (x,y) (w, 1) left right =leftChar ++ rightChar
+    where leftChar = if left then [((x,y), '{')] else []
+          rightChar = if right then [((x + w - 1, y),'}')] else []
+
+renderBraces (x,y) (w, 2) renderLeft renderRight = leftChar ++ rightChar
+    where leftChar = if renderLeft 
+                        then [((x,y), '{'), ((x,y+1),'{')] 
+                        else []
+          right = x + w - 1
+          rightChar = if renderRight 
+                         then [((right, y),'}'), ((right, y+1), '}')]
+                         else []
+
+renderBraces (x,y) (w, 3) renderLeft renderRight = leftChar ++ rightChar
+    where leftChar = if renderLeft 
+            then [((x,y), '/'), ((x,y+1),'{'), ((x,y+2),'\\')] 
+            else []
+          right = x + w - 1
+          rightChar = if renderRight
+            then [((right, y),'\\'), ((right,y+1), '}'), ((right, y+2),'/')]
+            else []
+
+renderBraces (x,y) (w, h) renderLeft renderRight = leftChar ++ rightChar
+    where leftChar = if renderLeft then leftBrace else []
+          rightChar = if renderRight then rightBrace else []
+          top = (h - 4) `div` 2
+          bottomLine = y + h - 1
+          right = x + w - 1
+          middle = y + top + 1
+          leftBrace = [ ((x,y),'/'), ((x, bottomLine),'\\')
+                      , ((x, middle), '/'), ((x, middle + 1),'\\')] 
+                    ++ [((x,i), '|')| i <- [y + 1 .. middle - 1]]
+                    ++ [((x,i), '|')| i <- [middle + 2 .. bottomLine - 1]]
+          rightBrace = [ ((right,y),'\\'), ((right, bottomLine),'/')
+                      , ((right, middle), '\\'), ((right, middle + 1),'/')] 
+                    ++ [((right,i), '|')| i <- [y + 1 .. middle - 1]]
+                    ++ [((right,i), '|')| i <- [middle + 2 .. bottomLine - 1]]
 
 -- | Little association...
 charOfOp :: BinOperator -> Char
@@ -285,6 +341,9 @@ renderF (UnOp OpCeil f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
 
 renderF (UnOp OpFloor f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     renderSquareBracket (x,y) (w,h) False True ++ renderF f s (x + 1,y)
+
+renderF (UnOp OpFrac f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
+    renderBraces (x,y) (w,h) True True ++ renderF f s (x + 1,y)
 
 renderF (UnOp OpFactorial f) (MonoSizeNode _ (b,(w,_)) s) (x,y) =
     ((x + w - 1, y + b), '!') : renderF f s (x,y)
