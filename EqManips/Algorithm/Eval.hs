@@ -7,6 +7,7 @@ module EqManips.Algorithm.Eval( reduce
 import Data.Maybe
 
 import EqManips.Types
+import EqManips.Propreties
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Inject
@@ -16,7 +17,7 @@ import EqManips.Algorithm.MetaEval
 
 import EqManips.Algorithm.Unification
 
-import Data.List( foldl' , transpose )
+import Data.List( foldl' , transpose, sort )
 
 type FormulOperator = Formula -> Formula -> Formula
 type EvalOp = Formula -> Formula -> EqContext (Either Formula (Formula,Formula))
@@ -200,11 +201,17 @@ ceilEval f = return $ UnOp OpCeil f
 -----------------------------------------------
 ----        lalalal operators
 -----------------------------------------------
+binOp :: BinOperator -> [Formula] -> Formula
+binOp _ [x] = x
+binOp op lst = BinOp op lst
+
 -- | Evaluate a binary operator
 binEval :: BinOperator -> EvalOp -> EvalOp -> [Formula] -> EqContext Formula
-binEval op f inv formulaList = biAssocM f inv formulaList >>= rez
-    where rez [x] = return x
-          rez lst = return $ BinOp op lst
+binEval op f inv formulaList 
+    | op `hasProp` Associativ && op `hasProp` Commutativ =
+        biAssocM f inv (sort formulaList) >>= return . binOp op
+
+    | otherwise = biAssocM f inv formulaList >>= return . binOp op
 
 -----------------------------------------------
 ----        General evaluation
