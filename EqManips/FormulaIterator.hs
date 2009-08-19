@@ -1,8 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module EqManips.FormulaIterator where
+module EqManips.FormulaIterator( depthFirstFormula
+                               , depthFormulaTraversal 
+                               ) where
 
-import Data.List
-import Data.Monoid( Monoid( .. ) )
 import EqManips.Types
 import Control.Monad( mapM )
 
@@ -89,45 +89,4 @@ depthFormulaTraversal pre post formula@(BinOp op fs) = do
 
 -- Hmm, it's a debug for renderer, we dont really care
 depthFormulaTraversal _ _ b@(Block _ _ _) = return b
-
-foldf :: (Monoid b) => (Formula -> b -> b) -> b -> Formula -> b
-foldf f acc m@(Meta _ fo) = f m $ foldf f acc fo
-foldf f acc fo@(UnOp _ sub) = f fo $ foldf f acc sub
-foldf f acc fo@(App def args) =
-    foldf f (foldf f listAcc def) fo
-     where listAcc = foldr f acc args
-
-foldf f acc fo@(BinOp _ args) =
-    f fo $ foldr f acc args
-
-foldf f acc fo@(Sum ini end what) = f fo finalAcc
-    where whatAcc = foldf f acc what
-          iniAcc = foldf f acc ini
-          endAcc = foldf f acc end
-          finalAcc = whatAcc `mappend` iniAcc `mappend` endAcc
-
-foldf f acc fo@(Product ini end what) = f fo finalAcc
-        where whatAcc = foldf f acc what
-              iniAcc = foldf f acc ini
-              endAcc = foldf f acc end
-              finalAcc = whatAcc `mappend` iniAcc `mappend` endAcc
-
-foldf f acc fo@(Integrate ini end what var) = f fo finalAcc
-        where whatAcc = foldf f acc what
-              iniAcc = foldf f acc ini
-              endAcc = foldf f acc end
-              varAcc = foldf f acc var
-              finalAcc = whatAcc `mappend` iniAcc 
-                                 `mappend` endAcc `mappend` varAcc
-
-foldf f acc fo@(Derivate what var) = f fo $ whatAcc `mappend` varAcc
-        where whatAcc = foldf f acc what
-              varAcc = foldf f acc var
-
-foldf f acc fo@(Matrix _ _ cells) = f fo finalAcc
-    where lineFolder acc' formu = acc' `mappend` (foldf f acc formu)
-          rowAccs = [ foldl' lineFolder mempty row | row <- cells]
-          finalAcc = foldl1' mappend rowAccs
-
-foldf f acc fo = f fo acc
 

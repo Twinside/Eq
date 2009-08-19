@@ -17,13 +17,16 @@ module EqManips.Types( Formula( .. )
                      , OperatorText(..)
 
                      , MetaOperation( .. )
+                     , foldf
                      ) where
 
 import Control.Applicative( (<$>) )
 import Control.Monad.Identity
+import Data.Monoid( Monoid( .. ), getSum )
+import qualified Data.Monoid as Monoid
 
 import Data.Ratio
-import Data.List( intersperse, mapAccumR )
+import Data.List( intersperse, mapAccumR, foldl', foldl1' )
 import Data.Maybe( fromJust )
 
 import EqManips.Propreties
@@ -136,6 +139,7 @@ instance Ord Formula where
     compare (Meta _ f) f2 = compare f f2
     compare f (Meta _ f2) = compare f f2
 
+    compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
     compare (NumEntity e1) (NumEntity e2) = compare e1 e2
     compare (CInteger i) (CInteger i2) = compare i i2
     compare (CFloat f) (CFloat f2) = compare f f2
@@ -147,25 +151,40 @@ instance Ord Formula where
             (BinOp OpPow [Variable v2, p2])
             | v1 == v2 = compare p1 p2
             | otherwise = compare v1 v2
-    compare (BinOp op [, _])
-            (BinOp op' [BinOp OpPow [Variable v2, p2], _])
+    compare (BinOp op [BinOp OpPow (Variable v1: p1: _)])
+            (BinOp op' [BinOp OpPow (Variable v2: p2: _)])
         | op == op' && v1 == v2
          && (op == OpMul || op == OpDiv) = compare p1 p2
-        | otherwise =
 
+    compare (BinOp _ f1) (BinOp _ f2) = compare f1 f2
 
     -- To avoid some hypothetical problems :-S
     compare (Matrix _ _ _) (Matrix _ _ _) = EQ
     
-    compare f (Block _ _ _) = LT
-    compare f (CInteger _) = GT
-    compare f (CFloat _) = GT
-    compare f (NumEntity _) = GT
+    compare _ (Block _ _ _) = LT
+    compare _ (CInteger _) = GT
+    compare _ (CFloat _) = GT
+    compare _ (NumEntity _) = GT
 
-    compare (Block _ _ _) f = GT
-    compare (CInteger _) f = LT
-    compare (CFloat _) f = LT
-    compare (NumEntity _) f = LT
+    compare (Derivate w _) (Derivate w' _) = compare w w'
+    compare (Derivate _ _) (Integrate _ _ _ _) = LT
+    compare (Derivate _ _) _ = GT
+
+    compare (Integrate _ _ w _) (Integrate _ _ w' _) = compare w w'
+    compare (Integrate _ _ _ _) _ = GT
+    compare (Product _ _ _) _ = GT
+    compare (Sum _ _ _) _ = GT
+    compare (App _ _) _ = LT
+
+    compare (Block _ _ _) _ = GT
+    compare (CInteger _) _ = LT
+    compare (CFloat _) _ = LT
+    compare (NumEntity _) _ = LT
+    compare f1 f2 = compare (nodeCount f1) $ nodeCount f2
+        where nodeCount = getSum . foldf 
+                    (\_ a -> Monoid.Sum $ getSum a + 1)
+                    (Monoid.Sum 0 :: Monoid.Sum Int)
+    
 
 -----------------------------------------------------------
 --          Side Associativity
@@ -292,6 +311,50 @@ unOpNames =
     , (OpFloor, "floor")
     , (OpFrac, "frac")
     ]
+ 
+-------------------------------------------
+---- Formula Folding
+-------------------------------------------
+foldf :: (Monoid b) => (Formula -> b -> b) -> b -> Formula -> b
+foldf f acc m@(Meta _ fo) = f m $ foldf f acc fo
+foldf f acc fo@(UnOp _ sub) = f fo $ foldf f acc sub
+foldf f acc fo@(App def args) =
+    foldf f (foldf f listAcc def) fo
+     where listAcc = foldr f acc args
+
+foldf f acc fo@(BinOp _ args) =
+    f fo $ foldr f acc args
+
+foldf f acc fo@(Sum ini end what) = f fo finalAcc
+    where whatAcc = foldf f acc what
+          iniAcc = foldf f acc ini
+          endAcc = foldf f acc end
+          finalAcc = whatAcc `mappend` iniAcc `mappend` endAcc
+
+foldf f acc fo@(Product ini end what) = f fo finalAcc
+        where whatAcc = foldf f acc what
+              iniAcc = foldf f acc ini
+              endAcc = foldf f acc end
+              finalAcc = whatAcc `mappend` iniAcc `mappend` endAcc
+
+foldf f acc fo@(Integrate ini end what var) = f fo finalAcc
+        where whatAcc = foldf f acc what
+              iniAcc = foldf f acc ini
+              endAcc = foldf f acc end
+              varAcc = foldf f acc var
+              finalAcc = whatAcc `mappend` iniAcc 
+                                 `mappend` endAcc `mappend` varAcc
+
+foldf f acc fo@(Derivate what var) = f fo $ whatAcc `mappend` varAcc
+        where whatAcc = foldf f acc what
+              varAcc = foldf f acc var
+
+foldf f acc fo@(Matrix _ _ cells) = f fo finalAcc
+    where lineFolder acc' formu = acc' `mappend` (foldf f acc formu)
+          rowAccs = [ foldl' lineFolder mempty row | row <- cells]
+          finalAcc = foldl1' mappend rowAccs
+
+foldf f acc fo = f fo acc
 
 -------------------------------------------
 ---- "Language" helpers
@@ -476,12 +539,12 @@ funCall funcName = App funcName <$> argList
        <?> "funCall"
         where argList = parens $ sepBy expr $ (char ',' >> whiteSpace)
 
-var :: Parsed st Formula
-var = Variable <$> identifier
+variable :: Parsed st Formula
+variable = Variable <$> identifier
 
 term :: Parsed st Formula
 term = parens expr
-   <|> (do varName <- var
+   <|> (do varName <- variable
            try (funCall varName) <|> return varName)
    <|> try (CFloat <$> float)
    <|> CInteger . fromInteger <$> integer

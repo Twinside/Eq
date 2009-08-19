@@ -5,7 +5,6 @@ import Control.Applicative
 import Data.Monoid( Monoid( .. ), Any( .. ) )
 import EqManips.Types
 import EqManips.EvaluationContext
-import EqManips.FormulaIterator
 import EqManips.Algorithm.MetaEval
 
 type Var = String
