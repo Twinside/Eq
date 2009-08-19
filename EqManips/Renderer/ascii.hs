@@ -349,7 +349,7 @@ renderF (UnOp OpFactorial f) (MonoSizeNode _ (b,(w,_)) s) (x,y) =
     ((x + w - 1, y + b), '!') : renderF f s (x,y)
 
 renderF (UnOp OpNegate f) (MonoSizeNode _ (b,_) s) (x,y) =
-    ((x,y + b), '-') : renderF f s (x,y)
+    ((x,y + b), '-') : renderF f s (x + 1,y)
 
 renderF (UnOp OpExp f) (MonoSizeNode _ (_,(_,h)) s) (x,y) =
     ((x, y + h - 1), 'e') : renderF f s (x + 1, y)
