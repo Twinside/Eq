@@ -6,6 +6,7 @@ import Data.Monoid( Monoid( .. ), Any( .. ) )
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Algorithm.MetaEval
+import EqManips.Algorithm.Utils
 
 type Var = String
 
@@ -16,7 +17,7 @@ int = CInteger
 -- | Public function to perform a derivation on a
 -- variable.
 derivate :: Formula -> Var -> EqContext Formula
-derivate f v = d f v
+derivate f v = return . sortFormula . listifyFormula =<< d f v
 
 -- | real function for derivation, d was choosen
 -- because I'm too lasy to type something else :]

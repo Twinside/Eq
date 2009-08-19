@@ -5,8 +5,10 @@ module EqManips.Algorithm.Utils ( biAssocM
                                 , fromEmptyMonad 
                                 , treeIfyBinOp 
                                 , listifyBinOp 
+                                , listifyFormula 
                                 , parseFormula
                                 , parseProgramm 
+                                , sortFormula 
                                 ) where
 import Text.Parsec.Error( ParseError )
 import Text.ParserCombinators.Parsec.Prim( runParser )
@@ -15,6 +17,7 @@ import EqManips.Propreties
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.Linker
+import Data.List( sort )
 
 -----------------------------------------------------------
 --          Parsing formula
@@ -28,6 +31,21 @@ parseFormula text = rez
              Left _ -> parsed
              Right f -> Right . listifyFormula $ linkFormula f
 
+-- | Perform a semantic sorting on formula, trying to put numbers
+-- front and rassembling terms
+sortFormula :: Formula -> Formula
+sortFormula = depthFirstFormula `asAMonad` sortBinOp
+
+-- | Sort a binary operator, used by sortFormula to sort globally
+-- a formula
+sortBinOp :: Formula -> Formula
+sortBinOp (BinOp op lst)
+    | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sort lst
+sortBinOp a = a
+
+-- | Helper function to use to parse a programm.
+-- Perform some transformations to get a usable
+-- formula.
 parseProgramm :: String -> Either ParseError [Formula]
 parseProgramm text = rez
     where parsed = runParser program () "FromFile" text

@@ -208,10 +208,13 @@ binOp op lst = BinOp op lst
 -- | Evaluate a binary operator
 binEval :: BinOperator -> EvalOp -> EvalOp -> [Formula] -> EqContext Formula
 binEval op f inv formulaList 
-    | op `hasProp` Associativ && op `hasProp` Commutativ =
+    | op `hasProp` Associativ && op `hasProp` Commutativ = do
+        addTrace ("OKI", Block 1 1 1)
         biAssocM f inv (sort formulaList) >>= return . binOp op
 
-    | otherwise = biAssocM f inv formulaList >>= return . binOp op
+    | otherwise = do
+        addTrace ("EVAL", BinOp op formulaList)
+        biAssocM f inv formulaList >>= return . binOp op
 
 -----------------------------------------------
 ----        General evaluation
