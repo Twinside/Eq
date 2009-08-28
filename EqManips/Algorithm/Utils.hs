@@ -93,6 +93,7 @@ treeIfyBinOp (BinOp op (f1:f2:fs)) = innerNode $ op `obtainProp` AssocSide
               innerNode OpAssocRight = BinOp op [f1, BinOp op $ f2 : fs]
 treeIfyBinOp _ = error "treeIfy of non binop formula"
 
+-- |
 biAssoc :: (a -> a -> Either a (a,a)) 
         -> (a -> a -> Either a (a,a)) 
         -> [a] -> [a]

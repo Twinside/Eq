@@ -49,4 +49,4 @@ if ($args[0] -eq "-showAll") { $toShowAll = $true }
 
 performFullTest "eval" "eval" $toShowAll
 performFullTest "derivate" "eval" $toShowAll
-
+performFullTest "programm" "eval" $toShowAll

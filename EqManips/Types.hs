@@ -531,7 +531,7 @@ program = sepBy expr $ (char ';' >> whiteSpace)
 
 -- | Parser for the mini language is defined here
 expr :: Parsed st Formula
-expr = buildExpressionParser operatorDefs term
+expr = whiteSpace >> buildExpressionParser operatorDefs term
     <?> "expression"
 
 funCall :: Formula -> Parsed st Formula
