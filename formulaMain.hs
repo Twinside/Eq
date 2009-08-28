@@ -94,10 +94,11 @@ transformParseFormula operation args = do
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
-               hPutStrLn finalFile "####### </TRACE> #########"
+               hPutStrLn finalFile "####### </TRACE> #########\n"
 #endif
 
-               print $ result rez
+               hPrint finalFile $ result rez
+               hPutStrLn finalFile ""
                printErrors $ errorList rez
                hPutStr finalFile . formatFormula $ result rez
 
