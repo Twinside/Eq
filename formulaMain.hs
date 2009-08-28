@@ -49,10 +49,7 @@ formatCommand args = do
     formulaText <- input
     let formula = parseFormula formulaText
     output <- outputFile
-    either (\err -> do print "Error : "
-                       print err
-                       hClose output
-                       return False)
+    either (parseErrorPrint output)
            (\formula' -> do 
                 hPutStrLn output $ formatFormula formula'
                 hClose output
@@ -65,6 +62,13 @@ printErrors :: [(Formula, String)] -> IO ()
 printErrors =
     mapM_ (\(f,s) -> do putStrLn s
                         putStrLn $ formatFormula f) 
+
+parseErrorPrint :: (Show a) => Handle -> a -> IO Bool
+parseErrorPrint finalFile err = do
+    hPutStr finalFile "Error : "
+    hPutStr finalFile $ show err
+    hClose finalFile
+    return False
 
 preprocessCommand :: [String] -> IO Bool
 preprocessCommand args =
@@ -85,7 +89,7 @@ transformParseFormula operation args = do
     formulaText <- input
     finalFile <- outputFile
     let formulaList = parseProgramm formulaText
-    either (\err -> print "Error : " >> print err >> return False)
+    either (parseErrorPrint finalFile)
            (\formulal -> do
                let rez = performLastTransformation $
                                 mapM operation formulal

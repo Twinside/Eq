@@ -20,7 +20,9 @@ module EqManips.Types( Formula( .. )
                      , foldf
                      ) where
 
-import Control.Applicative( (<$>), (<*) )
+import Control.Applicative( (<$>), (<*)
+                          {-, (<*>) -}
+                          )
 import Control.Monad.Identity
 import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
@@ -527,30 +529,46 @@ lexer  = P.makeTokenParser
 type Parsed st b = ParsecT String st Identity b
 
 program :: Parsed st [Formula]
-program =
-    sepBy expr (whiteSpace >> char ';' >> whiteSpace) <* whiteSpace
+program = sepBy expr (whiteSpace >> char ';' >> whiteSpace) <* whiteSpace
+       <?> "program"
 
 -- | Parser for the mini language is defined here
 expr :: Parsed st Formula
-expr = whiteSpace >> buildExpressionParser operatorDefs term
+expr = whiteSpace >> buildExpressionParser operatorDefs funCall
     <?> "expression"
 
-funCall :: Formula -> Parsed st Formula
-funCall funcName = App funcName <$> argList
-       <?> "funCall"
-        where argList = parens $ sepBy expr $ (char ',' >> whiteSpace)
+operatorDefs :: OperatorTable String st Identity Formula
+operatorDefs = 
+    [ [postfix "!" (UnOp OpFactorial)]
+    , [prefix "-" (UnOp OpNegate) ]
+    , [binary "^" (binop OpPow) AssocLeft]
+    , [binary "/" (binop OpDiv) AssocLeft, binary "*" (binop OpMul) AssocLeft]
+    , [binary "+" (binop OpAdd) AssocLeft, binary "-" (binop OpSub) AssocLeft]
+    , [binary "=" (binop OpEq) AssocRight]
+    ]
+
+funCall :: Parsed st Formula
+funCall =  do
+    caller <- term
+    (App caller <$> argList) <|> return caller
+        where argSeparator = whiteSpace >> char ',' >> whiteSpace
+              exprList = sepBy expr argSeparator
+              argList = parens (whiteSpace >> (exprList <* whiteSpace))
 
 variable :: Parsed st Formula
 variable = Variable <$> identifier
+        <?> "variable"
 
 term :: Parsed st Formula
-term = parens expr
-   <|> (do varName <- variable
-           try (funCall varName) <|> return varName)
-   <|> try (CFloat <$> float)
-   <|> CInteger . fromInteger <$> integer
-   <?> "Term error"
+term = variable
+    <|> try (CFloat <$> float)
+    <|> CInteger . fromInteger <$> integer
+    <|> parens expr
+    <?> "Term error"
 
+-----------------------------------------------
+----        Little helpers
+-----------------------------------------------
 binary :: String -> (a -> a -> a) -> Assoc -> Operator String st Identity a
 binary  name fun assoc = Infix (do{ reservedOp name; return fun }) assoc
 
@@ -562,14 +580,4 @@ postfix name fun = Postfix (do{ reservedOp name; return fun })
 
 binop :: BinOperator -> Formula -> Formula -> Formula
 binop op left right = BinOp op [left, right]
-
-operatorDefs :: OperatorTable String st Identity Formula
-operatorDefs = 
-    [ [postfix "!" (UnOp OpFactorial)]
-    , [prefix "-" (UnOp OpNegate) ]
-    , [binary "^" (binop OpPow) AssocLeft]
-    , [binary "/" (binop OpDiv) AssocLeft, binary "*" (binop OpMul) AssocLeft]
-    , [binary "+" (binop OpAdd) AssocLeft, binary "-" (binop OpSub) AssocLeft]
-    , [binary "=" (binop OpEq) AssocRight]
-    ]
 

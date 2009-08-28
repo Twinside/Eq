@@ -19,6 +19,9 @@ conf:
 test:
 	./iotest
 
+debug:
+	./eq.exe eval -o out.txt -f taylor.txt
+
 run:
 	dist/build/eq/eq.exe preprocess -f tests/preprocess/test.cc -o rez.cc
 	dist/build/eq/eq.exe preprocess -f rez.cc -o rez2.cc
