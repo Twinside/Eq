@@ -10,10 +10,9 @@ function performTestSuite( [string]$where, [bool]$isValid, [string]$command, [bo
     else { $testPath = $where + "\invalid\" }
 
     $toSearch = $testPath + "*.txt"
-    echo $toSearch
 
     ls $($toSearch) | % {
-        echo $_.FullName
+        write-host -nonewline "."
         $rez = ../eq $command -f $($testPath + $_.name)
         if ( $showAll ) {
             echo "`n==========================================================="

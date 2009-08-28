@@ -1,0 +1,6 @@
+-- Ok, this test is here for agressive inline comment
+f(x)=1 {- nested {- comments -} in the middle -} + {- of an expression -} 4;
+y=x+3; -- yahoo
+-- Whoptidooo
+f(z) + y {- da
+boudou -}
