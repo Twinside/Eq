@@ -20,7 +20,7 @@ module EqManips.Types( Formula( .. )
                      , foldf
                      ) where
 
-import Control.Applicative( (<$>) )
+import Control.Applicative( (<$>), (<*) )
 import Control.Monad.Identity
 import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
@@ -527,7 +527,8 @@ lexer  = P.makeTokenParser
 type Parsed st b = ParsecT String st Identity b
 
 program :: Parsed st [Formula]
-program = sepBy expr $ (char ';' >> whiteSpace)
+program =
+    sepBy expr (whiteSpace >> char ';' >> whiteSpace) <* whiteSpace
 
 -- | Parser for the mini language is defined here
 expr :: Parsed st Formula
