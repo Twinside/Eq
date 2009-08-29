@@ -116,7 +116,9 @@ data Formula =
     -- can have many definitions. The applied
     -- one must be the first in the list which
     -- unify with the applied parameters.
-    | Lambda [([Formula], Formula)]
+    | Lambda [( [Formula] {- clause args -}
+              , Formula {- clause body -})
+             ] {- clauses -}
 
     -- | f1 op f2
     | BinOp BinOperator [Formula]

@@ -6,6 +6,7 @@ import Data.Monoid( Monoid( .. ), Any( .. ) )
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Algorithm.MetaEval
+import EqManips.Algorithm.Inject
 import EqManips.Algorithm.Utils
 
 type Var = String
@@ -127,6 +128,14 @@ d (UnOp OpASinh f) var = (\f' -> f' * (int 1 / sqrt (f ** 2 + 1))) <$> d f var
 d (UnOp OpACosh f) var = (\f' -> f' * (int 1 / sqrt (f ** 2 - 1))) <$> d f var
 d (UnOp OpATanh f) var = (\f' -> f' * (int 1 / (int 1 - f ** 2))) <$> d f var
 d fo@(UnOp OpLn f) var = (\f' -> f' / fo) <$> d f var
+
+-- | We allow deriving of lambda with only one argument...
+d (Lambda [([Variable v], body)]) var = do
+    pushContext
+    addSymbol v $ Variable var
+    body' <- inject body
+    popContext
+    d body' var
 
 d f@(UnOp OpFloor _) _ = eqFail f "The floor function is not continuous"
 d f@(UnOp OpCeil _) _ = eqFail f "The ceil function in not continuous"
