@@ -3,7 +3,6 @@
 3:Make some validation about definition domain
 3:Matrix multiplication order problem!
 2:make an expand algorithm
-2:Write formula sorting blah lah blah
 2:Standard library?
 1:Make some C output (quid matrix?)
 1:Make some HLSL/GLSL output

@@ -33,6 +33,10 @@ data EqTransformInfo = EqTransformInfo {
         -- which can be used to evaluate some sums.
         , contextStack :: [[(String, Formula)]]
 
+        -- | Depth of the context stack. Used to limit
+        -- recursion in the monad.
+        , contextDepth :: !Int
+
         -- | Some constraints put on variables
         , assertions :: [(String, Formula)]
 
@@ -83,6 +87,7 @@ emptyContext :: EqTransformInfo
 emptyContext = EqTransformInfo {
         context = []
       , contextStack = []
+      , contextDepth = 0
       , assertions = []
       , errorList = []
       , result = Block 0 0 0
@@ -114,7 +119,10 @@ traceContext = EqContext $ \c ->
 -- | Keep a track of current context, keep previous context clean
 pushContext :: EqContext ()
 pushContext = EqContext $ \c ->
-    (c { contextStack = context c : contextStack c }, ())
+    (c { contextStack = context c : contextStack c
+       , contextDepth = contextDepth c + 1
+       }
+    , ())
 
 -- | Discard the current deep context and restore the one
 -- which was previously "pushed" by pushContext. If no
@@ -125,7 +133,11 @@ popContext = EqContext $ \c ->
         safeHeadTail     [] = ([], [])
         (oldContext, stack) = safeHeadTail $ contextStack c
     in
-    (c { contextStack = stack, context = oldContext }, ())
+    (c { contextStack = stack
+       , context = oldContext
+       , contextDepth = contextDepth c - 1
+       }
+    , ())
 
 setContext :: [(String, Formula)] -> EqContext ()
 setContext newContext = EqContext $ \c -> (c { context = newContext }, ())

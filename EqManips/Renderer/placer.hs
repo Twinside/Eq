@@ -9,17 +9,18 @@ type OpPriority = Int
 type BaseLine = Int
 type Dimension = (Int, Int)
 
+type RelativePlacement = (BaseLine, Dimension)
+
 -- | Size tree used to store the block size to
 -- render the equation in ASCII
 data SizeTree =
-      EndNode (BaseLine, Dimension)
-    | MonoSizeNode Bool (BaseLine, Dimension) SizeTree
-    | BiSizeNode Bool (BaseLine, Dimension) SizeTree SizeTree
-    | SizeNodeList Bool (BaseLine, Dimension) BaseLine [SizeTree]
-    | SizeNodeArray Bool (BaseLine, Dimension) ![[((BaseLine, Dimension), SizeTree)]]
-    deriving (Eq, Show, Read)
-
-type RelativePlacement = (BaseLine, Dimension)
+      EndNode        RelativePlacement
+    | MonoSizeNode   Bool RelativePlacement SizeTree
+    | BiSizeNode     Bool RelativePlacement SizeTree   SizeTree
+    | SizeNodeList   Bool RelativePlacement BaseLine   [SizeTree]
+    | SizeNodeClause Bool RelativePlacement [(BaseLine, [SizeTree], BaseLine, SizeTree)]
+    | SizeNodeArray  Bool RelativePlacement [[(RelativePlacement, SizeTree)]]
+    deriving (Eq, Show)
 
 -- | an "object" which is used to get the placement of all the elements in the equation.
 data Dimensioner = Dimensioner
@@ -34,6 +35,7 @@ data Dimensioner = Dimensioner
     , binop :: BinOperator -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , argSize :: (Int, Int, Int) -> RelativePlacement -> (Int, Int, Int)
     , appSize :: (Int, Int, Int) -> RelativePlacement -> RelativePlacement
+    , lambdaSize :: [((Int,Int,Int), RelativePlacement)] -> RelativePlacement
     , sumSize :: RelativePlacement -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , productSize :: RelativePlacement -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , integralSize :: RelativePlacement -> RelativePlacement 
@@ -44,12 +46,13 @@ data Dimensioner = Dimensioner
     , entitySize :: Entity -> RelativePlacement
     }
 
-sizeExtract :: SizeTree -> (BaseLine, Dimension)
+sizeExtract :: SizeTree -> RelativePlacement
 sizeExtract (EndNode s) = s
 sizeExtract (MonoSizeNode _ s _) = s
 sizeExtract (BiSizeNode _ s _ _) = s
 sizeExtract (SizeNodeList _ s _ _) = s
 sizeExtract (SizeNodeArray _ s _) = s
+sizeExtract (SizeNodeClause _ s _) = s
 
 sizeOfTree :: SizeTree -> (Int, Int)
 sizeOfTree = snd . sizeExtract
@@ -63,7 +66,6 @@ maxPrio = 100
 -- | Compute a size tree for a formula.
 -- This size-tree can be used for a following render
 sizeOfFormula :: Dimensioner -> Bool -> OpPriority -> Formula -> SizeTree
-sizeOfFormula _ _ _ (Lambda _) = EndNode (0,(1,1))
 -- INVISIBLE META NINJA
 sizeOfFormula sizer a b (Meta _ f) = sizeOfFormula sizer a b f
 -- Simply the size of rendered text
@@ -196,13 +198,24 @@ sizeOfFormula sizer _isRight _prevPrio (Sum inite end what) =
 --      #######
 sizeOfFormula sizer _ _ (App f1 f2) =
     SizeNodeList False sizeDim argsBase (funcSize : trees)
-        where trees = map (sizeOfFormula sizer False maxPrio) f2
-              funcSize = sizeOfFormula sizer False maxPrio f1
+        where subSize = sizeOfFormula sizer False maxPrio
+              trees = map subSize f2
+              funcSize = subSize f1
 
-              sizeExtractor acc node =
-                  (argSize sizer) acc $ sizeExtract node
-
+              accumulated = argSizes sizer trees
               sizeDim = (appSize sizer) accumulated (sizeExtract funcSize)
-              accumulated = foldl' sizeExtractor (0, 0, 0) trees
               (_, argsBase, _) = accumulated
+
+sizeOfFormula sizer _ _ (Lambda clauses) = SizeNodeClause False nodeSize finalTree
+    where subSize = sizeOfFormula sizer False maxPrio 
+          subTrees = [ (map subSize args, subSize body) | (args, body) <- clauses ]
+          subPlacement = [(argSizes sizer args, sizeExtract body) | (args, body) <- subTrees]
+          nodeSize = lambdaSize sizer subPlacement
+          finalTree = [ (argBase, argTrees, bodyBase, bodyTree) 
+                            | ( (argTrees, bodyTree)
+                              , ((_, argBase,_),(bodyBase,_)) ) <- zip subTrees subPlacement]
+
+argSizes :: Dimensioner -> [SizeTree] -> (Int, Int, Int)
+argSizes sizer args = foldl' sizeExtractor (0, 0, 0) args
+    where sizeExtractor acc node = (argSize sizer) acc $ sizeExtract node
 

@@ -65,13 +65,6 @@ asciiSizer = Dimensioner
                         nodeSize = base + max (h1 - bl) (h2 - br)
                     in (base, (w1 + w2 + 3, nodeSize))
 
-    , argSize = \(wa, argBase, lower) (nodeBase, (w,h)) ->
-                  (wa + w + 2, max argBase nodeBase, max lower (h-nodeBase))
-
-    , appSize = \(pw, argsBase, argsLeft) (_, (wf, hf)) ->
-            let finalY = max hf (argsBase + argsLeft)
-            in ((finalY - hf) `div` 2, (wf + pw, finalY))
-
     , productSize = \(_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
             let height = inih + endh + max 2 whath
                 sumW = maximum [iniw, endw, 3]
@@ -105,6 +98,24 @@ asciiSizer = Dimensioner
 
     , blockSize = \(i1,i2,i3) -> (i1, (i2,i3))
     , entitySize = fst . textOfEntity
+
+    , argSize = \(wa, argBase, lower) (nodeBase, (w,h)) ->
+                  (wa + w + 2, max argBase nodeBase, max lower (h-nodeBase))
+
+    , appSize = \(pw, argsBase, argsLeft) (_, (wf, hf)) ->
+            let finalY = max hf (argsBase + argsLeft)
+            in ((finalY - hf) `div` 2, (wf + pw, finalY))
+
+    -- lambdaSize :: [((Int,Int,Int), RelativePlacement)] -> RelativePlacement
+    , lambdaSize = \poses -> 
+        let clauseCount = length poses
+            mHeight = 2 + clauseCount + sum
+                [ max bodyH $ top + bottom | ((_, top, bottom), (_,(_,bodyH))) <- poses ]
+            mWidth = maximum
+                [ w + 4 {- " -> " -} + bodyW 
+                    | ((w, _, _), (_,(bodyW,_))) <- poses]
+        in
+        (mHeight `div` 2, (2 + mWidth, mHeight))
     }
 
 -- | Convert entity to text, not much entity for
@@ -231,6 +242,25 @@ renderBraces (x,y) (w, h) renderLeft renderRight = leftChar ++ rightChar
                     ++ [((right,i), '|')| i <- [y + 1 .. middle - 1]]
                     ++ [((right,i), '|')| i <- [middle + 2 .. bottomLine - 1]]
 
+-- | Render a list of arguments, used by lambdas & functions
+renderArgs :: Pos -- ^ Where to render the arguments
+           -> Int -- ^ The baseline for all the arguments
+           -> Int 
+           -> [(Formula, SizeTree)] -- ^ Arguments to be rendered
+           -> (Int, [(Pos, Char)]) -- ^ Width & charList
+renderArgs (x,y) argBase argsMaxHeight mixedList = (xla, concat params
+    ++ renderParens (x , y) (xla - argBegin, argsMaxHeight))
+  where argBegin = x + 1
+        (params, (xla,_)) = foldl' write ([], (argBegin,y)) mixedList
+
+        write (acc, (x',y')) (node, size) =
+            ( commas : argWrite : acc , (x' + nodeWidth + 2, y') )
+              where (nodeWidth, _) = sizeOfTree size
+                    commas = [((x' + nodeWidth, y + argBase), ',')] 
+                    nodeBase = baseLineOfTree size
+                    baseLine' = y' + (argBase - nodeBase)
+                    argWrite = renderF node size (x', baseLine')
+
 -- | Little association...
 charOfOp :: BinOperator -> Char
 charOfOp OpEq = '='
@@ -266,8 +296,6 @@ renderF node (SizeNodeList True (base, dim) abase stl) (x,y) =
     renderParens (x,y) dim ++ renderF node neoTree (x+1, y)
         where subSize = (remParens asciiSizer) dim
               neoTree = SizeNodeList False (base, subSize) abase stl
-
-renderF (Lambda _) _ pos = [(pos, '\\')]
 
 -- Here we make the "simple" rendering, just a conversion.
 renderF (Block _ w h) _ (x,y) =
@@ -369,24 +397,26 @@ renderF (UnOp op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
 
 renderF (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
         (x,y) =
-    concat params
-    ++ renderF func s (x,baseLine) 
-    ++ renderParens (x + fw, y) (xla - argBegin, h)
+    (snd $ renderArgs (x + fw, y) argBase h mixedList) ++ renderF func s (x,baseLine) 
         where (fw, _) = sizeOfTree s
-
               baseLine = y + base
-
               mixedList = zip flist ts
-              argBegin = x + fw + 1
-              (params, (xla,_)) = foldl' write ([], (argBegin,y)) mixedList
 
-              write (acc, (x',y')) (node, size) =
-                  ( commas : argWrite : acc , (x' + nodeWidth + 2, y') )
-                    where (nodeWidth, _) = sizeOfTree size
-                          commas = [((x' + nodeWidth, y + argBase), ',')] 
-                          nodeBase = baseLineOfTree size
-                          baseLine' = y' + (argBase - nodeBase)
-                          argWrite = renderF node size (x', baseLine')
+renderF (Lambda clauses) (SizeNodeClause _ (_,(w,h)) subTrees) (x,y) =
+    (fst . foldr renderClause ([], y + 1) . reverse $ zip clauses subTrees)
+    ++ renderBraces (x,y) (w,h) True True
+        where renderClause ((args, body), (argBase, trees, _bodyBase, bodyTree))
+                           (lst, top) =
+                  let (left, rez) = renderArgs (x + 1, top) argBase argsHeight
+                                     $ zip args trees
+                      bodyText = renderF body bodyTree (left + 3, top)
+                      (_, bodyHeight) = sizeOfTree bodyTree
+                      argsHeight = maximum [ snd $ sizeOfTree tree | tree <- trees]
+                      maxTop = max argsHeight bodyHeight
+                      arrow = [ ((left, top + argBase), '-')
+                              , ((left + 1, top + argBase), '>') ]
+                  in
+                  (arrow ++ rez ++ bodyText ++ lst, maxTop + top + 1)
 
 renderF (Integrate ini end what var)
         (SizeNodeList False

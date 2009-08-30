@@ -14,6 +14,9 @@ import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 import Preprocessor
 
+-- BLEH
+import CharArray 
+
 data Flag =
       Output
     | Input
@@ -99,12 +102,18 @@ transformParseFormula operation args = do
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"
+               hPutStrLn finalFile "======== <SizeDump> =========\n"
+               let (array, size) = renderFormula $ result rez
+                   text = unlines $ linesOfArray array
+               hPutStr finalFile $ show size
+               hPutStrLn finalFile "\n======== </SizeDump> =========\n"
 #endif
 
                hPrint finalFile $ result rez
                hPutStrLn finalFile ""
                printErrors $ errorList rez
-               hPutStr finalFile . formatFormula $ result rez
+               hPutStr finalFile text
+               {-hPutStr finalFile . formatFormula $ result rez-}
 
                return . null $ errorList rez)
            formulaList
