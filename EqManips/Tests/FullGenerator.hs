@@ -1,12 +1,17 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
 module EqManips.Tests.FullGenerator( formulaGen ) where
 
+import Control.Applicative
 import Control.Monad
 import Test.QuickCheck
 import EqManips.Types
 
 -- | To generate variables without clashing everywhere else
 newtype VarLetter = VarLetter Char
+instance Applicative Gen where
+    pure = return
+    a <*> b = do { a' <- a; b' <- b; return $ a' b' }
+
 instance Arbitrary Entity where
     arbitrary  = elements [Pi] 
 
@@ -44,12 +49,14 @@ formulaGen :: Int -> Gen Formula
 formulaGen n  
     | n <= 0 = oneof leafs
     | otherwise = oneof $
-        leafs ++ [ liftM2 BinOp arbitrary formulist
-                 , liftM2 UnOp arbitrary subFormul
-                 , liftM3 Sum subFormul subFormul subFormul
-                 , liftM3 Product subFormul subFormul subFormul
-                 , liftM2 Derivate subFormul subFormul
-                 , liftM4 Integrate subFormul subFormul subFormul subFormul
+        leafs ++ [ BinOp <$> arbitrary <*> formulist
+                 , UnOp <$> arbitrary <*> subFormul
+                 , Sum <$> subFormul <*> subFormul <*> subFormul
+                 , Product <$> subFormul <*> subFormul <*> subFormul
+                 , Derivate <$> subFormul <*> subFormul
+                 , Integrate <$> subFormul <*> subFormul 
+                             <*> subFormul <*> subFormul
+                 , App <$> subFormul <*> formulist
                  , matrixGenerator (n-1)
                  ]
           where subFormul = formulaGen (n-1)

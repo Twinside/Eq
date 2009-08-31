@@ -9,7 +9,10 @@ module EqManips.Algorithm.Utils ( biAssocM
                                 , parseFormula
                                 , parseProgramm 
                                 , sortFormula 
+                                , nodeCount
                                 ) where
+
+import qualified Data.Monoid as Monoid
 import Text.Parsec.Error( ParseError )
 import Text.ParserCombinators.Parsec.Prim( runParser )
 import EqManips.Algorithm.EmptyMonad
@@ -30,6 +33,11 @@ parseFormula text = rez
           rez = case parsed of
              Left _ -> parsed
              Right f -> Right . listifyFormula $ linkFormula f
+
+nodeCount :: Formula -> Int
+nodeCount f = Monoid.getSum $ foldf 
+   (\_ a -> Monoid.Sum $ Monoid.getSum a + 1)
+   (Monoid.Sum 0) f
 
 -- | Perform a semantic sorting on formula, trying to put numbers
 -- front and rassembling terms

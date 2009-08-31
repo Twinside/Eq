@@ -135,6 +135,13 @@ data Formula =
     | Meta MetaOperation Formula
     deriving (Eq, Show, Read)
 
+infixl 4 <<>>
+
+(<<>>) :: Ordering -> Ordering -> Ordering
+a <<>> b = ordIt a
+    where ordIt EQ = b
+          ordIt o = o
+
 -----------------------------------------------------------
 --  Ord def, used to sort-out '+' list for exemples
 -----------------------------------------------------------
@@ -176,8 +183,14 @@ instance Ord Formula where
 
     compare (Integrate _ _ w _) (Integrate _ _ w' _) = compare w w'
     compare (Integrate _ _ _ _) _ = GT
+    compare (Product l h w) (Product l' h' w') =
+        compare l l' <<>> compare h h' <<>> compare w w'
     compare (Product _ _ _) _ = GT
+
+    compare (Sum l h w) (Sum l' h' w') =
+        compare l l' <<>> compare h h' <<>> compare w w'
     compare (Sum _ _ _) _ = GT
+
     compare (App _ _) _ = LT
 
     compare (Block _ _ _) _ = GT
@@ -323,7 +336,7 @@ foldf :: (Monoid b) => (Formula -> b -> b) -> b -> Formula -> b
 foldf f acc m@(Meta _ fo) = f m $ foldf f acc fo
 foldf f acc fo@(UnOp _ sub) = f fo $ foldf f acc sub
 foldf f acc fo@(App def args) =
-    foldf f (foldf f listAcc def) def
+    f fo (foldf f listAcc def)
      where listAcc = foldr f acc args
 
 foldf f acc fo@(BinOp _ args) =
@@ -401,8 +414,11 @@ deparse _ _ (CFloat d) = show d
 deparse _ _ (Block i i1 i2) =
     "block(" ++ show i ++ "," ++ show i1 ++ "," ++ show i2 ++ ")"
 
+deparse _ _ (App (Variable v) fl) =
+    v ++ "(" ++ argListToString fl ++ ")"
+
 deparse _ _ (App f1 fl) =
-    deparse maxPrio False f1 ++ "(" ++ argListToString fl ++ ")"
+    '(' : deparse maxPrio False f1 ++ ")(" ++ argListToString fl ++ ")"
 
 deparse _ _ (Sum i i1 i2) =
     "sum(" ++ argListToString [i, i1, i2]  ++ ")"
