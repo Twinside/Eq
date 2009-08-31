@@ -1,0 +1,15 @@
+-- derivaten( function, var, order )
+sinus( z ) = sin( z );
+
+taylorn( f, var, a, n, n ) = f( a ) / n! * (x - a) ^ n;
+taylorn( f, var, a, max, 0 ) = f 
+							 + taylorn( derivate( Force( f ), Force( var ) ), var, a, max, 1 );
+taylorn( f, var, a, max, n ) = f( a ) / n! * (x - a) ^ n
+                             + taylorn( derivate( Force( f ), Force( var )), var, a, max, n + 1 );
+
+-- taylor( function, derivation var, onVar, order )
+taylor( f, var, a, 0 ) = f;
+taylor( f, var, a, n ) = taylorn( f, var, a, n, 0 );
+
+taylor( sinus, x, a, 5 )
+

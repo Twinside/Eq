@@ -1,0 +1,6 @@
+matrix( 2, 2
+      , sqrt( a ), 1
+      , sin( x ), 3 ) * matrix( 2, 2
+                              , a, b
+                              , c, d )
+

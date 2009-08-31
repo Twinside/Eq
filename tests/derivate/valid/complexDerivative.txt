@@ -1,0 +1,1 @@
+derivate( sin(x) * cos( x) / (x ^(5*x)), x )
