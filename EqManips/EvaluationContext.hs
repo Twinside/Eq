@@ -4,6 +4,7 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , performLastTransformation 
                                  , obtainEqResult 
                                  , cleanErrorList 
+                                 , addSymbols 
                                  , addSymbol, delSymbol, updateSymbol 
                                  , eqFail
                                  , symbolLookup
@@ -113,7 +114,10 @@ printTrace f inf = mapM_ showIt . reverse $ trace inf
 
 traceContext :: EqContext ()
 traceContext = EqContext $ \c ->
-    (c { trace = (show $ contextStack c, Variable ""): (show $ context c, Variable "") : trace c }, ())
+    let contextes = unlines . map (\a -> printContext a ++ "\n/////////////////////////////////////////////////\n") $ contextStack c
+        printContext var = concat $ map (\(a,f) -> a ++ " =\n" ++ formatFormula f ++ "\n") var
+    in
+    (c { trace = ("ContextStack | " ++ contextes, Variable ""): ("Context | " ++ (show $ context c), Variable "") : trace c }, ())
 #endif /* _DEBUG */
 
 -- | Keep a track of current context, keep previous context clean
@@ -171,6 +175,11 @@ updateSymbol :: String -> Formula -> EqContext ()
 updateSymbol varName def = do
     delSymbol varName
     addSymbol varName def
+
+addSymbols :: [(String, Formula)] -> EqContext ()
+addSymbols adds = EqContext $ \eqCtxt ->
+    let syms = context eqCtxt
+    in ( eqCtxt { context = adds ++ syms }, ())
 
 -- | Add a variable into the context
 addSymbol :: String -> Formula -> EqContext ()

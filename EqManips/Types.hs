@@ -323,7 +323,7 @@ foldf :: (Monoid b) => (Formula -> b -> b) -> b -> Formula -> b
 foldf f acc m@(Meta _ fo) = f m $ foldf f acc fo
 foldf f acc fo@(UnOp _ sub) = f fo $ foldf f acc sub
 foldf f acc fo@(App def args) =
-    foldf f (foldf f listAcc def) fo
+    foldf f (foldf f listAcc def) def
      where listAcc = foldr f acc args
 
 foldf f acc fo@(BinOp _ args) =

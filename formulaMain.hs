@@ -114,6 +114,7 @@ transformParseFormula operation args = do
                printErrors $ errorList rez
                hPutStr finalFile text
                {-hPutStr finalFile . formatFormula $ result rez-}
+               hClose finalFile
 
                return . null $ errorList rez)
            formulaList

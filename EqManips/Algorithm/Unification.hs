@@ -4,6 +4,7 @@ module EqManips.Algorithm.Unification( unify, getFirstUnifying ) where
 import Control.Applicative
 import EqManips.Types
 import Control.Monad.State.Lazy
+import Data.List( foldl' )
 
 infix 4 =~=
 
@@ -19,12 +20,12 @@ a =~= b = unifyFormula a b
 
 getFirstUnifying :: [([Formula], Formula)] -> [Formula]
                  -> Maybe (Formula,[(String,Formula)])
-getFirstUnifying matches toMatch = unif matches
-    where unif [] = Nothing
-          unif ((args, body):xs) =
+getFirstUnifying matches toMatch = foldl' unif Nothing matches
+    where unif Nothing (args, body) =
               let (rez, list) = runState (unifyList args toMatch) []
               in if rez then Just (body, list)
-                        else unif xs
+                        else Nothing
+          unif j@(Just _) _ = j
           
 
 unify :: Formula -> Formula -> Maybe [(String, Formula)]
@@ -32,8 +33,11 @@ unify a b = if rez then Nothing else Just list
     where (rez, list) = runState (a =~= b) []
 
 unifyList :: [Formula] -> [Formula] -> UnificationContext Bool
-unifyList l1 l2 = foldM valid True $ zip l1 l2
-    where valid acc (a,b) = (acc &&) <$> (a =~= b)
+unifyList l1 l2 
+	| length l1 == length l2 =
+		let valid acc (a,b) = (acc &&) <$> (a =~= b)
+		in foldM valid True $ zip l1 l2
+	| otherwise = return False
 
 -- | origin pattern (function args...), to unify
 unifyFormula :: Formula -> Formula -> UnificationContext Bool

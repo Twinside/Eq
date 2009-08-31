@@ -209,11 +209,11 @@ binOp op lst = BinOp op lst
 binEval :: BinOperator -> EvalOp -> EvalOp -> [Formula] -> EqContext Formula
 binEval op f inv formulaList 
     | op `hasProp` Associativ && op `hasProp` Commutativ = do
-        addTrace ("OKI", Block 1 1 1)
+        addTrace ("Sorting => ", BinOp op formulaList)
         biAssocM f inv (sort formulaList) >>= return . binOp op
 
     | otherwise = do
-        addTrace ("EVAL", BinOp op formulaList)
+        addTrace ("Basic Eval=>", BinOp op formulaList)
         biAssocM f inv formulaList >>= return . binOp op
 
 -----------------------------------------------
@@ -233,20 +233,22 @@ eval (Variable v) = symbolLookup v
 eval (App def var) = do
     redDef <- eval def
     redVar <- mapM eval var
-    addTrace ("erf |", App redDef redVar)
+    addTrace ("Appbegin |", App redDef redVar)
     needApply redDef redVar
    where needApply (Lambda funArgs) args' =
            case getFirstUnifying funArgs args' of
                 Nothing -> eqFail (App def var) "Error can't apply function"
                 Just (body, subst) -> do
                     pushContext
-                    setContext subst
-                    {-traceContext-}
-                    addTrace ("hmm | " ++ show subst, body)
-                    body' <- inject body
-                    addTrace ("WTF | " ++ show body', Variable "")
+                    {-setContext subst-}
+                    addSymbols subst
+                    traceContext
+                    addTrace ("subst | " ++ show subst, body)
+                    body' <- eval body
+                    addTrace ("body' | " ++ show body', body')
                     popContext
-                    eval body'
+                    traceContext
+                    return body'
          needApply def' args = do
              return $ App def' args
 
@@ -261,7 +263,7 @@ eval (BinOp OpEq [v@(Variable _),f2]) = do
     f2' <- eval f2
     return $ BinOp OpEq [v,f2']
 
-eval (UnOp OpFactorial f) = factorial =<< eval f 
+eval (UnOp OpFactorial f) = factorial =<< eval f
 eval (UnOp OpFloor f) = floorEval =<< eval f
 eval (UnOp OpCeil f) = ceilEval =<< eval f
 eval (UnOp OpFrac f) = fracEval =<< eval f
@@ -290,12 +292,16 @@ eval (UnOp op f) = unOpReduce (funOf op) =<< eval f
           funOf OpCeil = error "ceil - unop - should not happen here"
           funOf OpFactorial = error "Should not happen here"
 
+eval (Derivate what (Meta op var)) = do
+    evalued <- metaEval op var
+    eval $ Derivate what evalued
+
 eval (Derivate f@(Meta op _) var) = do
     evalued <- metaEval op f
     eval (Derivate evalued var)
 
 eval (Derivate what (Variable s)) = do
-    addTrace ("Derivation ", what)
+    addTrace ("Derivation on " ++ s, what)
     derived <- derivate what s
     return $ cleanup derived
 
@@ -303,13 +309,13 @@ eval f@(Derivate _ _) =
     eqFail f "Sorry your derivation doesn't have a good variable specification"
 
 eval formu@(Sum (BinOp OpEq [Variable v, CInteger initi])
-                (CInteger endi) 
-                f) 
+                (CInteger endi)
+                f)
      | initi <= endi = iterateFormula (BinOp OpAdd) v initi endi f
      | otherwise = eqFail formu "Sorry, your sum as wrong bounds, can't evaluate"
 
 eval formu@(Product (BinOp OpEq [Variable v, CInteger initi])
-                    (CInteger endi) 
+                    (CInteger endi)
                     f)
      | initi <= endi = iterateFormula (BinOp OpMul) v initi endi f
      | otherwise = eqFail formu "Sorry, your product as wrong bounds, can't evaluate"

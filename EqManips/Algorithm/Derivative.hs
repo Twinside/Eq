@@ -135,7 +135,8 @@ d (Lambda [([Variable v], body)]) var = do
     addSymbol v $ Variable var
     body' <- inject body
     popContext
-    d body' var
+    body'' <- d body' var
+    return $ Lambda [([Variable v], body'')]
 
 d f@(UnOp OpFloor _) _ = eqFail f "The floor function is not continuous"
 d f@(UnOp OpCeil _) _ = eqFail f "The ceil function in not continuous"

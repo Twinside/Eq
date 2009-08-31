@@ -14,7 +14,11 @@ prop_showBack formula = case eitherformula of
     where text = unparse formula
           eitherformula = runParser expr () "FromFile" text
 
+prop_ordering :: Formula -> Bool
+prop_ordering f = f <= f
+
 main :: IO ()
 main = do
     quickCheck prop_showBack
+    quickCheck prop_ordering
 
