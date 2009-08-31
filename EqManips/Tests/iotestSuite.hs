@@ -1,15 +1,25 @@
-import EqManips.Tests.FullGenerator()
-import EqManips.Tests.ContinuousGenerator()
-import Test.QuickCheck
-import Test.QuickCheck.Batch
 import System.Environment
 import Text.Printf
+
+
 import EqManips.Types
 import EqManips.Linker
+import EqManips.Propreties
+import EqManips.FormulaIterator
+import EqManips.EvaluationContext
 import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Utils
-import EqManips.FormulaIterator
+import EqManips.Algorithm.Expand
+import EqManips.Algorithm.Eval
+import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.EmptyMonad
+
+import EqManips.Tests.FullGenerator()
+import EqManips.Tests.ContinuousGenerator()
+
+import Test.QuickCheck
+{-import Test.QuickCheck.Batch-}
+
 import Text.ParserCombinators.Parsec.Prim( runParser )
 
 prop_showBack :: Formula -> Bool
@@ -29,6 +39,16 @@ prop_nodeCount f = nodeCount f > 0
 prop_depthFirstFormula :: Formula -> Bool
 prop_depthFirstFormula f = (depthFirstFormula `asAMonad` id $ f) == f
 
+preserveMeaning :: (Formula -> Formula) -> Formula -> Bool
+preserveMeaning transformation f = 
+  not (iniVal `hasProp` LeafNode) || comp iniVal (eval $ transformation f)
+    where eval = result . performTransformation . reduce
+          iniVal = eval f
+          comp (CFloat f1) (CFloat f2)
+            | isNaN f1 = isNaN f2
+            | otherwise = f1 == f2
+          comp a b = a == b
+
 testRunner :: Testable a => a -> Int -> IO ()
 testRunner prop count = check config prop
     where config = defaultConfig { configMaxTest = count
@@ -40,13 +60,15 @@ globalTests =
     , ("Formula ordering", testRunner prop_ordering)
     , ("Formula folding", testRunner prop_nodeCount)
     , ("Formula depth first traversal", testRunner prop_depthFirstFormula)
+    , ("Expand don't change meaning", testRunner $ preserveMeaning expand)
+    , ("Cleanup don't change meaning", testRunner $ preserveMeaning cleanup)
     ]
 
 runTestList :: [(String, Int -> IO ())] -> IO ()
 runTestList tests = do
     x <- getArgs
     let n = if null x then 100 else read . head $ x
-    mapM_ (\(s,a) -> printf "%-25s:\n " s >> a n) tests
+    mapM_ (\(s,a) -> printf "%-25s: " s >> a n) tests
 
 main :: IO ()
 main = runTestList globalTests

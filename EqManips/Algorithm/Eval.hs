@@ -198,6 +198,18 @@ ceilEval i@(CInteger _) = return i
 ceilEval (CFloat f) = return . CInteger $ ceiling f
 ceilEval f = return $ UnOp OpCeil f
 
+-- Negate
+fNegate :: Formula -> EqContext Formula
+fNegate (CInteger i) = return . CInteger $ negate i
+fNegate (CFloat f) = return . CFloat $ negate f
+fNegate f = return f
+
+-- Abs
+fAbs :: Formula -> EqContext Formula
+fAbs (CInteger i) = return . CInteger $ abs i
+fAbs (CFloat f) = return . CFloat $ abs f
+fAbs f = return f
+
 -----------------------------------------------
 ----        lalalal operators
 -----------------------------------------------
@@ -267,10 +279,12 @@ eval (UnOp OpFactorial f) = factorial =<< eval f
 eval (UnOp OpFloor f) = floorEval =<< eval f
 eval (UnOp OpCeil f) = ceilEval =<< eval f
 eval (UnOp OpFrac f) = fracEval =<< eval f
+
+eval (UnOp OpNegate f) = fNegate =<< eval f
+eval (UnOp OpAbs f) = fAbs =<< eval f
+
 eval (UnOp op f) = unOpReduce (funOf op) =<< eval f
     where funOf :: Floating a => UnOperator -> (a -> a)
-          funOf OpNegate = negate
-          funOf OpAbs = abs
           funOf OpSqrt = sqrt
           funOf OpSin = sin
           funOf OpSinh = sinh
@@ -287,6 +301,8 @@ eval (UnOp op f) = unOpReduce (funOf op) =<< eval f
           funOf OpLn = log
           funOf OpLog = \n -> log n / log 10.0
           funOf OpExp = exp
+          funOf OpAbs = error "abs - unop - shouldn't happen here"
+          funOf OpNegate = error "negate - unop - shouldn't happen here"
           funOf OpFloor = error "floor - unop - should not happen here"
           funOf OpFrac =  error "frac - unop - should not happen here"
           funOf OpCeil = error "ceil - unop - should not happen here"
