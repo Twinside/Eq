@@ -1,11 +1,9 @@
 -- | Utility function/types used in the project.
-module EqManips.Algorithm.Utils ( biAssocM 
-                                , biAssoc
+module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , asAMonad
                                 , fromEmptyMonad 
-                                , treeIfyBinOp 
-                                , listifyBinOp 
-                                , listifyFormula 
+                                , treeIfyFormula,  treeIfyBinOp 
+                                , listifyFormula, listifyBinOp 
                                 , parseFormula
                                 , parseProgramm 
                                 , sortFormula 
@@ -34,6 +32,7 @@ parseFormula text = rez
              Left _ -> parsed
              Right f -> Right . listifyFormula $ linkFormula f
 
+-- | Count the number of nodes in a formula.
 nodeCount :: Formula -> Int
 nodeCount f = Monoid.getSum $ foldf 
    (\_ a -> Monoid.Sum $ Monoid.getSum a + 1)
@@ -65,6 +64,7 @@ parseProgramm text = rez
 listifyFormula :: Formula -> Formula
 listifyFormula = depthFirstFormula `asAMonad` listifyBinOp 
 
+
 -- | Given a binary operator in binary tree form,
 -- transform it in list form.
 listifyBinOp :: Formula -> Formula
@@ -91,6 +91,10 @@ listifyBinOp f@(BinOp op _) = BinOp op $ translate f
 
 listifyBinOp a = a
 
+-- | treeify a whole formula
+treeIfyFormula :: Formula -> Formula
+treeIfyFormula = depthFirstFormula `asAMonad` treeIfyBinOp
+
 -- | Given a formula where all binops are in list
 -- forms, transform it back to binary tree.
 treeIfyBinOp :: Formula -> Formula
@@ -99,9 +103,10 @@ treeIfyBinOp f@(BinOp _ [_,_]) = f
 treeIfyBinOp (BinOp op (f1:f2:fs)) = innerNode $ op `obtainProp` AssocSide
         where innerNode OpAssocLeft = BinOp op $ (BinOp op [f1, f2]) : fs
               innerNode OpAssocRight = BinOp op [f1, BinOp op $ f2 : fs]
-treeIfyBinOp _ = error "treeIfy of non binop formula"
+treeIfyBinOp f = f
 
--- |
+-- | Bi associate operation on a list of elements.
+-- Can be used for reduction of formula.
 biAssoc :: (a -> a -> Either a (a,a)) 
         -> (a -> a -> Either a (a,a)) 
         -> [a] -> [a]
@@ -110,6 +115,7 @@ biAssoc f finv lst = fromEmptyMonad
                               (\a -> return . finv a)
                               lst
 
+-- | same as biAssoc, but use monads.
 biAssocM :: (Monad m) 
          => (a -> a -> m (Either a (a,a))) 
          -> (a -> a -> m (Either a (a,a))) 

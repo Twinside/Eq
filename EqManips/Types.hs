@@ -84,8 +84,9 @@ data MetaOperation =
     -- | Inverse of hold, whenever encountered in
     -- evaluation, should force an evaluation.
     | Force
-    | Listify
-    | Treefy
+    | Listify   -- ^ Pack operation a list-like form.
+    | Treefy    -- ^ Pack operation in a tree-like form
+    | Expand    -- ^ trigger an expend operation
     deriving (Eq, Show, Read)
 
 -- | Main type manipulated by the software.
