@@ -1,7 +1,6 @@
 4:Find a way to execute a real taylor serie
 3:Add a boolean type, and maybe a list type
 3:if boolean, add comparison
-3:make an expand algorithm
 2:Make some validation about definition domain
 2:Matrix multiplication order problem!
 2:Standard library?

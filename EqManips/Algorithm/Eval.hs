@@ -166,8 +166,8 @@ power :: EvalOp
 power l@(CFloat _) (CInteger i2) = power l . CFloat $ toEnum i2
 power (CInteger i) r@(CFloat _) = power (CFloat $ toEnum i) r
 power (CFloat i1) (CFloat i2) = return . Left . CFloat $ i1 ** i2
-power (CInteger i1) (CInteger i2) = return . Left . CInteger $ i1 ^ i2
 power f1 (CInteger i2) | i2 < 0 = return . Left $ CInteger 1 / (f1 ** CInteger (-i2))
+power (CInteger i1) (CInteger i2) = return . Left . CInteger $ i1 ^ i2
 power f1 f2 = return . Right $ (f1, f2)
 
 -----------------------------------------------

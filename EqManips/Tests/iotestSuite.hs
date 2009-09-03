@@ -41,9 +41,15 @@ prop_depthFirstFormula f = (depthFirstFormula `asAMonad` id $ f) == f
 
 preserveMeaning :: (Formula -> Formula) -> Formula -> Bool
 preserveMeaning transformation f = 
-  not (iniVal `hasProp` LeafNode) || comp iniVal (eval $ transformation f)
+  not (iniVal `hasProp` LeafNode) || comp (clean iniVal)
+                                          (clean . eval $ transformation f)
     where eval = result . performTransformation . reduce
           iniVal = eval f
+          clean (CFloat 0.0) = CInteger 0
+          clean (CFloat 1.0) = CInteger 1
+          clean (CFloat (-1.0)) = CInteger (-1)
+          clean e = e
+
           comp (CFloat f1) (CFloat f2)
             | isNaN f1 = isNaN f2
             | otherwise = f1 == f2
@@ -54,10 +60,14 @@ testRunner prop count = check config prop
     where config = defaultConfig { configMaxTest = count
                                  , configMaxFail = 2 }
 
+prop_treelistify :: Formula -> Bool
+prop_treelistify f = listifyFormula f == listifyFormula (treeIfyFormula f)
+
 globalTests :: [(String, Int -> IO ())]
 globalTests =
     [ ("Formula deparsing", testRunner prop_showBack)
     , ("Formula ordering", testRunner prop_ordering)
+    , ("Formula tree/list", testRunner prop_treelistify) 
     , ("Formula folding", testRunner prop_nodeCount)
     , ("Formula depth first traversal", testRunner prop_depthFirstFormula)
     , ("Expand don't change meaning", testRunner $ preserveMeaning expand)
