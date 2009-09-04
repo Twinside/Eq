@@ -257,18 +257,20 @@ compOperator _ a b = return $ Right (a,b)
 -----------------------------------------------
 ----        AND
 -----------------------------------------------
-and :: EvalOp
-and (Truth True) (Truth True) = return . Left $ Truth True
-and (Truth _) (Truth _) = return . Left $ Truth False
-and a b = return $ Right (a,b)
+binand :: EvalOp
+binand (Truth True) (Truth True) = return . Left $ Truth True
+binand (Truth False) _ = return . Left $ Truth False
+binand _ (Truth False) = return . Left $ Truth False
+binand a b = return $ Right (a,b)
 
 -----------------------------------------------
 ----        OR
 -----------------------------------------------
-or :: EvalOp
-or (Truth False) (Truth False) = return . Left $ Truth False
-or (Truth _) (Truth _) = return . Left $ Truth True
-or a b = return $ Right (a,b)
+binor :: EvalOp
+binor (Truth False) (Truth False) = return . Left $ Truth False
+binor (Truth True) _ = return . Left $ Truth True
+binor _ (Truth True) = return . Left $ Truth True
+binor a b = return $ Right (a,b)
 
 -----------------------------------------------
 ----        lalalal operators
@@ -342,6 +344,9 @@ eval (BinOp OpGe fs) = predicateList OpGe (compOperator (>=)) =<< mapM eval fs
 eval (BinOp OpEq [v@(Variable _),f2]) = do
     f2' <- eval f2
     return $ BinOp OpEq [v,f2']
+
+eval (BinOp OpAnd fs) = binEval OpAnd binand binand =<< mapM eval fs
+eval (BinOp OpOr fs) = binEval OpOr binor binor =<< mapM eval fs
 
 eval (UnOp OpFactorial f) = factorial =<< eval f
 eval (UnOp OpFloor f) = floorEval =<< eval f

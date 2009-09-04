@@ -309,8 +309,8 @@ instance Property UnOperator OperatorText String where
 -- of binary operators
 binopDefs :: [(BinOperator, (Int,String))]
 binopDefs =
-	[ (OpAnd, (6, "&&"))
-    , (OpOr, (6, "||"))
+	[ (OpAnd, (6, "&"))
+    , (OpOr, (6, "|"))
     , (OpEq, (5, "="))
     , (OpNe, (5, "/="))
     , (OpLt, (5, "<"))
