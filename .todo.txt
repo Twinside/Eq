@@ -7,3 +7,4 @@
 1:Make some C output (quid matrix?)
 1:Make some HLSL/GLSL output
 0:Make some LaTeX output
+2:redefine distributivity in term of allowed lists of distributed

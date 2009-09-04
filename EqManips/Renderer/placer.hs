@@ -44,6 +44,7 @@ data Dimensioner = Dimensioner
     , matrixSize :: [[RelativePlacement]] -> RelativePlacement
     , derivateSize :: RelativePlacement -> RelativePlacement -> RelativePlacement
     , entitySize :: Entity -> RelativePlacement
+    , truthSize :: Bool -> RelativePlacement
     }
 
 sizeExtract :: SizeTree -> RelativePlacement
@@ -72,6 +73,7 @@ sizeOfFormula sizer a b (Meta _ f) = sizeOfFormula sizer a b f
 sizeOfFormula sizer _ _ (Variable v) = EndNode $ varSize sizer $ v
 sizeOfFormula sizer _ _ (CInteger n) = EndNode $ intSize sizer $ n
 sizeOfFormula sizer _ _ (CFloat f) = EndNode $ floatSize sizer $ f
+sizeOfFormula sizer _ _ (Truth truthness) = EndNode $ truthSize sizer $ truthness
 sizeOfFormula sizer _ _ (NumEntity f) = EndNode . entitySize sizer $ f
 sizeOfFormula sizer _ _ (Block i1 i2 i3) = 
     EndNode $ (blockSize sizer) (i1, i2, i3)

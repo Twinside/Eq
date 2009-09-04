@@ -181,34 +181,94 @@ factorial f@(CInteger i) | i > 0 = return . CInteger $ product [1 .. i]
 factorial f@(Matrix _ _ _) = eqFail f "No factorial of matrix"
 factorial a = return $ UnOp OpFactorial a
 
+-----------------------------------------------
+----        'floor'
+-----------------------------------------------
 floorEval :: Formula -> EqContext Formula
 floorEval i@(CInteger _) = return i
 floorEval (CFloat f) = return . CInteger $ floor f
 floorEval f = return $ UnOp OpFloor f
 
--- frac
+-----------------------------------------------
+----        'frac'
+-----------------------------------------------
 fracEval :: Formula -> EqContext Formula
 fracEval (CInteger _) = return $ CInteger 0
 fracEval (CFloat f) = return . CFloat . snd $ (properFraction f :: (Int,Double))
 fracEval f = return $ UnOp OpFrac f
 
--- ceil
+-----------------------------------------------
+----        'Ceil'
+-----------------------------------------------
 ceilEval :: Formula -> EqContext Formula
 ceilEval i@(CInteger _) = return i
 ceilEval (CFloat f) = return . CInteger $ ceiling f
 ceilEval f = return $ UnOp OpCeil f
 
--- Negate
+-----------------------------------------------
+----        'negate'
+-----------------------------------------------
 fNegate :: Formula -> EqContext Formula
 fNegate (CInteger i) = return . CInteger $ negate i
 fNegate (CFloat f) = return . CFloat $ negate f
 fNegate f = return f
 
--- Abs
+-----------------------------------------------
+----        'abs'
+-----------------------------------------------
 fAbs :: Formula -> EqContext Formula
 fAbs (CInteger i) = return . CInteger $ abs i
 fAbs (CFloat f) = return . CFloat $ abs f
 fAbs f = return f
+
+-----------------------------------------------
+----        '<'
+-----------------------------------------------
+binoding :: [a] -> [(a,a)]
+binoding [] = []
+binoding [_] = error "binoding, supposedly impossible"
+binoding [x, y] = [(x,y)]
+binoding (x:y:xs) = (x,y) : binoding (y:xs)
+
+predicateList :: BinOperator -> EvalOp -> [Formula] -> EqContext Formula
+predicateList op f (x:xs) = lastRez =<< apply x (Left (Truth True)) xs
+    where apply _ (Left (Truth False)) _ = return [Truth False]
+          apply prev (Left (Truth True)) [] = return [Truth True]
+          apply prev (Left (Truth True)) (x:xs) =
+              f prev x >>= (\y -> apply x y xs)
+          
+          apply _ (Left _) _ = error "Invalid predicate"
+          apply _ (Right (a,b)) [] = return [a, b]
+          apply _ (Right (a,b)) (c:xs) =
+            f b c >>= (\y -> apply c y xs) >>= return . (:) a
+
+          lastRez [x] = return x
+          lastRez lst = return $ BinOp op lst
+
+compOperator :: (forall a. Ord a => a -> a -> Bool) -> EvalOp
+compOperator f (CInteger a) (CInteger b) = return . Left . Truth $ f a b
+compOperator f (CFloat a) (CFloat b) = return . Left . Truth $ f a b
+compOperator f a@(CFloat _) (CInteger b) =
+    compOperator f a . CFloat $ fromIntegral b
+compOperator f (CInteger a) b@(CFloat _) =
+    compOperator f (CFloat $ fromIntegral a) b
+compOperator _ a b = return $ Right (a,b)
+
+-----------------------------------------------
+----        AND
+-----------------------------------------------
+and :: EvalOp
+and (Truth True) (Truth True) = return . Left $ Truth True
+and (Truth _) (Truth _) = return . Left $ Truth False
+and a b = return $ Right (a,b)
+
+-----------------------------------------------
+----        OR
+-----------------------------------------------
+or :: EvalOp
+or (Truth False) (Truth False) = return . Left $ Truth False
+or (Truth _) (Truth _) = return . Left $ Truth True
+or a b = return $ Right (a,b)
 
 -----------------------------------------------
 ----        lalalal operators
@@ -270,6 +330,14 @@ eval (BinOp OpMul fs) = binEval OpMul mul mul =<< mapM eval fs
 -- | Todo fix this, it's incorrect
 eval (BinOp OpPow fs) = binEval OpPow power power =<< mapM eval fs
 eval (BinOp OpDiv fs) = binEval OpDiv division mul =<< mapM eval fs
+
+-- comparisons operators
+eval (BinOp OpLt fs) = predicateList OpLt (compOperator (<)) =<< mapM eval fs
+eval (BinOp OpGt fs) = predicateList OpGt (compOperator (>)) =<< mapM eval fs
+eval (BinOp OpLe fs) = predicateList OpLe (compOperator (<=)) =<< mapM eval fs
+eval (BinOp OpGe fs) = predicateList OpGe (compOperator (>=)) =<< mapM eval fs
+
+{-eval (BinOp OpNe fs) = binEval OpNe (compOperator (/=)) =<< mapM eval fs-}
 
 eval (BinOp OpEq [v@(Variable _),f2]) = do
     f2' <- eval f2

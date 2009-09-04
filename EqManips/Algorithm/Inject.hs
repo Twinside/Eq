@@ -50,5 +50,6 @@ reBoundVar (Block _ _ _) = Nothing
 reBoundVar (Product _ _ _) = Nothing
 reBoundVar (Sum _ _ _) = Nothing
 reBoundVar (Lambda _) = Nothing
+reBoundVar (Truth _) = Nothing
 -- Nothing preserved during evaluation normaly.
 reBoundVar (Meta _ _) = Nothing

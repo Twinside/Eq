@@ -30,6 +30,7 @@ depthFormulaTraversal _ f v@(Variable _) = f v
 depthFormulaTraversal _ f i@(CInteger _) = f i
 depthFormulaTraversal _ f d@(CFloat _) = f d
 depthFormulaTraversal _ f e@(NumEntity _) = f e
+depthFormulaTraversal _ f t@(Truth _) = f t
 depthFormulaTraversal pre f l@(Lambda eqs) = do
 	pre l
 	eqs' <- mapM traverser eqs

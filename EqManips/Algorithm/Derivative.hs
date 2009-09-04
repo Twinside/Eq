@@ -165,6 +165,9 @@ d f@(Matrix _ _ _formulas) _var =
 d f@(Lambda _) _ =
     eqFail f "Deriving lambdas"
 
+d f@(Truth _) _ =
+    eqFail f "No truthness allowed in derivation"
+
 d (Block _ _ _) _var =
     eqFail (Block 0 1 1)
          $ "Deriving a debug block"

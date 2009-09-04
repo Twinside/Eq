@@ -44,6 +44,9 @@ asciiSizer = Dimensioner
 
     , varSize = \s -> (0, (length s, 1))
     , intSize = \i -> (0, (length $ show i,1))
+    , truthSize = \v -> if v then (0, (length "true", 1))
+                             else (0, (length "false", 1))
+
     , floatSize = \f -> (0, (length $ show f, 1))
     , addParens = \(w, h) -> (w + 2, h)
     , remParens = \(w, h) -> (w - 2, h)
@@ -60,10 +63,11 @@ asciiSizer = Dimensioner
       --  |       ||       |
       --  +-------+|       |
       --           +-------+
-    , binop = \_ (bl,(w1,h1)) (br,(w2,h2)) ->
+    , binop = \op (bl,(w1,h1)) (br,(w2,h2)) ->
                     let base = max bl br
+                        oplength = length $ binopString op
                         nodeSize = base + max (h1 - bl) (h2 - br)
-                    in (base, (w1 + w2 + 3, nodeSize))
+                    in (base, (w1 + w2 + 2 + oplength, nodeSize))
 
     , productSize = \(_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
             let height = inih + endh + max 2 whath
@@ -261,15 +265,6 @@ renderArgs (x,y) argBase argsMaxHeight mixedList = (xla, concat params
                     baseLine' = y' + (argBase - nodeBase)
                     argWrite = renderF node size (x', baseLine')
 
--- | Little association...
-charOfOp :: BinOperator -> Char
-charOfOp OpEq = '='
-charOfOp OpAdd = '+'
-charOfOp OpSub = '-'
-charOfOp OpMul = '*'
-charOfOp OpDiv = '/'
-charOfOp OpPow = '^'
-
 -- | The real rendering function, return a list of position and char
 -- to be used in accumArray function.
 renderF :: Formula -- ^ CurrentNode
@@ -306,7 +301,8 @@ renderF (CFloat d)   _ (x,y) = map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show 
 renderF (NumEntity e) _ (x,y) = concat
     [ [((x + xi,y + yi),c) | (xi, c) <- zip [0..] elines]
         | (yi, elines) <- zip [0..] $ snd $ textOfEntity e]
-
+renderF (Truth True) _ (x,y) = map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "true"
+renderF (Truth False) _ (x,y) = map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "false"
 renderF (BinOp _ []) _ _ = error "renderF - rendering BinOp with no operand."
 renderF (BinOp _ [_]) _ _ = error "renderF - rendering BinOp with only one operand."
 
@@ -328,11 +324,12 @@ renderF (BinOp OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
               rightBegin = x + (w - rw) `div` 2
 
 renderF (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
-  ((x + lw + 1, y + base),opChar) : (leftRender ++ rightRender)
+  [ ((i, y + base), c) | (i, c) <- zip [x + lw + 1 ..] opChar]
+  ++ leftRender ++ rightRender
     where (lw, _) = sizeOfTree t1
           leftBase = baseLineOfTree t1
           rightBase = baseLineOfTree t2
-          opChar = charOfOp op
+          opChar = binopString op
 
           (leftTop, rightTop) =
               if leftBase > rightBase
@@ -340,7 +337,8 @@ renderF (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
                  else (y + rightBase - leftBase, y)
 
           leftRender = renderF f1 t1 (x, leftTop)
-          rightRender = renderF f2 t2 (x + lw + 3, rightTop)
+          rightRender = renderF f2 t2 (x + lw + 2 + length opChar
+                                      , rightTop)
 
 renderF f@(BinOp _ _) node pos = renderF (treeIfyBinOp f) node pos
 

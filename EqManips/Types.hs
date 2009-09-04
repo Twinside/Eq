@@ -9,6 +9,7 @@ module EqManips.Types( Formula( .. )
                      , expr     -- if you want to evaluate just an expression
                      , unparse  -- regurgitation in parsed language.
 
+                     , binopString
                      , AssocSide(..) -- To query associativity side
                      , OpAssoc( .. ) -- Return type for associativity side
                      , Priority(.. ) -- Gain access to operator's priority
@@ -51,8 +52,15 @@ data BinOperator  =
     -- | '^'
     | OpPow 
 
-    -- | '='
-    | OpEq
+    | OpAnd -- ^ '&'
+    | OpOr -- ^ '|'
+
+    | OpEq -- ^ '='
+	| OpNe -- ^ '/='
+	| OpLt -- ^ '<'
+	| OpGt -- ^ '>'
+	| OpGe -- ^ '>='
+	| OpLe -- ^ '<='
     deriving (Eq,Show,Read)
 
 -- | All `unary` operators are in there. some are mathematical
@@ -95,6 +103,7 @@ data MetaOperation =
 data Formula =
       Variable String
     | NumEntity Entity
+    | Truth Bool
     | CInteger Int
     | CFloat Double
     -- | FunName arguments
@@ -237,7 +246,17 @@ emptyProps e = map $ flip (,) e
 
 instance Property BinOperator OpProp BinOperator where
     getProps OpEq  = []
+
+    getProps OpAnd = []
+    getProps OpOr = []
+    getProps OpNe = []
+    getProps OpLe = []
+    getProps OpGe = []
+    getProps OpLt = []
+    getProps OpGt = []
+
     getProps OpPow = []
+
     getProps OpSub = [(InverseOp, OpAdd)]
     getProps OpAdd =
         (InverseOp, OpSub) : emptyProps OpAdd [Associativ, Commutativ]
@@ -290,13 +309,23 @@ instance Property UnOperator OperatorText String where
 -- of binary operators
 binopDefs :: [(BinOperator, (Int,String))]
 binopDefs =
-	[ (OpEq, (5, "="))
+	[ (OpAnd, (6, "&&"))
+    , (OpOr, (6, "||"))
+    , (OpEq, (5, "="))
+    , (OpNe, (5, "/="))
+    , (OpLt, (5, "<"))
+    , (OpGt, (5, ">"))
+    , (OpGe, (5, ">="))
+    , (OpLe, (5, "<="))
 	, (OpAdd, (4, "+"))
 	, (OpSub, (4, "-"))
 	, (OpMul, (3, "*"))
 	, (OpDiv, (3, "/"))
 	, (OpPow, (2, "^"))
     ]
+
+binopString :: BinOperator -> String
+binopString a = snd . fromJust $ lookup a binopDefs
 
 -- | Textual representation of "unary" operators
 unOpNames :: [(UnOperator, String)]
@@ -402,6 +431,8 @@ unparse = deparse maxPrio False
 deparse :: Int -> Bool -> Formula -> String
 -- INVISIBLE META NINJA !!
 deparse i r (Meta _ f) = deparse i r f
+deparse _ _ (Truth True) = "true"
+deparse _ _ (Truth False) = "false"
 deparse _ _ (BinOp _ []) =
     error "The formula is denormalized : a binary operator without any operands"
 deparse _ _ (Variable s) = s
@@ -540,7 +571,9 @@ whiteSpace = P.whiteSpace lexer
 
 lexer :: P.GenTokenParser String st Identity
 lexer  = P.makeTokenParser 
-         (haskellStyle { P.reservedOpNames = ["*","/","+","-","^","=","!",":"] } )
+         (haskellStyle { P.reservedOpNames = [ "&", "|", "<", ">"
+                                             , "*", "/", "+", "-"
+                                             , "^", "=", "!", ":"] } )
 
 -----------------------------------------------------------
 --          Real "grammar"
@@ -563,7 +596,10 @@ operatorDefs =
     , [binary "^" (binop OpPow) AssocLeft]
     , [binary "/" (binop OpDiv) AssocLeft, binary "*" (binop OpMul) AssocLeft]
     , [binary "+" (binop OpAdd) AssocLeft, binary "-" (binop OpSub) AssocLeft]
-    , [binary "=" (binop OpEq) AssocRight]
+    , [binary "=" (binop OpEq)  AssocRight, binary "/=" (binop OpNe) AssocLeft
+      ,binary "<" (binop OpLt)  AssocLeft,  binary ">"  (binop OpGt) AssocLeft
+      ,binary "<=" (binop OpLe) AssocLeft,  binary ">=" (binop OpGe) AssocLeft]
+    , [binary "&" (binop OpAnd) AssocLeft, binary "|" (binop OpOr) AssocLeft]
     ]
 
 funCall :: Parsed st Formula
@@ -579,7 +615,9 @@ variable = Variable <$> identifier
         <?> "variable"
 
 term :: Parsed st Formula
-term = variable
+term = (return $ Truth True) <* (string "true" >> whiteSpace)
+    <|> (return $ Truth False) <* (string "false" >> whiteSpace)
+    <|> variable
     <|> try (CFloat <$> float)
     <|> CInteger . fromInteger <$> integer
     <|> parens expr

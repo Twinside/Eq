@@ -45,6 +45,9 @@ unifyFormula (App f1 l1) (App f2 l2) =
     (&&) . valid <$> (f1 =~= f2) <*> unifyList l1 l2
         where valid = (&&) $ length l1 == length l2 
 
+unifyFormula (Truth a) (Truth b) =
+    return $ a == b
+
 unifyFormula (CInteger i1) (CInteger i2) =
     return $ i1 == i2
 
