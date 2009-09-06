@@ -71,6 +71,8 @@ globalTests =
     , ("Formula folding", testRunner prop_nodeCount)
     , ("Formula depth first traversal", testRunner prop_depthFirstFormula)
     , ("Expand don't change meaning", testRunner $ preserveMeaning expand)
+    , ("Treeify don't change meaning", testRunner $ preserveMeaning treeIfyFormula)
+    , ("Listify don't change meaning", testRunner $ preserveMeaning listifyFormula)
     , ("Cleanup don't change meaning", testRunner $ preserveMeaning cleanup)
     ]
 

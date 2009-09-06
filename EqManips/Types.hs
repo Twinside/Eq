@@ -627,14 +627,19 @@ variable = Variable <$> identifier
         <?> "variable"
 
 term :: Parsed st Formula
-term = (return $ Truth True) <* (string "true" >> whiteSpace)
-    <|> (return $ Truth False) <* (string "false" >> whiteSpace)
+term = try trueConst
+    <|> try falseConst
     <|> variable
     <|> try (CFloat <$> float)
     <|> CInteger . fromInteger <$> integer
     <|> parens expr
     <?> "Term error"
 
+trueConst :: Parsed st Formula
+trueConst = (return $ Truth True) <* (string "true" >> whiteSpace)
+
+falseConst :: Parsed st Formula
+falseConst = (return $ Truth False) <* (string "false" >> whiteSpace)
 -----------------------------------------------
 ----        Little helpers
 -----------------------------------------------

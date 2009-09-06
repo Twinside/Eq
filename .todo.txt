@@ -1,4 +1,3 @@
-4:fix predicateList, to obtain meaningful result from it
 3:Find a way to execute a real taylor serie
 2:Make some validation about definition domain
 2:Matrix multiplication order problem!
