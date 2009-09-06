@@ -222,37 +222,39 @@ fAbs (CFloat f) = return . CFloat $ abs f
 fAbs f = return f
 
 -----------------------------------------------
-----        '<'
+----        'Comparison operators'
 -----------------------------------------------
-binoding :: [a] -> [(a,a)]
-binoding [] = []
-binoding [_] = error "binoding, supposedly impossible"
-binoding [x, y] = [(x,y)]
-binoding (x:y:xs) = (x,y) : binoding (y:xs)
+predicateList :: BinOperator 
+              -> (Formula -> Formula -> Maybe Bool)
+              -> [Formula]
+              -> EqContext Formula
+predicateList _ _ [] = error "predicate list - Operator denormalized"
+predicateList _ _ [_] = error "predicate list - Operator denormalized"
+predicateList op f (x:y:xs) = lastRez 
+                            {-. lastCase -}
+                            $ foldl' transform ([], False, x) (y:xs)
+    where transform (acc@[Truth False],_,_) curr = (acc, False, curr)
+          transform (acc, allWritten, prev) curr =
+              case (f prev curr, allWritten) of
+                   (Nothing, True)  -> (acc ++ [curr], True, curr)
+                   (Nothing, False) -> (acc ++ [prev, curr], True, curr)
+                   (Just True, _)   -> (acc, False, curr)
+                   (Just False, _)  -> ([Truth False], True, curr)
 
-predicateList :: BinOperator -> EvalOp -> [Formula] -> EqContext Formula
-predicateList op f (x:xs) = lastRez =<< apply x (Left (Truth True)) xs
-    where apply _ (Left (Truth False)) _ = return [Truth False]
-          apply prev (Left (Truth True)) [] = return [Truth True]
-          apply prev (Left (Truth True)) (x:xs) =
-              f prev x >>= (\y -> apply x y xs)
-          
-          apply _ (Left _) _ = error "Invalid predicate"
-          apply _ (Right (a,b)) [] = return [a, b]
-          apply _ (Right (a,b)) (c:xs) =
-            f b c >>= (\y -> apply c y xs) >>= return . (:) a
+          lastRez ([],_,_) = return $ Truth True
+          lastRez ([e],_,_) = return e
+          lastRez (lst,_,_) = return $ BinOp op lst
 
-          lastRez [x] = return x
-          lastRez lst = return $ BinOp op lst
-
-compOperator :: (forall a. Ord a => a -> a -> Bool) -> EvalOp
-compOperator f (CInteger a) (CInteger b) = return . Left . Truth $ f a b
-compOperator f (CFloat a) (CFloat b) = return . Left . Truth $ f a b
+compOperator :: (forall a. Ord a => a -> a -> Bool)
+             -> Formula -> Formula
+             -> Maybe Bool
+compOperator f (CInteger a) (CInteger b) = Just $ f a b
+compOperator f (CFloat a) (CFloat b) = Just $ f a b
 compOperator f a@(CFloat _) (CInteger b) =
     compOperator f a . CFloat $ fromIntegral b
 compOperator f (CInteger a) b@(CFloat _) =
     compOperator f (CFloat $ fromIntegral a) b
-compOperator _ a b = return $ Right (a,b)
+compOperator _ _ _ = Nothing
 
 -----------------------------------------------
 ----        AND
@@ -261,6 +263,8 @@ binand :: EvalOp
 binand (Truth True) (Truth True) = return . Left $ Truth True
 binand (Truth False) _ = return . Left $ Truth False
 binand _ (Truth False) = return . Left $ Truth False
+binand (Truth True) l = return . Left $ l
+binand l (Truth True) = return . Left $ l
 binand a b = return $ Right (a,b)
 
 -----------------------------------------------
@@ -270,6 +274,8 @@ binor :: EvalOp
 binor (Truth False) (Truth False) = return . Left $ Truth False
 binor (Truth True) _ = return . Left $ Truth True
 binor _ (Truth True) = return . Left $ Truth True
+binor (Truth False) l = return . Left $ l
+binor l (Truth False) = return . Left $ l
 binor a b = return $ Right (a,b)
 
 -----------------------------------------------

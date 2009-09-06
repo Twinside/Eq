@@ -19,11 +19,11 @@ module EqManips.Types( Formula( .. )
 
                      , MetaOperation( .. )
                      , foldf
+                     , canDistributeOver 
+                     , distributeOver 
                      ) where
 
-import Control.Applicative( (<$>), (<*)
-                          {-, (<*>) -}
-                          )
+import Control.Applicative( (<$>), (<*) )
 import Control.Monad.Identity
 import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
@@ -234,10 +234,13 @@ instance Property BinOperator AssocSide OpAssoc where
 --          General operator property
 -----------------------------------------------------------
 -- | Some use full informations which can be used for$
--- transformation based on operators
+-- transformation based on operators. Distributivity
+-- is handled elsewhere because we need to specify which
+-- operator we can distribute uppon.
 data OpProp = Associativ -- ^ if (a . b) . c <=> a . (b . c)
-    | Distributiv        -- ^ if a . (b ! c) <=> a . b ! a . c
     | Commutativ         -- ^ if a . b = b . a
+    | Distributiv        -- ^ if a . (b ! c) <=> a . b ! a . c
+                         -- /!\ must check on what it is distributiv
     | InverseOp          -- ^ Inverse operation
     deriving (Eq, Show)
 
@@ -264,6 +267,15 @@ instance Property BinOperator OpProp BinOperator where
         (InverseOp, OpDiv) : emptyProps OpMul [Associativ, Commutativ, Distributiv]
     getProps OpDiv = 
         (InverseOp, OpMul) : emptyProps OpDiv [Distributiv]
+
+canDistributeOver :: BinOperator -> BinOperator -> Bool
+canDistributeOver op1 op2 = op2 `elem` distributeOver op1
+
+distributeOver :: BinOperator -> [BinOperator]
+distributeOver OpMul = [OpAdd, OpSub]
+distributeOver OpDiv = [OpAdd, OpSub]
+distributeOver OpOr = [OpAnd]
+distributeOver _ = []
 
 -----------------------------------------------------------
 --          Priority Property

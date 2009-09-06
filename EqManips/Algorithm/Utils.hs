@@ -8,6 +8,8 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , parseProgramm 
                                 , sortFormula 
                                 , nodeCount
+                                , needParenthesis 
+                                , needParenthesisPrio 
                                 ) where
 
 import qualified Data.Monoid as Monoid
@@ -104,6 +106,27 @@ treeIfyBinOp (BinOp op (f1:f2:fs)) = innerNode $ op `obtainProp` AssocSide
         where innerNode OpAssocLeft = BinOp op $ (BinOp op [f1, f2]) : fs
               innerNode OpAssocRight = BinOp op [f1, BinOp op $ f2 : fs]
 treeIfyBinOp f = f
+
+-- | Little helper to help to know if a formula renderer
+-- need to put parenthesis around the current node regarding
+-- his parent node.
+needParenthesis :: Bool         -- ^ if the node is on the right side of parent operator
+                -> BinOperator  -- ^ Parent operator
+                -> BinOperator  -- ^ This node operator
+                -> Bool
+needParenthesis v parentOp op =
+    needParenthesisPrio v (parentOp `obtainProp` Priority) op
+
+-- | Little helper to know if a renderer need to put parenthesis
+-- given his parent's priority
+needParenthesisPrio :: Bool        -- ^ If the node is on the right side of parent operator
+                    -> Int         -- ^ Parent operator priority
+                    -> BinOperator -- ^ This node operator
+                    -> Bool
+needParenthesisPrio True parentPrio op =
+    (op `obtainProp` Priority) >= parentPrio
+needParenthesisPrio False parentPrio op =
+    (op `obtainProp` Priority) > parentPrio
 
 -- | Bi associate operation on a list of elements.
 -- Can be used for reduction of formula.

@@ -116,17 +116,16 @@ sizeOfFormula sizer _isRight _prevPrio (BinOp OpPow [f1,f2]) =
 -- add 3 char : ###### ! #######
 -- we add spaces around operators
 sizeOfFormula sizer isRight prevPrio (BinOp op [formula1, formula2]) =
-  BiSizeNode needParenthesis sizeDim nodeLeft nodeRight
+  BiSizeNode needParenthes sizeDim nodeLeft nodeRight
     where prio = op `obtainProp` Priority
-          needParenthesis = if isRight then prio >= prevPrio
-                                       else prio > prevPrio
+          needParenthes = needParenthesisPrio isRight prevPrio op
 
           nodeLeft = sizeOfFormula sizer False prio formula1
           nodeRight = sizeOfFormula sizer True prio formula2
 
           (base, s) = (binop sizer) op (sizeExtract nodeLeft) (sizeExtract nodeRight)
 
-          sizeDim = if needParenthesis
+          sizeDim = if needParenthes
                 then (base, addParens sizer s)
                 else (base, s)
 

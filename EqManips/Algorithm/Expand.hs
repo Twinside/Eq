@@ -16,19 +16,19 @@ expand f = listifyFormula
 expander :: Formula -> Formula
 expander (BinOp op [a,b])
     | op `hasProp` Distributiv = 
-        distributeLeft (op `obtainProp` Priority) (BinOp op) a b
+        distributeLeft op (BinOp op) a b
 expander f = f
 
 -- | The role of this function is to search all pseudo-end
 -- nodes in the right formula and then launch another matching
 -- which will really create new nodes.
-distributeLeft :: Int                    -- ^ Priority of distributiv operator
+distributeLeft :: BinOperator            -- ^ Priority of distributiv operator
                -> ([Formula] -> Formula) -- ^ Combine two sub-formulas
                -> Formula -> Formula -> Formula
-distributeLeft iniPrio combine formula (BinOp op' [a,b]) 
-    | not $ op' `hasProp` Distributiv && iniPrio < op' `obtainProp` Priority
+distributeLeft op combine formula (BinOp op' [a,b]) 
+    | not $ op `canDistributeOver` op'
     = BinOp op' [digg a, digg b]
-        where digg = distributeLeft iniPrio combine formula
+        where digg = distributeLeft op combine formula
 
 distributeLeft _iniPrio combine formula with =
     distributeRight combine formula with

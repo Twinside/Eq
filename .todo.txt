@@ -1,10 +1,8 @@
-4:Find a way to execute a real taylor serie
-3:Add a boolean type, and maybe a list type
-3:if boolean, add comparison
+4:fix predicateList, to obtain meaningful result from it
+3:Find a way to execute a real taylor serie
 2:Make some validation about definition domain
 2:Matrix multiplication order problem!
 2:Standard library?
 1:Make some C output (quid matrix?)
 1:Make some HLSL/GLSL output
 0:Make some LaTeX output
-2:redefine distributivity in term of allowed lists of distributed
