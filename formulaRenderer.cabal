@@ -16,6 +16,7 @@ Executable eq
                  , parsec >= 3.0
                  , array
                  , mtl
+                 , containers
                  , filepath
 
 Executable iotest
@@ -28,4 +29,5 @@ Executable iotest
                  , array
                  , mtl
                  , filepath
+                 , containers
                  , QuickCheck

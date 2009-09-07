@@ -20,6 +20,9 @@ import EqManips.Types
 import Data.List
 import Control.Applicative
 
+import Data.Map (Map)
+import qualified Data.Map as Map
+
 #ifdef _DEBUG
 import System.IO
 import EqManips.Renderer.Ascii( formatFormula )
@@ -29,17 +32,17 @@ import EqManips.Renderer.Ascii( formatFormula )
 data EqTransformInfo = EqTransformInfo {
         -- | Well, here context mean more "symbol table"
         -- associate some variable with a definition.
-          context    :: [(String, Formula)]
+          context    :: Map String Formula
         -- | A context "stack" used to handle some scoping
         -- which can be used to evaluate some sums.
-        , contextStack :: [[(String, Formula)]]
+        , contextStack :: [Map String Formula]
 
         -- | Depth of the context stack. Used to limit
         -- recursion in the monad.
         , contextDepth :: !Int
 
         -- | Some constraints put on variables
-        , assertions :: [(String, Formula)]
+        , assertions :: Map String Formula
 
         -- | List of errors encountered when
         -- transforming formula
@@ -86,10 +89,10 @@ instance Monad EqContext where
 -- | A basic initial context
 emptyContext :: EqTransformInfo 
 emptyContext = EqTransformInfo {
-        context = []
+        context = Map.empty
       , contextStack = []
       , contextDepth = 0
-      , assertions = []
+      , assertions = Map.empty
       , errorList = []
       , result = Block 0 0 0
 #ifdef _DEBUG
@@ -114,7 +117,10 @@ printTrace f inf = mapM_ showIt . reverse $ trace inf
 
 traceContext :: EqContext ()
 traceContext = EqContext $ \c ->
-    let contextes = unlines . map (\a -> printContext a ++ "\n/////////////////////////////////////////////////\n") $ contextStack c
+    let contextes = unlines 
+                  . map (\a -> printContext a ++ "\n/////////////////////////////////////////////////\n") 
+                  . map Map.toList
+                  $ contextStack c
         printContext var = concat $ map (\(a,f) -> a ++ " =\n" ++ formatFormula f ++ "\n") var
     in
     (c { trace = ("ContextStack | " ++ contextes, Variable ""): ("Context | " ++ (show $ context c), Variable "") : trace c }, ())
@@ -134,7 +140,7 @@ pushContext = EqContext $ \c ->
 popContext :: EqContext ()
 popContext = EqContext $ \c ->
     let safeHeadTail (x:xs) = (x, xs)
-        safeHeadTail     [] = ([], [])
+        safeHeadTail     [] = (Map.empty, [])
         (oldContext, stack) = safeHeadTail $ contextStack c
     in
     (c { contextStack = stack
@@ -144,7 +150,8 @@ popContext = EqContext $ \c ->
     , ())
 
 setContext :: [(String, Formula)] -> EqContext ()
-setContext newContext = EqContext $ \c -> (c { context = newContext }, ())
+setContext newContext = EqContext $ \c ->
+    (c { context = Map.fromList newContext }, ())
 
 -- | Cleanup error list, useful in cases of
 -- threaded computation
@@ -167,9 +174,7 @@ obtainEqResult m = snd $ runEqTransform m emptyContext
 -- | Remove a variable from the context
 delSymbol :: String -> EqContext ()
 delSymbol s = EqContext $ \ctxt ->
-    let newContext = deleteBy (\_ (v,_) -> v == s) ("", CInteger 0)
-                   $ context ctxt
-    in (ctxt { context = newContext }, ())
+    (ctxt { context = Map.delete s $ context ctxt}, ())
 
 updateSymbol :: String -> Formula -> EqContext ()
 updateSymbol varName def = do
@@ -179,19 +184,21 @@ updateSymbol varName def = do
 addSymbols :: [(String, Formula)] -> EqContext ()
 addSymbols adds = EqContext $ \eqCtxt ->
     let syms = context eqCtxt
-    in ( eqCtxt { context = adds ++ syms }, ())
+    in -- union is left biased, we use it here, new symbols
+       -- at the left of union !!
+    ( eqCtxt { context = Map.fromList adds `Map.union` syms}, ())
 
 -- | Add a variable into the context
 addSymbol :: String -> Formula -> EqContext ()
 addSymbol varName def = EqContext $ \eqCtxt ->
     let prevSymbol = context eqCtxt
-    in ( eqCtxt{ context = (varName,def): prevSymbol }, ())
+    in ( eqCtxt{ context = Map.insert varName def prevSymbol }, ())
 
 -- | Check if a symbol is present, and if so, return it's
 -- definition
 symbolLookup :: String -> EqContext (Maybe Formula)
 symbolLookup varName = EqContext $ \eqCtxt ->
-    (eqCtxt, lookup varName $ context eqCtxt)
+    (eqCtxt, Map.lookup varName $ context eqCtxt)
 
 -- | Used to provide error messages at the end of the computation
 -- (when jumping back to IO), and also assure a nice partial evaluation,
