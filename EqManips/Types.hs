@@ -29,7 +29,7 @@ import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
 
 import Data.Ratio
-import Data.List( intersperse, mapAccumR, foldl', foldl1' )
+import Data.List( foldl', foldl1' )
 import Data.Maybe( fromJust )
 
 import EqManips.Propreties
@@ -420,10 +420,13 @@ foldf f acc fo = f fo acc
 -------------------------------------------
     
 -- | used to render functions' arguments
-argListToString :: [Formula] -> String
-argListToString fl = concat $ intersperse "," textArgs
-    where accum _ f = ((), deparse maxPrio False f)
-          (_,textArgs) = mapAccumR accum () fl
+argListToString :: [Formula] -> ShowS
+argListToString [] = id
+argListToString [f] = deparse maxPrio False f
+argListToString lst = foldl' accum (unprint lastElem) reved
+    where unprint = deparse maxPrio False
+          accum acc f = unprint f . (',':) . acc
+          (lastElem:reved) = reverse lst
 
 -- | only to avoid a weird constant somewhere
 maxPrio :: Int
@@ -436,50 +439,50 @@ maxPrio = 15
 -- | Public function to translate a formula back to it's
 -- original notation. NOTE : it's not used as a Show instance...
 unparse :: Formula -> String
-unparse = deparse maxPrio False
+unparse f = deparse maxPrio False f ""
 
 -- | Real conversion function, pass down priority
 -- and tree direction
-deparse :: Int -> Bool -> Formula -> String
+deparse :: Int -> Bool -> Formula -> ShowS
 -- INVISIBLE META NINJA !!
 deparse i r (Meta _ f) = deparse i r f
-deparse _ _ (Truth True) = "true"
-deparse _ _ (Truth False) = "false"
+deparse _ _ (Truth True) = ("true" ++)
+deparse _ _ (Truth False) = ("false" ++)
 deparse _ _ (BinOp _ []) =
     error "The formula is denormalized : a binary operator without any operands"
-deparse _ _ (Variable s) = s
-deparse _ _ (Lambda _) = "" -- NINJA HIDDEN!
-deparse _ _ (NumEntity e) = en e
+deparse _ _ (Variable s) = (s ++)
+deparse _ _ (Lambda _) = id -- NINJA HIDDEN!
+deparse _ _ (NumEntity e) = (en e ++)
     where en Pi = "pi"
           en Nabla = "nabla"
           en Infinite = "infinite"
-deparse _ _ (CInteger i) = show i
-deparse _ _ (CFloat d) = show d
+deparse _ _ (CInteger i) = shows i
+deparse _ _ (CFloat d) = shows d
 deparse _ _ (Block i i1 i2) =
-    "block(" ++ show i ++ "," ++ show i1 ++ "," ++ show i2 ++ ")"
+    ("block(" ++) . shows i . (',':) . shows i1 . (',' :) . shows i2 . (')' :)
 
 deparse _ _ (App (Variable v) fl) =
-    v ++ "(" ++ argListToString fl ++ ")"
+    (v ++) . ('(' :) . argListToString fl . (')' :)
 
 deparse _ _ (App f1 fl) =
-    '(' : deparse maxPrio False f1 ++ ")(" ++ argListToString fl ++ ")"
+    ('(' :) . deparse maxPrio False f1 . (")(" ++) . argListToString fl . (')' :)
 
 deparse _ _ (Sum i i1 i2) =
-    "sum(" ++ argListToString [i, i1, i2]  ++ ")"
+    ("sum(" ++) . argListToString [i, i1, i2] . (')':)
 
 deparse _ _ (Product i i1 i2) =
-    "product(" ++ argListToString [i, i1, i2]  ++ ")"
+    ("product(" ++) . argListToString [i, i1, i2] . (')':)
 
 deparse _ _ (Derivate i i1) =
-    "derivate(" ++ argListToString [i, i1] ++ ")"
+    ("derivate(" ++) . argListToString [i, i1] . (')':)
 
 deparse _ _ (Integrate i i1 i2 i3) =
-    "integrate(" ++ argListToString [i, i1, i2, i3] ++ ")"
+    ("integrate(" ++) . argListToString [i, i1, i2, i3] . (')':)
 
-deparse _ _ (UnOp OpFactorial f) = "(" ++ deparse maxPrio False f ++ ")!"
+deparse _ _ (UnOp OpFactorial f) = ('(':) . deparse maxPrio False f . (")!" ++)
 deparse _ _ (UnOp op f) =
-    (fromJust $ lookup op unOpNames) ++ 
-        "(" ++ deparse maxPrio False f ++ ")"
+    ((++) . fromJust $ lookup op unOpNames) . 
+        ('(':) . deparse maxPrio False f . (')':)
 
 -- Special case... as OpEq is right associative...
 -- we must reverse shit for serialisation
@@ -487,38 +490,41 @@ deparse oldPrio right (BinOp OpEq [f1,f2]) =
     let (prio, txt) = fromJust $ lookup OpEq binopDefs
     in
     if prio > oldPrio || (not right && prio == oldPrio)
-       then "(" ++ deparse prio False f1 
-                ++ ' ' : txt ++ " " 
-                ++ deparse prio True f2 ++ ")"
+       then ('(':) 
+                . deparse prio False f1 
+                . (' ' :) . (txt ++) . (' ':) 
+                . deparse prio True f2 . (')':)
        else deparse prio False f1 
-            ++ ' ' : txt ++ " "
-            ++ deparse prio True f2
+            . (' ' :) . (txt ++) . (' ':)
+            . deparse prio True f2
 
 deparse oldPrio right (BinOp op [f1,f2]) =
     let (prio, txt) = fromJust $ lookup op binopDefs
     in
     if prio > oldPrio || (right && prio == oldPrio)
-       then "(" ++ deparse prio False f1 
-                ++ ' ' : txt ++ " " 
-                ++ deparse prio True f2 ++ ")"
+       then ('(':) . deparse prio False f1 
+                . (' ' :) . (txt ++) . (' ':) 
+                . deparse prio True f2 . (')':)
        else deparse prio False f1 
-            ++ ' ' : txt ++ " "
-            ++ deparse prio True f2
+            . (' ' :) . (txt ++) . (' ':)
+            . deparse prio True f2
 
 deparse oldPrio right (BinOp op (f1:xs)) =
     let (prio, txt) = fromJust $ lookup op binopDefs
     in
     if prio > oldPrio || (right && prio == oldPrio)
-       then "(" ++ deparse prio False f1 
-                ++ ' ' : txt ++ " " 
-                ++ deparse prio False (BinOp op xs) ++ ")"
+       then ('(':) . deparse prio False f1 
+                . (' ':) . (txt ++) . (' ':) 
+                . deparse prio False (BinOp op xs) . (')':)
        else deparse prio False f1 
-            ++ ' ' : txt ++ " "
-            ++ deparse prio False (BinOp op xs)
+            . (' ' :) . (txt ++) . (' ':)
+            . deparse prio False (BinOp op xs)
 
 deparse _ _ (Matrix n m fl) =
-    "matrix(" ++ show n ++ "," ++ show m ++ "," ++
-            (argListToString $ concat fl) ++ ")"
+    ("matrix("++) . shows n 
+                  . (',':) 
+                  . shows m 
+                  . (',':) .  (argListToString $ concat fl) . (')':)
 
 ----------------------------------------
 ----  Strong and valid instances    ----
