@@ -141,12 +141,17 @@ mul e e' = right (e, e')
 -- | Handle the division operator. Nicely handle the case
 -- of division by 0.
 division :: EvalOp
+division l@(Matrix _ _ _) r@(Matrix _ _ _) = do
+    eqFail (l / r) "Division is not defined for matrixes"
+    left $ Block 1 1 1
+
 division f1 f2@(CInteger 0) = do
     eqFail (f1 / f2) "This expression evaluate to 0, and is used in a division."
-    right (f1, f2)
+    left $ Block 1 1 1
+
 division f1 f2@(CFloat 0) = do
     eqFail (f1 / f2) "This expression evaluate to 0, and is used in a division."
-    right (f1, f2)
+    left $ Block 1 1 1
 
 division l@(CFloat _) (CInteger i2) = division l . CFloat $ toEnum i2
 division (CInteger i) r@(CFloat _) = division (CFloat $ toEnum i) r

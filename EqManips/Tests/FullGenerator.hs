@@ -27,7 +27,7 @@ instance Arbitrary UnOperator where
                           ]
 
 instance Arbitrary Formula where
-    arbitrary = formulaGen 2
+    arbitrary = formulaGen 5
 
 
 instance Arbitrary VarLetter where

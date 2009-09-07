@@ -55,18 +55,22 @@ preserveMeaning transformation f =
             | otherwise = f1 == f2
           comp a b = a == b
 
-testRunner :: Testable a => a -> Int -> IO ()
-testRunner prop count = check config prop
+testRunner :: Testable a => a -> Bool -> String -> Int -> IO ()
+testRunner prop verbose txt count = check config prop
     where config = defaultConfig { configMaxTest = count
-                                 , configMaxFail = 2 }
+                                 , configMaxFail = 2 
+                                 , configEvery = display }
+          display = if verbose
+                then \n args -> txt ++ " " ++ show n ++ ":\n" ++ unlines args
+                else \n _ -> let s = show n in s ++ [ '\b' | _ <- s ]
+
 
 prop_treelistify :: Formula -> Bool
 prop_treelistify f = listifyFormula f == listifyFormula (treeIfyFormula f)
 
-globalTests :: [(String, Int -> IO ())]
+globalTests :: [(String, Bool -> String -> Int -> IO ())]
 globalTests =
-    [ ("Formula deparsing", testRunner prop_showBack)
-    , ("Formula ordering", testRunner prop_ordering)
+    [ ("Formula ordering", testRunner prop_ordering)
     , ("Formula tree/list", testRunner prop_treelistify) 
     , ("Formula folding", testRunner prop_nodeCount)
     , ("Formula depth first traversal", testRunner prop_depthFirstFormula)
@@ -74,13 +78,19 @@ globalTests =
     , ("Treeify don't change meaning", testRunner $ preserveMeaning treeIfyFormula)
     , ("Listify don't change meaning", testRunner $ preserveMeaning listifyFormula)
     , ("Cleanup don't change meaning", testRunner $ preserveMeaning cleanup)
+    , ("Formula deparsing", testRunner prop_showBack)
     ]
 
-runTestList :: [(String, Int -> IO ())] -> IO ()
+parseArgs :: (Bool, Int) -> [String] -> (Bool, Int)
+parseArgs params [] = params
+parseArgs (_, n) ("-v":xs) = parseArgs (True, n) xs
+parseArgs (v, _) (n:xs) = parseArgs (v, read n) xs
+
+runTestList :: [(String, Bool -> String -> Int -> IO ())] -> IO ()
 runTestList tests = do
-    x <- getArgs
-    let n = if null x then 100 else read . head $ x
-    mapM_ (\(s,a) -> printf "%-25s: " s >> a n) tests
+    args <- getArgs
+    let (verbose, n) = parseArgs (False, 100) args
+    mapM_ (\(s,a) -> printf "%-25s: " s >> a verbose s n) tests
 
 main :: IO ()
 main = runTestList globalTests
