@@ -2,6 +2,7 @@ import System.Environment
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.Renderer.Ascii
+import EqManips.Renderer.Latex
 
 import System.Exit
 import System.IO
