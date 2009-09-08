@@ -248,36 +248,6 @@ renderBraces (x,y) (w, h) renderLeft renderRight = leftChar . rightChar
                      . (++) [((right,i), '|')| i <- [middle + 2 .. bottomLine - 1]]
 
 -- | Render a list of arguments, used by lambdas & functions
-{-renderArgs :: Pos -- ^ Where to render the arguments-}
-           {--> Int -- ^ The baseline for all the arguments-}
-           {--> Int -}
-           {--> [(Formula, SizeTree)] -- ^ Arguments to be rendered-}
-           {--> (Int, PoserS) -- ^ Width & charList-}
-{-renderArgs _ _ _ [] = (0, id)-}
-{-renderArgs pos  _ _ [(x,t)] = (w, renderF x t pos)-}
-    {-where (w,_) = sizeOfTree t-}
-{-renderArgs (x,y) argBase argsMaxHeight ((node, size):mixedList) = (xla, params-}
-    {-. renderParens (x , y) (xla - argBegin, argsMaxHeight))-}
-  {-where argBegin = x + 1-}
-        {-initBase = baseLineOfTree size-}
-        {-initBaseLine = y + (argBase - initBase)-}
-        {-(initWidth, _) = sizeOfTree size-}
-
-        {-comma left = (:) ((left, y + argBase), ',')-}
-
-        {-firstAcc = comma (argBegin + initWidth)-}
-                 {-. renderF node size (argBegin, y + initBaseLine)-}
-        {-(params, (xla,_)) = foldl' write (firstAcc, (argBegin + initWidth + 2,y)) mixedList-}
-
-        {-write (acc, (x',y')) (node', size') =-}
-            {-( commas . argWrite . acc , (x' + nodeWidth + 2, y') )-}
-              {-where (nodeWidth, _) = sizeOfTree size-}
-                    {-commas = comma (x' + nodeWidth)-}
-                    {-nodeBase = baseLineOfTree size-}
-                    {-baseLine' = y' + (argBase - nodeBase)-}
-                    {-argWrite = renderF node' size' (x', baseLine')-}
-
--- | Render a list of arguments, used by lambdas & functions
 renderArgs :: Pos -- ^ Where to render the arguments
            -> Int -- ^ The baseline for all the arguments
            -> Int 
