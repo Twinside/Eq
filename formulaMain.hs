@@ -159,8 +159,9 @@ commandList =
     , ("format", "Load and display the formula in ASCII Art"
             , formatCommand formatFormula, commonOption)
     , ("latexify", "Translate the formula into latex"
-            , formatCommand {-(latexRender . treeIfyFormula)-} 
-                            (show . treeIfyFormula), commonOption)
+            , formatCommand (latexRender . treeIfyFormula), commonOption)
+    , ("toraw", "Show internal representation of formula"
+            , formatCommand show, commonOption)
     , ("help", "Ask specific help for a command, or this"
             , helpCommand, [])
     , ("preprocess", "Parse a source file and apply inline action in it"

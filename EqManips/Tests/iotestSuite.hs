@@ -1,6 +1,6 @@
 import System.Environment
 import Text.Printf
-
+import Data.Monoid( All( .. ), mempty, mappend )
 
 import EqManips.Types
 import EqManips.Linker
@@ -22,6 +22,32 @@ import Test.QuickCheck
 
 import Text.ParserCombinators.Parsec.Prim( runParser )
 
+-----------------------------------------------
+----        Helpers
+-----------------------------------------------
+preserveMeaning :: (Formula -> Formula) -> Formula -> Bool
+preserveMeaning transformation f = 
+  not (iniVal `hasProp` LeafNode) || comp (clean iniVal)
+                                          (clean . eval $ transformation f)
+    where eval = result . performTransformation . reduce
+          iniVal = eval f
+          clean (CFloat 0.0) = CInteger 0
+          clean (CFloat 1.0) = CInteger 1
+          clean (CFloat (-1.0)) = CInteger (-1)
+          clean e = e
+
+          comp (CFloat f1) (CFloat f2)
+            | isNaN f1 = isNaN f2
+            | otherwise = f1 == f2
+          comp a b = a == b
+
+mustVerify :: (Formula -> Bool) -> Formula -> Bool
+mustVerify f = getAll . foldf combiner mempty
+    where combiner formula acc = acc `mappend` (All $ f formula)
+
+-----------------------------------------------
+----        Propreties
+-----------------------------------------------
 prop_showBack :: Formula -> Bool
 prop_showBack formula = case eitherformula of
              Left _ -> False
@@ -39,22 +65,34 @@ prop_nodeCount f = nodeCount f > 0
 prop_depthFirstFormula :: Formula -> Bool
 prop_depthFirstFormula f = (depthFirstFormula `asAMonad` id $ f) == f
 
-preserveMeaning :: (Formula -> Formula) -> Formula -> Bool
-preserveMeaning transformation f = 
-  not (iniVal `hasProp` LeafNode) || comp (clean iniVal)
-                                          (clean . eval $ transformation f)
-    where eval = result . performTransformation . reduce
-          iniVal = eval f
-          clean (CFloat 0.0) = CInteger 0
-          clean (CFloat 1.0) = CInteger 1
-          clean (CFloat (-1.0)) = CInteger (-1)
-          clean e = e
+prop_treelistify :: Formula -> Bool
+prop_treelistify f = listifyFormula f == listifyFormula (treeIfyFormula f)
 
-          comp (CFloat f1) (CFloat f2)
-            | isNaN f1 = isNaN f2
-            | otherwise = f1 == f2
-          comp a b = a == b
+prop_treefi2 :: Formula -> Bool
+prop_treefi2 f = mustVerify size2 $ treeIfyFormula f
+    where size2 (BinOp _op lst) = length lst == 2
+          size2 _ = True
 
+-----------------------------------------------
+----        Test list.
+-----------------------------------------------
+globalTests :: [(String, Bool -> String -> Int -> IO ())]
+globalTests =
+    [ ("Formula ordering", testRunner prop_ordering)
+    , ("Formula tree/list", testRunner prop_treelistify)
+    , ("Formula folding", testRunner prop_nodeCount)
+    , ("Formula depth first traversal", testRunner prop_depthFirstFormula)
+    , ("Expand don't change meaning", testRunner $ preserveMeaning expand)
+    , ("Treeify don't change meaning", testRunner $ preserveMeaning treeIfyFormula)
+    , ("Treeify has BinOp of size 2", testRunner $ prop_treefi2)
+    , ("Listify don't change meaning", testRunner $ preserveMeaning listifyFormula)
+    , ("Cleanup don't change meaning", testRunner $ preserveMeaning cleanup)
+    , ("Formula deparsing", testRunner prop_showBack)
+    ]
+
+-----------------------------------------------
+----        System
+-----------------------------------------------
 testRunner :: Testable a => a -> Bool -> String -> Int -> IO ()
 testRunner prop verbose txt count = check config prop
     where config = defaultConfig { configMaxTest = count
@@ -63,23 +101,6 @@ testRunner prop verbose txt count = check config prop
           display = if verbose
                 then \n args -> txt ++ " " ++ show n ++ ":\n" ++ unlines args
                 else \n _ -> let s = show n in s ++ [ '\b' | _ <- s ]
-
-
-prop_treelistify :: Formula -> Bool
-prop_treelistify f = listifyFormula f == listifyFormula (treeIfyFormula f)
-
-globalTests :: [(String, Bool -> String -> Int -> IO ())]
-globalTests =
-    [ ("Formula ordering", testRunner prop_ordering)
-    , ("Formula tree/list", testRunner prop_treelistify) 
-    , ("Formula folding", testRunner prop_nodeCount)
-    , ("Formula depth first traversal", testRunner prop_depthFirstFormula)
-    , ("Expand don't change meaning", testRunner $ preserveMeaning expand)
-    , ("Treeify don't change meaning", testRunner $ preserveMeaning treeIfyFormula)
-    , ("Listify don't change meaning", testRunner $ preserveMeaning listifyFormula)
-    , ("Cleanup don't change meaning", testRunner $ preserveMeaning cleanup)
-    , ("Formula deparsing", testRunner prop_showBack)
-    ]
 
 parseArgs :: (Bool, Int) -> [String] -> (Bool, Int)
 parseArgs params [] = params

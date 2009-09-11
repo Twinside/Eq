@@ -21,7 +21,7 @@ Executable eq
 
 Executable iotest
     Main-Is: EqManips/Tests/iotestSuite.hs
-    ghc-options: -Wall
+    ghc-options: -Wall -O2
     extensions: CPP
     cpp-options: -D_DEBUG
     Build-Depends: base >= 4.0

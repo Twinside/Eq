@@ -5,7 +5,9 @@ import EqManips.Algorithm.Utils
 import EqManips.Propreties
 
 latexRender :: Formula -> String
-latexRender f = l (treeIfyFormula f) ""
+latexRender f = (str "\\begin{equation}\n")
+              . l (treeIfyFormula f) 
+              . (str "\n\\end{equation}\n") $ ""
 
 str :: String -> ShowS
 str = (++)
@@ -51,6 +53,7 @@ stringOfBinOp OpLe = " \\le "
 stringOfBinOp _ = error "stringOfBinOp - unknown op"
 
 l :: Formula -> ShowS
+l (Block _ _ _) = str "block"
 l (Variable v) = str v
 l (NumEntity e) = str $ latexOfEntity e
 l (Truth t) = shows t
@@ -87,11 +90,11 @@ l (Integrate begin end what var) =
                   . str "} \\! " . l what . str " \\, d" . l var
 
 l (Derivate f var) =
-    str "\\frac{d " . l f . str "}{ d" . l var . str "}"
+    str "\\frac{d " . l f . str "}{ d" . l var . char '}'
 
 l (App func args) = 
-    l func . str "\\left(" . latexargs . str "\\right)"
-     where latexargs = id
+    l func . str "\\left(" . latexargs args . str "\\right)"
+     where latexargs _ = id
 
 l (Matrix _ _ lsts) = str "\\begin{bmatrix}\n"
                     . matrixCells

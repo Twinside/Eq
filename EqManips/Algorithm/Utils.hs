@@ -20,7 +20,7 @@ import EqManips.Propreties
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.Linker
-import Data.List( sort )
+import Data.List( foldl', sort )
 
 -----------------------------------------------------------
 --          Parsing formula
@@ -70,26 +70,25 @@ listifyFormula = depthFirstFormula `asAMonad` listifyBinOp
 -- | Given a binary operator in binary tree form,
 -- transform it in list form.
 listifyBinOp :: Formula -> Formula
-listifyBinOp f@(BinOp op _) = BinOp op $ translate f
+listifyBinOp (BinOp op lst) = BinOp op $ translate lst
     where translate = flatten (op `obtainProp` AssocSide)
           flatten OpAssocRight = rightLister
           flatten OpAssocLeft 
-                | op `hasProp` Associativ = rightLister . BinOp op . leftLister []
-                | otherwise = leftLister []
+                | op `hasProp` Associativ = rightLister . leftLister
+                | otherwise = leftLister
+
+          leftLister = foldr lefter []
 
           -- left associative operator packing.
-          leftLister acc (BinOp op' (f1@(BinOp op'' _): f2))
-                | op' == op'' = leftLister (f2 ++ acc) f1
-          leftLister acc (BinOp op' fl)
-                | op' == op = fl ++ acc
-          leftLister acc final = final : acc
+          lefter (BinOp op' fl) acc
+                | op == op' = foldr lefter acc fl
+          lefter final acc = final : acc
 
+          rightLister = foldl' righter []
           -- right associative operator packing.
-          rightLister (BinOp op' [f1, f2@(BinOp op'' _)])
-                | op' == op'' = f1 : flatten OpAssocRight f2 
-          rightLister (BinOp op' fl)
-                | op' == op = fl
-          rightLister final = [final]
+          righter acc (BinOp op' fl)
+                | op' == op = foldl' righter acc fl
+          righter acc e = acc ++ [e]
 
 listifyBinOp a = a
 
@@ -100,11 +99,20 @@ treeIfyFormula = depthFirstFormula `asAMonad` treeIfyBinOp
 -- | Given a formula where all binops are in list
 -- forms, transform it back to binary tree.
 treeIfyBinOp :: Formula -> Formula
-treeIfyBinOp (BinOp _ []) = error "Impossible to treeIfy"
+treeIfyBinOp (BinOp _ []) = error "treeIfyBinOp - empty binop"
+treeIfyBinOp (BinOp _ [_]) = error "treeIfyBinOp - Singleton binop"
 treeIfyBinOp f@(BinOp _ [_,_]) = f
-treeIfyBinOp (BinOp op (f1:f2:fs)) = innerNode $ op `obtainProp` AssocSide
-        where innerNode OpAssocLeft = BinOp op $ (BinOp op [f1, f2]) : fs
-              innerNode OpAssocRight = BinOp op [f1, BinOp op $ f2 : fs]
+treeIfyBinOp (BinOp op lst) = innerNode (op `obtainProp` AssocSide) lst
+        where innerNode OpAssocLeft (fx:fy:fs) = 
+                foldl' innerLeft (BinOp op [fx, fy]) fs
+              innerNode OpAssocRight lst' = innerRight lst'
+              innerNode _ _ = error "treeIfyBinOp - weird unhandled case"
+
+              innerRight [a,b] = BinOp op [a,b]
+              innerRight (fx:fs) = BinOp op [fx, innerRight fs]
+              innerRight _ = error "treeIfyBinOp - bleh right"
+
+              innerLeft acc fx = BinOp op [acc, fx]
 treeIfyBinOp f = f
 
 -- | Little helper to help to know if a formula renderer
