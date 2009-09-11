@@ -60,9 +60,8 @@ formulaGen n
                  , matrixGenerator (n-1)
                  ]
           where subFormul = formulaGen (n-1)
-                formulist = do f1 <- subFormul
-                               f2 <- subFormul
-                               return [f1, f2]
+                formulist = do genCount <- choose (2, 7)
+                               replicateM genCount subFormul
 
 matrixGenerator :: Int -> Gen Formula
 matrixGenerator deep = do

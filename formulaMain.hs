@@ -1,6 +1,7 @@
 import System.Environment
 import EqManips.Types
 import EqManips.Algorithm.Utils
+import EqManips.Algorithm.Cleanup
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.Latex
 
@@ -48,14 +49,14 @@ getInputOutput opts args = (inputFile, outputFile)
 
 -- | Command which just format an equation
 -- without affecting it's form.
-formatCommand :: [String] -> IO Bool
-formatCommand args = do
+formatCommand :: (Formula -> String) -> [String] -> IO Bool
+formatCommand formater args = do
     formulaText <- input
     let formula = parseFormula formulaText
     output <- outputFile
     either (parseErrorPrint output)
            (\formula' -> do 
-                hPutStrLn output $ formatFormula formula'
+                hPutStrLn output $ formater formula'
                 hClose output
                 return True)
            formula
@@ -151,11 +152,19 @@ helpCommand (x:_) = case find (\(x',_,_,_) -> x' == x) commandList of
 
 commandList :: [(String, String, [String] -> IO Bool, [OptDescr (Flag, String)])]
 commandList = 
-    [ ("cleanup", "Perform trivial simplification on formula", transformParseFormula reduce, commonOption)
-    , ("eval", "Try to evaluate/reduce the formula", transformParseFormula evalGlobalStatement, commonOption)
-    , ("format", "Load and display the formula in ASCII Art", formatCommand, commonOption)
-    , ("help", "Ask specific help for a command, or this", helpCommand, [])
-    , ("preprocess", "Parse a source file and apply inline action in it", preprocessCommand, commonOption)
+    [ ("cleanup", "Perform trivial simplification on formula"
+            , transformParseFormula (return . cleanup), commonOption)
+    , ("eval", "Try to evaluate/reduce the formula"
+            , transformParseFormula evalGlobalStatement, commonOption)
+    , ("format", "Load and display the formula in ASCII Art"
+            , formatCommand formatFormula, commonOption)
+    , ("latexify", "Translate the formula into latex"
+            , formatCommand {-(latexRender . treeIfyFormula)-} 
+                            (show . treeIfyFormula), commonOption)
+    , ("help", "Ask specific help for a command, or this"
+            , helpCommand, [])
+    , ("preprocess", "Parse a source file and apply inline action in it"
+            , preprocessCommand, commonOption)
     ]
 
 reducedCommand :: [(String, [String] -> IO Bool)]

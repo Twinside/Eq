@@ -1,7 +1,9 @@
+4:debug latex output
 3:Find a way to execute a real taylor serie
+3:Matrix multiplication order problem!
 2:Make some validation about definition domain
-2:Matrix multiplication order problem!
-2:Standard library?
-1:Make some C output (quid matrix?)
-1:Make some HLSL/GLSL output
-0:Make some LaTeX output
+2:Make a GUI
+1:Make real formatting for a.. GUI
+1:Standard library?
+0:Make some C output (quid matrix?)
+0:Make some HLSL/GLSL output
