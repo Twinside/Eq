@@ -1,4 +1,3 @@
-4:debug latex output
 3:Find a way to execute a real taylor serie
 3:Matrix multiplication order problem!
 2:Make some validation about definition domain
