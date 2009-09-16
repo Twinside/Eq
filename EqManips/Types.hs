@@ -10,6 +10,7 @@ module EqManips.Types( Formula( .. )
                      , unparse  -- regurgitation in parsed language.
 
                      , binopString
+                     , unopString
                      , AssocSide(..) -- To query associativity side
                      , OpAssoc( .. ) -- Return type for associativity side
                      , Priority(.. ) -- Gain access to operator's priority
@@ -338,6 +339,9 @@ binopDefs =
 
 binopString :: BinOperator -> String
 binopString a = snd . fromJust $ lookup a binopDefs
+
+unopString :: UnOperator -> String
+unopString a = fromJust $ lookup a unOpNames
 
 -- | Textual representation of "unary" operators
 unOpNames :: [(UnOperator, String)]

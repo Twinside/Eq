@@ -8,9 +8,11 @@ import EqManips.Propreties
 mathmlRender :: Formula -> String
 mathmlRender f = (str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n")
                . semantics ( presMarkup . annotation contentMarkup)
+               {-. presMarkup-}
                . (str "</math>\n") $ ""
-    where contentMarkup = content f
-          presMarkup = prez f
+    where contentMarkup = content treefied
+          presMarkup = mrow $ prez treefied
+          treefied = treeIfyFormula f
           semantics = tagger "semantics"
           annotation c = str "<annotation-xml encoding=\"MathML-Content\">\n" 
                        . c . str "\n</annotation-xml>\n"
@@ -29,16 +31,15 @@ mathMlOfEntity Infinite = "<infinity/>"
 tagger :: String -> ShowS -> ShowS
 tagger tag f = str ('<': tag ++ ">") . f . str ("</" ++ tag ++ ">")
 
-prez :: Formula -> ShowS
-prez = presentation Nothing
-
 cleanify :: String -> String
 cleanify = concat . map deAnchor
     where deAnchor '<' = "&lt;"
           deAnchor '>' = "&gt;"
           deAnchor a = [a]
 
-mo, mi, mn, mfrac, mrow, parens, msubsup, msqrt, mfenced, mtable, mtd :: ShowS -> ShowS
+mo, msup, mi, mn, mfrac, mrow, parens,
+    msubsup, msqrt, mfenced, mtable,
+    mtd, mtr :: ShowS -> ShowS
 mo = tagger "mo"
 mi = tagger "mi"
 mn = tagger "mn"
@@ -46,14 +47,19 @@ mfrac = tagger "mfrac"
 mrow = tagger "mrow"
 parens f = str "<mo>(</mo>" . f . str "<mo>)</mo>"
 msubsup = tagger "msubsup"
+msup = tagger "msup"
 msqrt = tagger "msqrt"
 
 mfenced f = str "<mfenced open=\"[\" close=\"]\">\n" . f . str "</mfenced>\n"
 mtable = tagger "mtable"
 mtd = tagger "mtd"
+mtr = tagger "mtr"
 
 enclose :: Char -> Char -> ShowS -> ShowS
 enclose beg end f = str ("<mo>" ++ (beg : "</mo>")) . f . str ("<mo>" ++ (end : "</mo>"))
+
+prez :: Formula -> ShowS
+prez = presentation Nothing
 
 presentation :: Maybe (BinOperator, Bool) -> Formula -> ShowS
 presentation _ (Block _ _ _) = mi $ str "block"
@@ -65,12 +71,17 @@ presentation _ (CFloat d) = mn $ shows d
 presentation inf (Meta _ f) = presentation inf f
 presentation _ (Lambda _clauses) = id
 
+presentation _ (BinOp OpPow [a,b]) =
+    msup $ mrow (presentation (Just (OpPow, False)) a)
+         . mrow (presentation (Just (OpPow, True)) b)
+
 presentation _ (BinOp OpDiv [a,b]) =
     mfrac $ mrow (prez a)
           . mrow (prez b)
 
 presentation (Just (pop,isRight)) f@(BinOp op _)
     | needParenthesis isRight pop op = parens $ prez f
+    | otherwise = prez f
 
 presentation Nothing (BinOp op [a,b]) =
     presentation (Just (op, False)) a
@@ -78,6 +89,8 @@ presentation Nothing (BinOp op [a,b]) =
     . presentation (Just (op, True)) b
 
 -- Unary operators
+presentation _ (UnOp OpCeil f) = str "<mo>&lceil;</mo>" . prez f . str "<mo>&rceil;</mo>"
+presentation _ (UnOp OpFloor f) = str "<mo>&lfloor;</mo>" . prez f . str "<mo>&rfloor;</mo>"
 presentation _ (UnOp OpFrac f) = enclose '{' '}' $ prez f
 presentation _ (UnOp OpAbs f) = enclose '|' '|' $ prez f
 presentation _ (UnOp OpSqrt f) = msqrt $ prez f
@@ -88,8 +101,8 @@ presentation _ (UnOp OpNegate f)
   | f `hasProp` LeafNode = mo (char '-') . prez f
   | otherwise = mo (char '-') . (parens $ prez f)
 presentation _ (UnOp op f)
-  | f `hasProp` LeafNode = mo (str $ stringOfUnOp op) . prez f
-  | otherwise = mo (str $ stringOfUnOp op) . parens (prez f)
+  | f `hasProp` LeafNode = mo (str $ unopString op) . prez f
+  | otherwise = mo (str $ unopString op) . parens (prez f)
 
 presentation _ (Sum begin end what) =
     (msubsup $ mo (str "&sum;")
@@ -114,8 +127,8 @@ presentation _ (App func args) =
     prez func . parens (interspereseS (mo $ char ',') $ map prez args)
 
 presentation _ (Matrix _ _ lsts) =
-    mfenced $ mtable $ concatS [matrixrow $ concatS [ mtd $ prez cell | cell <- row] | row <- lsts ]
-presentation _ _ = error "Wrong MathML presentation rendering"
+    mfenced $ mtable $ concatS [mtr $ concatS [ mtd $ prez cell | cell <- row] | row <- lsts ]
+presentation _ f = error $ "\n\nWrong MathML presentation rendering : " ++ unparse f ++ "\n" ++ show f
 
 -----------------------------------------------
 ----        Content
@@ -155,7 +168,8 @@ stringOfUnOp OpFloor = "<floor/>"
 stringOfUnOp OpCeil = "<ceiling/>"
 stringOfUnOp OpSqrt = "<root/>"
 stringOfUnOp OpFactorial = "<factorial/>"
-stringOfUnOp op = error $ "stringOfUnop : unknown op " ++ show op
+stringOfUnOp OpNegate = "<minus/>"
+stringOfUnOp OpFrac = "<ci>frac</ci>"
 
 stringOfBinOp :: BinOperator -> String
 stringOfBinOp OpAdd = "<plus/>"
@@ -187,7 +201,8 @@ content :: Formula -> ShowS
 content (Block _ _ _) = ci $ str "block"
 content (Variable v) = ci $ str v
 content (NumEntity e) = cn . str $ mathMlOfEntity e
-content (Truth t) = cn $ shows t
+content (Truth True) = str "<true/>"
+content (Truth False) = str "<false/>"
 content (CInteger i) = cn $ shows i
 content (CFloat d) = cn $ shows d
 content (Meta _ f) = content f
