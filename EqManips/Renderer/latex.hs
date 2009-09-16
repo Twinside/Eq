@@ -1,13 +1,16 @@
-module EqManips.Renderer.Latex ( latexRender ) where
+module EqManips.Renderer.Latex ( latexRender, latexRenderS ) where
 
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
 
 latexRender :: Formula -> String
-latexRender f = (str "\\begin{equation}\n")
+latexRender f = latexRenderS f ""
+
+latexRenderS :: Formula -> ShowS
+latexRenderS f = (str "\\begin{equation}\n")
               . lno (treeIfyFormula f) 
-              . (str "\n\\end{equation}\n") $ ""
+              . (str "\n\\end{equation}\n")
 
 str :: String -> ShowS
 str = (++)

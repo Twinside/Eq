@@ -8,6 +8,7 @@ module EqManips.Types( Formula( .. )
                      , program  -- if you want to define some definition before
                      , expr     -- if you want to evaluate just an expression
                      , unparse  -- regurgitation in parsed language.
+                     , unparseS -- regurgitation with type ShowS
 
                      , binopString
                      , unopString
@@ -443,7 +444,10 @@ maxPrio = 15
 -- | Public function to translate a formula back to it's
 -- original notation. NOTE : it's not used as a Show instance...
 unparse :: Formula -> String
-unparse f = deparse maxPrio False f ""
+unparse f = unparseS f ""
+
+unparseS :: Formula -> ShowS
+unparseS  = deparse maxPrio False
 
 -- | Real conversion function, pass down priority
 -- and tree direction

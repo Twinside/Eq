@@ -4,17 +4,21 @@ module EqManips.Renderer.Mathml( mathmlRender ) where
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
+import EqManips.Renderer.Latex
 
 mathmlRender :: Formula -> String
 mathmlRender f = (str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n")
-               . semantics ( presMarkup . annotation contentMarkup)
-               {-. presMarkup-}
+               . semantics ( presMarkup 
+                           . annotation "MathML-Content" contentMarkup
+                           . annotation "Eq-language" (unparseS f)
+                           . annotation "LaTeX" (str . cleanify $ latexRender f))
                . (str "</math>\n") $ ""
     where contentMarkup = content treefied
           presMarkup = mrow $ prez treefied
           treefied = treeIfyFormula f
           semantics = tagger "semantics"
-          annotation c = str "<annotation-xml encoding=\"MathML-Content\">\n" 
+          annotation kind c =
+              str ("<annotation-xml encoding=\"" ++ kind ++ "\">\n")
                        . c . str "\n</annotation-xml>\n"
 
 str :: String -> ShowS
@@ -35,6 +39,7 @@ cleanify :: String -> String
 cleanify = concat . map deAnchor
     where deAnchor '<' = "&lt;"
           deAnchor '>' = "&gt;"
+          deAnchor '&' = "&amp;"
           deAnchor a = [a]
 
 mo, msup, mi, mn, mfrac, mrow, parens,
