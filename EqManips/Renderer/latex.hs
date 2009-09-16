@@ -115,7 +115,7 @@ l _ (App func args) =
 l _ (Matrix _ _ lsts) = str "\\begin{bmatrix}\n"
                       . matrixCells
                       . str "\\end{bmatrix}\n"
-    where writeLine curr acc = lno curr . str " & " . acc
-          liner = foldr writeLine (str "\\\\\n")
-          matrixCells = foldr (\mline acc -> liner mline . acc) id lsts
+    where perLine lst = interspereseS (str " & ") $ map lno lst
+          matrixCells = interspereseS (str "\\\\\n") $ map perLine lsts
+
 

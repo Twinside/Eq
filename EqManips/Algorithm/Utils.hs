@@ -10,6 +10,10 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , nodeCount
                                 , needParenthesis 
                                 , needParenthesisPrio 
+
+                                , interspereseS 
+                                , concatS 
+                                , concatMapS 
                                 ) where
 
 import qualified Data.Monoid as Monoid
@@ -160,4 +164,17 @@ biAssocM f finv lst = assocInner f lst
           assocInner f' (x:y:xs) = f' x y >>= \val -> case val of
               Left v -> assocInner f' (v:xs)
               Right (v1, v2) -> assocInner finv (v2:xs) >>= return . (v1:) 
+
+concatS :: [ShowS] -> ShowS
+concatS = foldr1 (.)
+
+concatMapS :: (a -> ShowS) -> [a] -> ShowS
+concatMapS f = concatS . map f
+
+-- | Same functionality as intersperse but combine function
+-- instead of concatenation
+interspereseS :: ShowS -> [ShowS] -> ShowS
+interspereseS what within =
+   foldl' (\acc e -> e . what . acc) lastOne reversed
+    where (lastOne : reversed) = reverse within
 

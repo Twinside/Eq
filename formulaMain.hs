@@ -4,6 +4,7 @@ import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Cleanup
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.Latex
+import EqManips.Renderer.Mathml
 
 import System.Exit
 import System.IO
@@ -159,7 +160,9 @@ commandList =
     , ("format", "Load and display the formula in ASCII Art"
             , formatCommand formatFormula, commonOption)
     , ("latexify", "Translate the formula into latex"
-            , formatCommand (latexRender . treeIfyFormula), commonOption)
+            , formatCommand latexRender, commonOption)
+    , ("mathmlify", "Translate the formula into MathML"
+            , formatCommand mathmlRender, commonOption)
     , ("toraw", "Show internal representation of formula"
             , formatCommand show, commonOption)
     , ("help", "Ask specific help for a command, or this"
