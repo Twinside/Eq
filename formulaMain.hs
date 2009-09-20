@@ -5,7 +5,6 @@ import EqManips.Algorithm.Cleanup
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.Latex
 import EqManips.Renderer.Mathml
-
 import System.Exit
 import System.IO
 import System.Console.GetOpt

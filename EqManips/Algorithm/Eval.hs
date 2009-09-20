@@ -24,7 +24,7 @@ type EvalOp = Formula -> Formula -> EqContext (Either Formula (Formula,Formula))
 
 -- | Main function to evaluate another function
 reduce :: Formula -> EqContext Formula
-reduce = eval
+reduce = eval . cleanup
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left
@@ -216,7 +216,8 @@ ceilEval f = return $ UnOp OpCeil f
 fNegate :: Formula -> EqContext Formula
 fNegate (CInteger i) = return . CInteger $ negate i
 fNegate (CFloat f) = return . CFloat $ negate f
-fNegate f = return f
+fNegate (UnOp OpNegate f) = return f
+fNegate f = return $ negate f
 
 -----------------------------------------------
 ----        'abs'
@@ -224,7 +225,7 @@ fNegate f = return f
 fAbs :: Formula -> EqContext Formula
 fAbs (CInteger i) = return . CInteger $ abs i
 fAbs (CFloat f) = return . CFloat $ abs f
-fAbs f = return f
+fAbs f = return $ abs f
 
 -----------------------------------------------
 ----        'Comparison operators'
@@ -327,7 +328,7 @@ eval (App def var) = do
                     pushContext
                     {-setContext subst-}
                     addSymbols subst
-                    traceContext
+                    {-traceContext-}
                     addTrace ("subst | " ++ show subst, body)
                     body' <- eval body
                     addTrace ("body' | " ++ show body', body')

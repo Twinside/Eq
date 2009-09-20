@@ -136,7 +136,8 @@ d (Lambda [([Variable v], body)]) var = do
     body' <- inject body
     popContext
     body'' <- d body' var
-    return $ Lambda [([Variable v], body'')]
+    addTrace ("Deriv | \n", BinOp OpEq [body', body''])
+    return $ Lambda [([Variable var], body'')]
 
 d f@(UnOp OpFloor _) _ = eqFail f "The floor function is not continuous"
 d f@(UnOp OpCeil _) _ = eqFail f "The ceil function in not continuous"
@@ -162,7 +163,8 @@ d f@(Integrate _i _e _w _v) _var =
 d f@(Matrix _ _ _formulas) _var =
     eqFail f "Deriving a Matrix, what to do?"
 
-d f@(Lambda _) _ =
+d f@(Lambda _) _ = do
+    addTrace ("WrongDeriv  \n|",f)
     eqFail f "Deriving lambdas"
 
 d f@(Truth _) _ =

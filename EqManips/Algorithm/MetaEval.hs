@@ -9,7 +9,7 @@ import {-# SOURCE #-} EqManips.Algorithm.Eval
 metaEval :: MetaOperation -> Formula -> EqContext Formula
 metaEval Force f = reduce f
 metaEval Hold f = return f
-metaEval Listify f = return $ listifyBinOp f
+metaEval Listify f = return . listifyBinOp =<< reduce f
 metaEval Treefy f = return $ treeIfyBinOp f
 metaEval Expand f = return $ expand f
 

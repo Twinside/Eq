@@ -20,7 +20,7 @@ test:
 	./iotest
 
 debug:
-	./eq.exe +RTS -p -RTS eval -o out.txt -f taylor.txt
+	./eq.exe eval -o out.txt -f taylor.txt
 
 run:
 	dist/build/eq/eq.exe preprocess -f tests/preprocess/test.cc -o rez.cc
