@@ -1,8 +1,5 @@
-{-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.Eval( reduce
-                              , runProgramm
-                              , evalGlobalStatement 
-                              ) where
+module EqManips.Algorithm.EvalForce where
+
 
 import Data.Maybe
 
@@ -32,98 +29,31 @@ left = return . Left
 right :: (Monad m) => b -> m (Either a b)
 right = return . Right
 
-runProgramm :: [Formula] -> EqContext [Formula]
-runProgramm = mapM evalGlobalStatement
-
------------------------------------------------
-----        Top level evaluation
------------------------------------------------
--- | Add a function into the symbol table.
-addLambda :: String -> [Formula] -> Formula -> EqContext ()
-addLambda varName args body = do
-    symb <- symbolLookup varName
-    case symb of
-      Nothing -> addSymbol varName $ Lambda [(args, body)]
-      Just (Lambda clauses@((prevArg,_):_)) -> do
-          if length prevArg /= length args
-            then do
-             eqFail (Variable varName) "Warning definition with different argument count"
-             return ()
-            else updateSymbol varName . Lambda $ clauses ++ [(args, body)]
-          
-      Just _ -> do
-         eqFail (Variable varName) $ varName ++ " already defined as not a function"
-         return ()
-
--- | Add a "value" into the symbol table
-addVar :: String -> Formula -> EqContext ()
-addVar varName body = do
-    symb <- symbolLookup varName
-    case symb of
-      Nothing -> addSymbol varName body
-      Just _ -> do
-         eqFail (Variable varName) $ varName ++ " is already defined"
-         return ()
-
--- | Evaluate top level declarations
-evalGlobalStatement :: Formula -> EqContext Formula
-evalGlobalStatement (BinOp OpEq [ (App (Variable funName) argList)
-                                , body ]) = do
-    addLambda funName argList body
-    return $ (BinOp OpEq [(App (Variable funName) argList), body])
-
-evalGlobalStatement (BinOp OpEq [(Variable varName), body]) = do
-    pushContext
-    body' <- reduce body
-    popContext
-    addVar varName body'
-    return $ (BinOp OpEq [(Variable varName), body'])
-
-evalGlobalStatement e = do
-    pushContext
-    a <- reduce e
-    popContext
-    return a
-
 -----------------------------------------------
 ----            '+'
 -----------------------------------------------
 add :: EvalOp
-add (CInteger i1) (CInteger i2) = left . CInteger $ i1 + i2
-add f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
-    matrixMatrixSimple (+) f1 f2
-add f1@(Matrix _ _ _) f2 = do
-    eqFail (f1+f2) "Error invalid addition on Matrix"
-    right (f1, f2)
-add f1 f2@(Matrix _ _ _) = do
-    eqFail (f1+f2) "Error invalid addition on Matrix"
-    right (f1, f2)
-
+add (CInteger i1) (CFloat f2) = left . CFloat $ fromIntegral i1 + f2
+add (CFloat f1) (CInteger i2) = left . CFloat $ f1 + fromIntegral i2
+add (CFloat f1) (CFloat f2) = left . CFloat $ f1 + f2
 add e e' = right (e, e')
 
 -----------------------------------------------
 ----            '-'
 -----------------------------------------------
 sub :: EvalOp
-sub (CInteger i1) (CInteger i2) = left . CInteger $ i1 - i2
-sub f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
-    matrixMatrixSimple (-) f1 f2
-sub f1@(Matrix _ _ _) f2 = do
-    eqFail (f1-f2) "Error invalid substraction on Matrix"
-    right (f1, f2)
-sub f1 f2@(Matrix _ _ _) = do
-    eqFail (f1-f2) "Error invalid substraction on Matrix"
-    right (f1, f2)
+sub (CInteger i1) (CFloat f2) = left . CFloat $ fromIntegral i1 - f2
+sub (CFloat f1) (CInteger i2) = left . CFloat $ f1 - fromIntegral i2
+sub (CFloat f1) (CFloat f2) = left . CFloat $ f1 - f2
 sub e e' = right (e,e')
 
 -----------------------------------------------
 ----            '*'
 -----------------------------------------------
 mul :: EvalOp
-mul (CInteger i1) (CInteger i2) = left . CInteger $ i1 * i2
-mul f1@(Matrix _ _ _) f2@(Matrix _ _ _) = matrixMatrixMul f1 f2
-mul m@(Matrix _ _ _) s = matrixScalar (*) m s >>= left
-mul s m@(Matrix _ _ _) = matrixScalar (*) m s >>= left
+mul (CInteger i1) (CFloat f2) = left . CFloat $ fromIntegral i1 * f2
+mul (CFloat f1) (CInteger i2) = left . CFloat $ f1 * fromIntegral i2
+mul (CFloat f1) (CFloat f2) = left . CFloat $ f1 * f2
 mul e e' = right (e, e')
 
 -----------------------------------------------
@@ -133,21 +63,17 @@ mul e e' = right (e, e')
 -- of division by 0.
 division :: EvalOp
 division l@(Matrix _ _ _) r@(Matrix _ _ _) = do
-    eqFail (l / r) Err.div_undefined_matrixes
-    left $ Block 1 1 1
-
-division f1 f2@(CInteger 0) = do
-    eqFail (f1 / f2) Err.div_by_0
+    eqFail (l / r) Err.div_undefined_matrixes 
     left $ Block 1 1 1
 
 division f1 f2@(CFloat 0) = do
     eqFail (f1 / f2) Err.div_by_0
     left $ Block 1 1 1
 
-division (CInteger i1) (CInteger i2)
-    | i1 `mod` i2 == 0 = left . CInteger $ i1 `div` i2
-division m@(Matrix _ _ _) s = matrixScalar (/) m s >>= left
-division s m@(Matrix _ _ _) = matrixScalar (/) m s >>= left
+division l@(CFloat _) (CInteger i2) = division l . CFloat $ toEnum i2
+division (CInteger i) r@(CFloat _) = division (CFloat $ toEnum i) r
+division (CFloat i1) (CFloat i2) = left . CFloat $ i1 / i2
+division (CInteger i1) (CInteger i2) = left . CFloat $ toEnum i1 / toEnum i2
 division f1 f2 = right (f1, f2)
 
 -----------------------------------------------
@@ -155,6 +81,9 @@ division f1 f2 = right (f1, f2)
 -----------------------------------------------
 -- | yeah handle all the power operation.
 power :: EvalOp
+power l@(CFloat _) (CInteger i2) = power l . CFloat $ toEnum i2
+power (CInteger i) r@(CFloat _) = power (CFloat $ toEnum i) r
+power (CFloat i1) (CFloat i2) = return . Left . CFloat $ i1 ** i2
 power f1 (CInteger i2) | i2 < 0 = return . Left $ CInteger 1 / (f1 ** CInteger (-i2))
 power (CInteger i1) (CInteger i2) = return . Left . CInteger $ i1 ^ i2
 power f1 f2 = return . Right $ (f1, f2)
@@ -163,7 +92,7 @@ power f1 f2 = return . Right $ (f1, f2)
 ----        '!'
 -----------------------------------------------
 factorial :: Formula -> EqContext Formula
-factorial f@(CFloat _) = eqFail f Err.factorial_on_real 
+factorial f@(CFloat _) = eqFail f "Can't apply factorial to real number"
 factorial (CInteger 0) = return $ CInteger 1
 factorial f@(CInteger i) | i > 0 = return . CInteger $ product [1 .. i]
                          | otherwise = eqFail f "No factorial of negative numbers"

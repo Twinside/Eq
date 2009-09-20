@@ -10,6 +10,6 @@ metaEval :: MetaOperation -> Formula -> EqContext Formula
 metaEval Force f = reduce f
 metaEval Hold f = return f
 metaEval Listify f = return . listifyBinOp =<< reduce f
-metaEval Treefy f = return $ treeIfyBinOp f
+metaEval Treefy f = return . treeIfyBinOp =<< reduce f
 metaEval Expand f = return $ expand f
 
