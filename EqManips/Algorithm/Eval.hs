@@ -23,6 +23,7 @@ import Data.List( foldl' , transpose, sort )
 
 type FormulOperator = Formula -> Formula -> Formula
 type EvalOp = Formula -> Formula -> EqContext (Either Formula (Formula,Formula))
+type Evaluator = Formula -> EqContext Formula
 
 -- | Main function to evaluate another function
 reduce :: Formula -> EqContext Formula
@@ -90,67 +91,67 @@ evalGlobalStatement e = do
 -----------------------------------------------
 ----            '+'
 -----------------------------------------------
-add :: EvalOp
-add (CInteger i1) (CInteger i2) = left . CInteger $ i1 + i2
-add f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
-    matrixMatrixSimple (+) f1 f2
-add f1@(Matrix _ _ _) f2 = do
+add :: Evaluator -> EvalOp
+add _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 + i2
+add evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
+    matrixMatrixSimple evaluator (+) f1 f2
+add _ f1@(Matrix _ _ _) f2 = do
     eqFail (f1+f2) Err.add_matrix
     right (f1, f2)
-add f1 f2@(Matrix _ _ _) = do
+add _ f1 f2@(Matrix _ _ _) = do
     eqFail (f1+f2) Err.add_matrix
     right (f1, f2)
 
-add e e' = right (e, e')
+add _ e e' = right (e, e')
 
 -----------------------------------------------
 ----            '-'
 -----------------------------------------------
-sub :: EvalOp
-sub (CInteger i1) (CInteger i2) = left . CInteger $ i1 - i2
-sub f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
-    matrixMatrixSimple (-) f1 f2
-sub f1@(Matrix _ _ _) f2 = do
+sub :: Evaluator -> EvalOp
+sub _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 - i2
+sub evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
+    matrixMatrixSimple evaluator (-) f1 f2
+sub _ f1@(Matrix _ _ _) f2 = do
     eqFail (f1-f2) Err.sub_matrix
     right (f1, f2)
-sub f1 f2@(Matrix _ _ _) = do
+sub _ f1 f2@(Matrix _ _ _) = do
     eqFail (f1-f2) Err.sub_matrix
     right (f1, f2)
-sub e e' = right (e,e')
+sub _ e e' = right (e,e')
 
 -----------------------------------------------
 ----            '*'
 -----------------------------------------------
-mul :: EvalOp
-mul (CInteger i1) (CInteger i2) = left . CInteger $ i1 * i2
-mul f1@(Matrix _ _ _) f2@(Matrix _ _ _) = matrixMatrixMul f1 f2
-mul m@(Matrix _ _ _) s = matrixScalar (*) m s >>= left
-mul s m@(Matrix _ _ _) = matrixScalar (*) m s >>= left
-mul e e' = right (e, e')
+mul :: Evaluator -> EvalOp
+mul _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 * i2
+mul evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) = matrixMatrixMul evaluator f1 f2
+mul evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (*) m s >>= left
+mul evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (*) m s >>= left
+mul _ e e' = right (e, e')
 
 -----------------------------------------------
 ----        '/'
 -----------------------------------------------
 -- | Handle the division operator. Nicely handle the case
 -- of division by 0.
-division :: EvalOp
-division l@(Matrix _ _ _) r@(Matrix _ _ _) = do
+division :: Evaluator -> EvalOp
+division _ l@(Matrix _ _ _) r@(Matrix _ _ _) = do
     eqFail (l / r) Err.div_undefined_matrixes
     left $ Block 1 1 1
 
-division f1 f2@(CInteger 0) = do
+division _ f1 f2@(CInteger 0) = do
     eqFail (f1 / f2) Err.div_by_0
     left $ Block 1 1 1
 
-division f1 f2@(CFloat 0) = do
+division _ f1 f2@(CFloat 0) = do
     eqFail (f1 / f2) Err.div_by_0
     left $ Block 1 1 1
 
-division (CInteger i1) (CInteger i2)
+division _ (CInteger i1) (CInteger i2)
     | i1 `mod` i2 == 0 = left . CInteger $ i1 `div` i2
-division m@(Matrix _ _ _) s = matrixScalar (/) m s >>= left
-division s m@(Matrix _ _ _) = matrixScalar (/) m s >>= left
-division f1 f2 = right (f1, f2)
+division evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (/) m s >>= left
+division evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (/) m s >>= left
+division _ f1 f2 = right (f1, f2)
 
 -----------------------------------------------
 ----        '^'
@@ -296,15 +297,14 @@ binEval op f inv formulaList
 ----        General evaluation
 -----------------------------------------------
 -- | General evaluation/reduction function
-eval :: (Formula -> EqContext Formula)
-     -> Formula -> EqContext Formula
-eval evaluator (Meta m f) = metaEval m f
-eval evaluator (NumEntity Pi) = return $ CFloat pi
+eval :: Evaluator -> Evaluator
+eval _ (Meta m f) = metaEval m f
+eval _ (NumEntity Pi) = return $ CFloat pi
 eval evaluator (Matrix n m mlines) = do
     cells <- sequence [mapM evaluator line | line <- mlines]
     return $ Matrix n m cells
 
-eval evaluator (Variable v) = symbolLookup v
+eval _ (Variable v) = symbolLookup v
     >>= return . fromMaybe (Variable v)
 
 eval evaluator (App def var) = do
@@ -333,12 +333,17 @@ eval evaluator (App def var) = do
          needApply def' args = do
              return $ App def' args
 
-eval evaluator (BinOp OpAdd fs) = binEval OpAdd add add =<< mapM evaluator fs
-eval evaluator (BinOp OpSub fs) = binEval OpSub sub add =<< mapM evaluator fs
-eval evaluator (BinOp OpMul fs) = binEval OpMul mul mul =<< mapM evaluator fs
+eval evaluator (BinOp OpAdd fs) =
+    binEval OpAdd (add evaluator) (add evaluator) =<< mapM evaluator fs
+eval evaluator (BinOp OpSub fs) =
+    binEval OpSub (sub evaluator) (add evaluator) =<< mapM evaluator fs
+eval evaluator (BinOp OpMul fs) =
+    binEval OpMul (mul evaluator) (mul evaluator) =<< mapM evaluator fs
+
 -- | Todo fix this, it's incorrect
 eval evaluator (BinOp OpPow fs) = binEval OpPow power power =<< mapM evaluator fs
-eval evaluator (BinOp OpDiv fs) = binEval OpDiv division mul =<< mapM evaluator fs
+eval evaluator (BinOp OpDiv fs) =
+    binEval OpDiv (division evaluator) (mul evaluator) =<< mapM evaluator fs
 
 -- comparisons operators
 eval evaluator (BinOp OpLt fs) = predicateList OpLt (compOperator (<)) =<< mapM evaluator fs
@@ -373,14 +378,14 @@ eval evaluator (Derivate f@(Meta op _) var) = do
     evalued <- metaEval op f
     evaluator (Derivate evalued var)
 
-eval evaluator (Derivate what (Variable s)) = do
+eval _ (Derivate what (Variable s)) = do
 #ifdef _DEBUG
     addTrace ("Derivation on " ++ s, what)
 #endif
     derived <- derivate what s
     return $ cleanup derived
 
-eval evaluator f@(Derivate _ _) =
+eval _ f@(Derivate _ _) =
     eqFail f Err.deriv_bad_var_spec 
 
 eval evaluator formu@(Sum (BinOp OpEq [Variable v, CInteger initi])
@@ -395,11 +400,11 @@ eval evaluator formu@(Product (BinOp OpEq [Variable v, CInteger initi])
      | initi <= endi = iterateFormula evaluator (BinOp OpMul) v initi endi f
      | otherwise = eqFail formu Err.product_wrong_bounds 
 
-eval evaluator f@(Integrate _ _ _ _) =
+eval _ f@(Integrate _ _ _ _) =
     eqFail f Err.integration_no_eval
 
-eval evaluator f@(Block _ _ _) = eqFail f Err.block_eval
-eval evaluator end = return end
+eval _ f@(Block _ _ _) = eqFail f Err.block_eval
+eval _ end = return end
 
 --------------------------------------------------------------
 ---- iteration
@@ -421,17 +426,18 @@ iterateFormula evaluator op ivar initi endi what = do
 --------------------------------------------------------------
 ---- Matrix related functions
 --------------------------------------------------------------
-matrixScalar :: (Formula -> Formula -> Formula) -> Formula -> Formula 
+matrixScalar :: Evaluator
+             -> (Formula -> Formula -> Formula) -> Formula -> Formula 
              -> EqContext Formula
-matrixScalar op s m@(Matrix _ _ _) = matrixScalar op m s
-matrixScalar op (Matrix n m mlines) s = cell >>= return . Matrix n m
+matrixScalar evaluator op s m@(Matrix _ _ _) = matrixScalar evaluator op m s
+matrixScalar evaluator op (Matrix n m mlines) s = cell >>= return . Matrix n m
     where cell = sequence
-            [ mapM (\c -> eval $ c `op` s) line | line <- mlines]
-matrixScalar _ _ _ = error Err.matrixScalar_badop
+            [ mapM (\c -> evaluator $ c `op` s) line | line <- mlines]
+matrixScalar _ _ _ _ = error Err.matrixScalar_badop
 
 -- | Multiplication between two matrix. Check for matrix sizes.
-matrixMatrixMul :: EvalOp
-matrixMatrixMul m1@(Matrix n _ mlines) m2@(Matrix n' m' mlines')
+matrixMatrixMul :: Evaluator -> EvalOp
+matrixMatrixMul evaluator m1@(Matrix n _ mlines) m2@(Matrix n' m' mlines')
     | n /= m' = do eqFail (BinOp OpMul [m1, m2]) Err.matrix_mul_bad_size
                    right (m1, m2)
     | otherwise = cellLine >>= left . Matrix n n'
@@ -439,24 +445,24 @@ matrixMatrixMul m1@(Matrix n _ mlines) m2@(Matrix n' m' mlines')
                     [ sequence [multCell $ zip line row | row <- transpose mlines' ]
                                                         | line <- mlines]
 
-              multCell l = eval $ foldl' multAtor (initCase l) (tail l)
+              multCell l = evaluator $ foldl' multAtor (initCase l) (tail l)
               multAtor acc (l, r) = acc + (l * r)
 
               initCase ((x,y):_) = x * y
               initCase _ = error . Err.shouldnt_happen $ Err.matrix_empty ++ " - "
               
-matrixMatrixMul _ _ = error $ Err.shouldnt_happen "matrixMatrixMul - "
+matrixMatrixMul _ _ _ = error $ Err.shouldnt_happen "matrixMatrixMul - "
 
 -- | Simple operation, matrix addition or substraction
-matrixMatrixSimple :: FormulOperator -> Formula -> Formula 
+matrixMatrixSimple :: Evaluator -> FormulOperator -> Formula -> Formula 
                    -> EqContext (Either Formula (Formula,Formula))
-matrixMatrixSimple op m1@(Matrix n m mlines) m2@(Matrix n' m' mlines')
+matrixMatrixSimple evaluator op m1@(Matrix n m mlines) m2@(Matrix n' m' mlines')
     | n /= n' || m /= m' = do
         eqFail (m1 `op` m2) Err.matrix_diff_size
         return $ Right (m1, m2)
     | otherwise = newCells >>= return . Left . Matrix n m
-        where dop (e1, e2) = eval $ e1 `op`e2
+        where dop (e1, e2) = evaluator $ e1 `op`e2
               newCells = sequence [ mapM dop $ zip line1 line2
                                      | (line1, line2) <- zip mlines mlines']
-matrixMatrixSimple _ _ _ = error $ Err.shouldnt_happen "matrixMatrixSimple"
+matrixMatrixSimple _ _ _ _ = error $ Err.shouldnt_happen "matrixMatrixSimple"
 

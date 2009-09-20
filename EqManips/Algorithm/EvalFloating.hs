@@ -1,3 +1,7 @@
+-- | This module implements the rules to interpret all floating
+-- points operations which are by nature lossy. So this set
+-- of rules may or may not be used in the context of global
+-- evaluation to preserve the "true" meaning of the formula.
 module EqManips.Algorithm.EvalFloating ( floatEvalRules ) where
 
 import Data.Maybe
@@ -135,7 +139,7 @@ binEval op f inv formulaList
 -----------------------------------------------
 ----        General evaluation
 -----------------------------------------------
--- | General evaluation/reduction function
+-- | All the rules for floats
 floatEvalRules :: Formula -> EqContext Formula
 floatEvalRules (NumEntity Pi) = return $ CFloat pi
 floatEvalRules (BinOp OpAdd fs) = binEval OpAdd add add fs
