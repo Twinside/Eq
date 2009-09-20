@@ -1,5 +1,4 @@
-module EqManips.Algorithm.EvalForce( floatEvalRules ) where
-
+module EqManips.Algorithm.EvalFloating ( floatEvalRules ) where
 
 import Data.Maybe
 
