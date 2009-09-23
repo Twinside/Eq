@@ -298,7 +298,7 @@ binEval op f inv formulaList
 -----------------------------------------------
 -- | General evaluation/reduction function
 eval :: Evaluator -> Evaluator
-eval _ (Meta m f) = metaEval m f
+eval evaluator (Meta m f) = metaEval evaluator m f
 eval _ (NumEntity Pi) = return $ CFloat pi
 eval evaluator (Matrix n m mlines) = do
     cells <- sequence [mapM evaluator line | line <- mlines]
@@ -371,18 +371,18 @@ eval evaluator (UnOp OpAbs f) = fAbs =<< evaluator f
 eval evaluator (UnOp op f) = return . UnOp op =<< evaluator f
 
 eval evaluator (Derivate what (Meta op var)) = do
-    evalued <- metaEval op var
+    evalued <- metaEval evaluator op var
     evaluator $ Derivate what evalued
 
 eval evaluator (Derivate f@(Meta op _) var) = do
-    evalued <- metaEval op f
+    evalued <- metaEval evaluator op f
     evaluator (Derivate evalued var)
 
-eval _ (Derivate what (Variable s)) = do
+eval evaluator (Derivate what (Variable s)) = do
 #ifdef _DEBUG
     addTrace ("Derivation on " ++ s, what)
 #endif
-    derived <- derivate what s
+    derived <- derivate evaluator s what
     return $ cleanup derived
 
 eval _ f@(Derivate _ _) =

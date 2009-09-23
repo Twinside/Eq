@@ -25,6 +25,16 @@ left = return . Left
 right :: (Monad m) => b -> m (Either a b)
 right = return . Right
 
+floatCastingOperator :: (Float -> Float) -> Formula -> Formula
+                     -> EqContext Formula
+floatCastingOperator f (CInteger i1) (CFloat f2) =
+    left . CFloat $ f (fromIntegral i1) f2
+floatCastingOperator f (CFloat f1) (CInteger i2) =
+    left . CFloat $ f f1 (fromIntegral i2)
+floatCastingOperator f (CFloat f1) (CFloat f2) =
+    left . CFloat $ f f1 f2
+floatCastingOperator _ e e' = right (e, e')
+
 -----------------------------------------------
 ----            '+'
 -----------------------------------------------
