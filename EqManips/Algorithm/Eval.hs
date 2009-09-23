@@ -29,7 +29,8 @@ type Evaluator = Formula -> EqContext Formula
 -- | Main function to evaluate another function
 reduce :: Formula -> EqContext Formula
 reduce = eval evaluator
-    where evaluator f = (eval return $ cleanupRules f)  >>= floatEvalRules
+    where evaluator :: Formula -> EqContext Formula
+          evaluator f = (eval evaluator $ cleanupRules f) >>= floatEvalRules
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left
@@ -285,9 +286,6 @@ binEval op f inv formulaList
         biAssocM f inv (sort formulaList) >>= return . binOp op
 
     | otherwise = do
-#ifdef _DEBUG
-        addTrace ("Basic Eval=>", BinOp op formulaList)
-#endif
         biAssocM f inv formulaList >>= return . binOp op
 
 -----------------------------------------------
@@ -330,7 +328,7 @@ eval evaluator (App def var) = do
          needApply def' args = do
              return $ App def' args
 
-eval evaluator (BinOp OpAdd fs) =
+eval evaluator (BinOp OpAdd fs) = do
     binEval OpAdd (add evaluator) (add evaluator) =<< mapM evaluator fs
 eval evaluator (BinOp OpSub fs) =
     binEval OpSub (sub evaluator) (add evaluator) =<< mapM evaluator fs
@@ -385,18 +383,25 @@ eval evaluator (Derivate what (Variable s)) = do
 eval _ f@(Derivate _ _) =
     eqFail f Err.deriv_bad_var_spec 
 
-eval evaluator formu@(Sum (BinOp OpEq [Variable v, CInteger initi])
-                (CInteger endi)
-                f)
-     | initi <= endi = iterateFormula evaluator (BinOp OpAdd) v initi endi f
-     | otherwise = eqFail formu Err.sum_wrong_bounds
+eval evaluator formu@(Sum (BinOp OpEq [Variable v, inexpr]) endexpr f) = do
+    inexpr' <- evaluator inexpr
+    endexpr' <- evaluator endexpr
+    sumEval inexpr' endexpr'
+     where sumEval (CInteger initi) (CInteger endi)
+            | initi <= endi = iterateFormula evaluator (BinOp OpAdd) v initi endi f
+            | otherwise = eqFail formu Err.sum_wrong_bounds
+           sumEval ini end = return $ Sum (BinOp OpEq [Variable v, ini]) end f
+    
 
-eval evaluator formu@(Product (BinOp OpEq [Variable v, CInteger initi])
-                    (CInteger endi)
-                    f)
-     | initi <= endi = iterateFormula evaluator (BinOp OpMul) v initi endi f
-     | otherwise = eqFail formu Err.product_wrong_bounds 
-
+eval evaluator formu@(Product (BinOp OpEq [Variable v, inexpr]) endexpr f) = do
+    inexpr' <- evaluator inexpr
+    endexpr' <- evaluator endexpr
+    prodEval inexpr' endexpr'
+     where prodEval (CInteger initi) (CInteger endi)
+            | initi <= endi = iterateFormula evaluator (BinOp OpMul) v initi endi f
+            | otherwise = eqFail formu Err.sum_wrong_bounds
+           prodEval ini end = return $ Product (BinOp OpEq [Variable v, ini]) end f
+    
 eval _ f@(Integrate _ _ _ _) =
     eqFail f Err.integration_no_eval
 

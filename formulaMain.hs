@@ -104,13 +104,9 @@ transformParseFormula operation args = do
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"
-               hPutStrLn finalFile "======== <SizeDump> =========\n"
-               let (array, size) = renderFormula $ result rez
-                   text = unlines $ linesOfArray array
-               hPutStr finalFile $ show size
-               hPutStrLn finalFile "\n======== </SizeDump> =========\n"
 #endif
-
+               let (array, _size) = renderFormula $ result rez
+                   text = unlines $ linesOfArray array
                hPrint finalFile $ result rez
                hPutStrLn finalFile ""
                printErrors $ errorList rez
