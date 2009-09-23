@@ -1,23 +1,20 @@
+{-# LANGUAGE Rank2Types #-}
 -- | This module implements the rules to interpret all floating
 -- points operations which are by nature lossy. So this set
 -- of rules may or may not be used in the context of global
 -- evaluation to preserve the "true" meaning of the formula.
 module EqManips.Algorithm.EvalFloating ( floatEvalRules ) where
 
-import Data.Maybe
 
+import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.Propreties
 import EqManips.EvaluationContext
-import EqManips.Algorithm.Cleanup
-import EqManips.Algorithm.Inject
-import EqManips.Algorithm.Derivative
 import EqManips.Algorithm.Utils
-import EqManips.Algorithm.MetaEval
 
-import EqManips.Algorithm.Unification
+import Data.List( sort )
 
-import Data.List( foldl' , transpose, sort )
+type EvalOp = Formula -> Formula -> EqContext (Either Formula (Formula,Formula))
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left
@@ -25,8 +22,7 @@ left = return . Left
 right :: (Monad m) => b -> m (Either a b)
 right = return . Right
 
-floatCastingOperator :: (Float -> Float) -> Formula -> Formula
-                     -> EqContext Formula
+floatCastingOperator :: (Double -> Double -> Double) -> EvalOp
 floatCastingOperator f (CInteger i1) (CFloat f2) =
     left . CFloat $ f (fromIntegral i1) f2
 floatCastingOperator f (CFloat f1) (CInteger i2) =
@@ -35,59 +31,17 @@ floatCastingOperator f (CFloat f1) (CFloat f2) =
     left . CFloat $ f f1 f2
 floatCastingOperator _ e e' = right (e, e')
 
------------------------------------------------
-----            '+'
------------------------------------------------
-add :: EvalOp
-add (CInteger i1) (CFloat f2) = left . CFloat $ fromIntegral i1 + f2
-add (CFloat f1) (CInteger i2) = left . CFloat $ f1 + fromIntegral i2
-add (CFloat f1) (CFloat f2) = left . CFloat $ f1 + f2
-add e e' = right (e, e')
-
------------------------------------------------
-----            '-'
------------------------------------------------
-sub :: EvalOp
-sub (CInteger i1) (CFloat f2) = left . CFloat $ fromIntegral i1 - f2
-sub (CFloat f1) (CInteger i2) = left . CFloat $ f1 - fromIntegral i2
-sub (CFloat f1) (CFloat f2) = left . CFloat $ f1 - f2
-sub e e' = right (e,e')
-
------------------------------------------------
-----            '*'
------------------------------------------------
-mul :: EvalOp
-mul (CInteger i1) (CFloat f2) = left . CFloat $ fromIntegral i1 * f2
-mul (CFloat f1) (CInteger i2) = left . CFloat $ f1 * fromIntegral i2
-mul (CFloat f1) (CFloat f2) = left . CFloat $ f1 * f2
-mul e e' = right (e, e')
-
------------------------------------------------
-----        '/'
------------------------------------------------
--- | Handle the division operator. Nicely handle the case
--- of division by 0.
-division :: EvalOp
-division l@(CFloat _) (CInteger i2) = division l . CFloat $ toEnum i2
-division (CInteger i) r@(CFloat _) = division (CFloat $ toEnum i) r
-division (CFloat i1) (CFloat i2) = left . CFloat $ i1 / i2
-division f1 f2 = right (f1, f2)
-
------------------------------------------------
-----        '^'
------------------------------------------------
--- | yeah handle all the power operation.
-power :: EvalOp
-power l@(CFloat _) (CInteger i2) = power l . CFloat $ toEnum i2
-power (CInteger i) r@(CFloat _) = power (CFloat $ toEnum i) r
-power (CFloat i1) (CFloat i2) = return . Left . CFloat $ i1 ** i2
-power f1 f2 = right (f1, f2)
+add, sub, mul, division, power :: EvalOp
+add = floatCastingOperator (+)
+sub = floatCastingOperator (-)
+mul = floatCastingOperator (*)
+division = floatCastingOperator (/)
+power = floatCastingOperator (**)
 
 -----------------------------------------------
 ----        'floor'
 -----------------------------------------------
 floorEval :: Formula -> EqContext Formula
-floorEval i@(CInteger _) = return i
 floorEval (CFloat f) = return . CInteger $ floor f
 floorEval f = return $ UnOp OpFloor f
 
@@ -95,7 +49,6 @@ floorEval f = return $ UnOp OpFloor f
 ----        'frac'
 -----------------------------------------------
 fracEval :: Formula -> EqContext Formula
-fracEval (CInteger _) = return $ CInteger 0
 fracEval (CFloat f) = return . CFloat . snd $ (properFraction f :: (Int,Double))
 fracEval f = return $ UnOp OpFrac f
 
@@ -111,16 +64,13 @@ ceilEval f = return $ UnOp OpCeil f
 ----        'negate'
 -----------------------------------------------
 fNegate :: Formula -> EqContext Formula
-fNegate (CInteger i) = return . CInteger $ negate i
 fNegate (CFloat f) = return . CFloat $ negate f
-fNegate (UnOp OpNegate f) = return f
 fNegate f = return $ negate f
 
 -----------------------------------------------
 ----        'abs'
 -----------------------------------------------
 fAbs :: Formula -> EqContext Formula
-fAbs (CInteger i) = return . CInteger $ abs i
 fAbs (CFloat f) = return . CFloat $ abs f
 fAbs f = return $ abs f
 
@@ -166,9 +116,8 @@ floatEvalRules (UnOp OpFrac f) = fracEval f
 floatEvalRules (UnOp OpNegate f) = fNegate f
 floatEvalRules (UnOp OpAbs f) = fAbs f
 
-floatEvalRules (UnOp op f) = unOpReduce (funOf op) =<< eval f
-    where funOf :: Floating a => UnOperator -> (a -> a)
-          funOf OpSqrt = sqrt
+floatEvalRules (UnOp op f) = unOpReduce (funOf op) f
+    where funOf OpSqrt = sqrt
           funOf OpSin = sin
           funOf OpSinh = sinh
           funOf OpASin = asin
@@ -199,5 +148,5 @@ floatEvalRules end = return end
 unOpReduce :: (forall a. (Floating a) => a -> a) -> Formula -> EqContext Formula
 unOpReduce f (CInteger i) = unOpReduce f . CFloat $ toEnum i
 unOpReduce f (CFloat num) = return . CFloat $ f num
-unOpReduce f formula = return . f =<< eval formula
+unOpReduce _ formula = return formula
 

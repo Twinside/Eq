@@ -16,6 +16,7 @@ import EqManips.Algorithm.Inject
 import EqManips.Algorithm.Derivative
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.MetaEval
+import EqManips.Algorithm.EvalFloating
 
 import EqManips.Algorithm.Unification
 
@@ -27,7 +28,8 @@ type Evaluator = Formula -> EqContext Formula
 
 -- | Main function to evaluate another function
 reduce :: Formula -> EqContext Formula
-reduce = eval (eval return) . cleanup
+reduce = eval evaluator
+    where evaluator f = (eval return $ cleanupRules f)  >>= floatEvalRules
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left
@@ -178,7 +180,6 @@ factorial a = return $ UnOp OpFactorial a
 -----------------------------------------------
 floorEval :: Formula -> EqContext Formula
 floorEval i@(CInteger _) = return i
-floorEval (CFloat f) = return . CInteger $ floor f
 floorEval f = return $ UnOp OpFloor f
 
 -----------------------------------------------
@@ -186,7 +187,6 @@ floorEval f = return $ UnOp OpFloor f
 -----------------------------------------------
 fracEval :: Formula -> EqContext Formula
 fracEval (CInteger _) = return $ CInteger 0
-fracEval (CFloat f) = return . CFloat . snd $ (properFraction f :: (Int,Double))
 fracEval f = return $ UnOp OpFrac f
 
 -----------------------------------------------
@@ -194,7 +194,6 @@ fracEval f = return $ UnOp OpFrac f
 -----------------------------------------------
 ceilEval :: Formula -> EqContext Formula
 ceilEval i@(CInteger _) = return i
-ceilEval (CFloat f) = return . CInteger $ ceiling f
 ceilEval f = return $ UnOp OpCeil f
 
 -----------------------------------------------
@@ -202,7 +201,6 @@ ceilEval f = return $ UnOp OpCeil f
 -----------------------------------------------
 fNegate :: Formula -> EqContext Formula
 fNegate (CInteger i) = return . CInteger $ negate i
-fNegate (CFloat f) = return . CFloat $ negate f
 fNegate (UnOp OpNegate f) = return f
 fNegate f = return $ negate f
 
@@ -211,7 +209,6 @@ fNegate f = return $ negate f
 -----------------------------------------------
 fAbs :: Formula -> EqContext Formula
 fAbs (CInteger i) = return . CInteger $ abs i
-fAbs (CFloat f) = return . CFloat $ abs f
 fAbs f = return $ abs f
 
 -----------------------------------------------
