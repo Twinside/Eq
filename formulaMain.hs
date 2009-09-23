@@ -16,9 +16,6 @@ import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 import Preprocessor
 
--- BLEH
-import CharArray 
-
 data Flag =
       Output
     | Input
@@ -98,20 +95,15 @@ transformParseFormula operation args = do
            (\formulal -> do
                let rez = performLastTransformation $
                                 mapM operation formulal
-               mapM (\a-> do hPutStr finalFile $ show a
-                             hPutStr finalFile "\n\n") formulal
+               {-mapM (\a-> do hPutStr finalFile $ show a-}
+                             {-hPutStr finalFile "\n\n") formulal-}
 #ifdef _DEBUG
-               hPutStrLn finalFile "\n####### <TRACE> #########"
-               printTrace finalFile rez
-               hPutStrLn finalFile "####### </TRACE> #########\n"
+               {-hPutStrLn finalFile "\n####### <TRACE> #########"-}
+               {-printTrace finalFile rez-}
+               {-hPutStrLn finalFile "####### </TRACE> #########\n"-}
 #endif
-               let (array, _size) = renderFormula $ result rez
-                   text = unlines $ linesOfArray array
-               hPrint finalFile $ result rez
-               hPutStrLn finalFile ""
                printErrors $ errorList rez
-               hPutStr finalFile text
-               {-hPutStr finalFile . formatFormula $ result rez-}
+               hPutStr finalFile . formatFormula $ result rez
                hClose finalFile
 
                return . null $ errorList rez)

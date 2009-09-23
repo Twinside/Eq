@@ -28,9 +28,7 @@ type Evaluator = Formula -> EqContext Formula
 
 -- | Main function to evaluate another function
 reduce :: Formula -> EqContext Formula
-reduce = eval evaluator
-    where evaluator :: Formula -> EqContext Formula
-          evaluator f = (eval evaluator $ cleanupRules f) >>= floatEvalRules
+reduce f = (eval reduce $ cleanupRules f) >>= floatEvalRules
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left
