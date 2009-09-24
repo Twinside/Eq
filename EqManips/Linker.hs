@@ -21,6 +21,7 @@ link (App (Variable "Listify") [f]) = Meta Listify $ link f
 link (App (Variable "Treefy") [f]) = Meta Treefy $ link f
 link (App (Variable "Expand") [f]) = Meta Expand $ link f
 link (App (Variable "Cleanup") [f]) = Meta Cleanup $ link f
+link (App (Variable "Lambda") [arg, body]) = Meta LambdaBuild $ Lambda [([arg], body)]
 
 -- Special cases
 link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 

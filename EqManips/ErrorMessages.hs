@@ -45,3 +45,7 @@ matrix_mul_bad_size = "Error can't multiply matrix, m2 has wrong height"
 matrix_empty = "Matrixes are empty" 
 matrix_diff_size = "Sorry can't apply this operation on matrix of different sizes"
 
+--------------------------------------------------
+----            MetaEval
+--------------------------------------------------
+wrong_lambda_format = "Your lambda definition doesn't have the good format"

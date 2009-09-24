@@ -14,6 +14,7 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , interspereseS 
                                 , concatS 
                                 , concatMapS 
+                                , collectSymbols 
                                 ) where
 
 import qualified Data.Monoid as Monoid
@@ -177,4 +178,11 @@ interspereseS :: ShowS -> [ShowS] -> ShowS
 interspereseS what within =
    foldl' (\acc e -> e . what . acc) lastOne reversed
     where (lastOne : reversed) = reverse within
+
+-- | Collect all the symbols present in the formula.
+-- Symbols can be present multiple times
+collectSymbols :: Formula -> [String]
+collectSymbols = foldf symbolCollector []
+    where symbolCollector (Variable v) acc = v:acc
+          symbolCollector _ acc = acc
 

@@ -302,6 +302,7 @@ eval evaluator (Matrix n m mlines) = do
     cells <- sequence [mapM evaluator line | line <- mlines]
     return $ Matrix n m cells
 
+eval _ func@(Lambda _) = inject func
 eval _ (Variable v) = symbolLookup v
     >>= return . fromMaybe (Variable v)
 

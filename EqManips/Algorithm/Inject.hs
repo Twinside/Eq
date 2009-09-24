@@ -4,6 +4,7 @@ import Data.Maybe( fromMaybe )
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.EvaluationContext
+import EqManips.Algorithm.Utils
 
 -- | Replace all variables that get a definition by
 -- their definition if there is one. Otherwise let
@@ -19,7 +20,7 @@ scopePreserver f = keepSafe $ reBoundVar f
     where keepSafe Nothing = return ()
           keepSafe (Just v) = do
               pushContext
-              delSymbol v
+              mapM_ delSymbol v
 
 injectIntern :: Formula -> EqContext Formula
 injectIntern f@(Variable v) =
@@ -32,9 +33,12 @@ injectIntern f = scope $ reBoundVar f
 -- | Tell if a node change the scope.
 -- The pattern is explicitely exaustive to be sure
 -- to get the compiler shout if a change is made.
-reBoundVar :: Formula -> Maybe String
-reBoundVar (Product (BinOp OpEq (Variable v:_)) _ _) = Just v
-reBoundVar (Sum (BinOp OpEq (Variable v: _)) _ _) = Just v
+reBoundVar :: Formula -> Maybe [String]
+reBoundVar (Product (BinOp OpEq (Variable v:_)) _ _) = Just [v]
+reBoundVar (Sum (BinOp OpEq (Variable v: _)) _ _) = Just [v]
+reBoundVar (Lambda clauses) =
+    Just $ concat [concatMap collectSymbols args
+                        | (args, _) <- clauses]
 
 reBoundVar (Variable _) = Nothing
 reBoundVar (NumEntity _) = Nothing
@@ -49,7 +53,6 @@ reBoundVar (Matrix _ _ _) = Nothing
 reBoundVar (Block _ _ _) = Nothing
 reBoundVar (Product _ _ _) = Nothing
 reBoundVar (Sum _ _ _) = Nothing
-reBoundVar (Lambda _) = Nothing
 reBoundVar (Truth _) = Nothing
 -- Nothing preserved during evaluation normaly.
 reBoundVar (Meta _ _) = Nothing

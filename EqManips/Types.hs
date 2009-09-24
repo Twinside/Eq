@@ -98,6 +98,7 @@ data MetaOperation =
     | Treefy    -- ^ Pack operation in a tree-like form
     | Expand    -- ^ trigger an expend operation
     | Cleanup   -- ^ trigger a basic formula cleanup
+    | LambdaBuild -- ^ To generate a full blown Lambda
     deriving (Eq, Show, Read)
 
 -- | Main type manipulated by the software.

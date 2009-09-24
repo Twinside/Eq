@@ -95,8 +95,8 @@ transformParseFormula operation args = do
            (\formulal -> do
                let rez = performLastTransformation $
                                 mapM operation formulal
-               {-mapM (\a-> do hPutStr finalFile $ show a-}
-                             {-hPutStr finalFile "\n\n") formulal-}
+               mapM (\a-> do hPutStr finalFile $ show a
+                             hPutStr finalFile "\n\n") formulal
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
