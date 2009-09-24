@@ -1,5 +1,4 @@
 4:Write a documentation
-3:Find a way to execute a real taylor serie
 3:Make a simplify algorithm
 3:Matrix multiplication order problem!
 2:Make a GUI

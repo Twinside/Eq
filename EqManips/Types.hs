@@ -173,16 +173,19 @@ instance Ord Formula where
 
     compare (BinOp OpPow [Variable v1, p1])
             (BinOp OpPow [Variable v2, p2])
-            | v1 == v2 = compare p1 p2
-            | otherwise = compare v1 v2
+            | p1 == p2 = compare v1 v2
+            | otherwise = compare p1 p2
     
     compare (BinOp OpPow _) _ = GT
     compare _ (BinOp OpPow _) = LT
 
-    compare (BinOp op [BinOp OpPow (Variable v1: p1: _)])
-            (BinOp op' [BinOp OpPow (Variable v2: p2: _)])
-        | op == op' && v1 == v2
-         && (op == OpMul || op == OpDiv) = compare p1 p2
+    compare (BinOp op (BinOp OpPow (Variable v1: p1: _):_))
+            (BinOp op' (BinOp OpPow (Variable v2: p2: _):_))
+        | op == op' && v1 == v2 && op `elem` [OpMul, OpDiv] = compare p1 p2
+
+    compare (BinOp op (_:(BinOp OpPow (Variable v1: p1: _):_)))
+            (BinOp op' (_:(BinOp OpPow (Variable v2: p2: _):_)))
+        | op == op' && v1 == v2 && op `elem` [OpMul, OpDiv] = compare p1 p2
 
     compare (BinOp _ f1) (BinOp _ f2) = compare f1 f2
 
