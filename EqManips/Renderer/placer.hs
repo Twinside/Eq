@@ -1,5 +1,6 @@
 module EqManips.Renderer.Placer where
 
+import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import Data.List( foldl', transpose )
@@ -85,10 +86,8 @@ sizeOfFormula sizer _ _ (UnOp op f) =
               subFormula = sizeOfFormula sizer True prio f
               sizeDim = (unaryDim sizer) op (sizeExtract subFormula)
 
-sizeOfFormula _ _ _ (BinOp _ [_]) =
-    error "Denormalized Formula, binop with only one operand (sizeOfFormula)"
-sizeOfFormula _ _ _ (BinOp _ []) =
-    error "Denormalized Formula, binop with no operands (sizeOfFormula)"
+sizeOfFormula _ _ _ (BinOp _ [_]) = error $ Err.single_binop "sizeOfFormula - "
+sizeOfFormula _ _ _ (BinOp _ []) = error $ Err.empty_binop "sizeOfFormula - "
 
 -- do something like that :
 --      ####

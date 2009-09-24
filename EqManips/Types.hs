@@ -164,6 +164,11 @@ instance Ord Formula where
     compare (Meta _ f) f2 = compare f f2
     compare f (Meta _ f2) = compare f f2
 
+    -- To avoid some hypothetical problems :-S
+    compare (Matrix _ _ _) (Matrix _ _ _) = EQ
+    compare _ (Matrix _ _ _) = LT
+    compare (Matrix _ _ _) _ = LT
+    
     compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
     compare (NumEntity e1) (NumEntity e2) = compare e1 e2
     compare (CInteger i) (CInteger i2) = compare i i2
@@ -190,9 +195,6 @@ instance Ord Formula where
 
     compare (BinOp _ f1) (BinOp _ f2) = compare f1 f2
 
-    -- To avoid some hypothetical problems :-S
-    compare (Matrix _ _ _) (Matrix _ _ _) = EQ
-    
     compare _ (Block _ _ _) = LT
     compare _ (CInteger _) = GT
     compare _ (CFloat _) = GT

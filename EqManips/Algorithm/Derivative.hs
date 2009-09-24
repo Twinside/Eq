@@ -3,6 +3,9 @@ module EqManips.Algorithm.Derivative( derivate
 
 import Control.Applicative
 import Data.Monoid( Monoid( .. ), Any( .. ) )
+
+import qualified EqManips.ErrorMessages as Err
+
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Algorithm.MetaEval
@@ -39,12 +42,10 @@ derivationRules evaluator variable func = d func variable
            (\f' g' -> (App f' [g]) * g') <$> d f var <*> d g var
      
      
-       d f@(App _ _) _ =
-           eqFail f "Ok, now solution for app with multi argument"
-     
-       d f@(BinOp _ []) _ = eqFail f "Binary op with no param"
-       d f@(BinOp _ [_]) _ = eqFail f "Binary op with only one param"
-       d f@(BinOp OpEq _) _ = eqFail f "Can't derivate expression with a '='"
+       d f@(App _ _) _ = eqFail f Err.deriv_no_multi_app
+       d f@(BinOp _ []) _ = eqFail f $ Err.empty_binop "derivate - "
+       d f@(BinOp _ [_]) _ = eqFail f $ Err.single_binop "derivate - "
+       d f@(BinOp OpEq _) _ = eqFail f Err.deriv_no_eq_expr
      
        -- Eq:format derivate(f + g, x) = derivate( f, x ) + 
        --                          derivate( g, x )
@@ -86,8 +87,6 @@ derivationRules evaluator variable func = d func variable
      
        d (BinOp op (x:x2:xs)) var =
            d (BinOp op [x, BinOp op $ x2:xs]) var
-     
-       d f@(UnOp OpFactorial _) _ = eqFail f "Can't derivate factorials"
      
        -- Eq:format derivate( -f, x ) = - derivate( f, x )
        d (UnOp OpNegate f) var = negate <$> d f var
@@ -141,40 +140,24 @@ derivationRules evaluator variable func = d func variable
            body' <- inject body
            popContext
            body'' <- d body' var
-           addTrace ("Deriv | \n", BinOp OpEq [body', body''])
            return $ Lambda [([Variable var], body'')]
      
-       d f@(UnOp OpFloor _) _ = eqFail f "The floor function is not continuous"
-       d f@(UnOp OpCeil _) _ = eqFail f "The ceil function in not continuous"
-       d f@(UnOp OpFrac _) _ = eqFail f "I don't know how to derivate the fractional part"
+       d f@(Lambda _) _ = eqFail f Err.deriv_lambda
      
        d f@(UnOp OpLog _f) _var =
            eqFail f "No position for Log for now"
        d f@(UnOp OpAbs _f) _var =
            eqFail f "abs is derivable? I don't think so"
      
-       d f@(Sum _i _e _w) _var =
-           eqFail f "Oki, deriving sums is not defined..."
-     
-       d f@(Product _i _e _w) _var =
-           eqFail f "Deriving product is undefined. Sorry. Really."
-     
-       d f@(Derivate _w _v) _var =
-           eqFail f "Derivate a derivative, what to do?"
-     
-       d f@(Integrate _i _e _w _v) _var =
-           eqFail f "Derivate an integration, what to do?"
-     
-       d f@(Matrix _ _ _formulas) _var =
-           eqFail f "Deriving a Matrix, what to do?"
-     
-       d f@(Lambda _) _ = do
-           addTrace ("WrongDeriv  \n|",f)
-           eqFail f "Deriving lambdas"
-     
-       d f@(Truth _) _ =
-           eqFail f "No truthness allowed in derivation"
-     
-       d (Block _ _ _) _var =
-           eqFail (Block 0 1 1)
-                $ "Deriving a debug block"
+       d f@(UnOp OpFactorial _) _ = eqFail f Err.deriv_no_factorial
+       d f@(UnOp OpFloor _) _ = eqFail f Err.deriv_floor_not_continuous 
+       d f@(UnOp OpCeil _) _ = eqFail f Err.deriv_ceil_not_continuous 
+       d f@(UnOp OpFrac _) _ = eqFail f Err.deriv_frac_not_continuous 
+       d f@(Sum _i _e _w) _var = eqFail f Err.deriv_no_sum
+       d f@(Product _i _e _w) _var = eqFail f Err.deriv_no_product
+       d f@(Derivate _w _v) _var = eqFail f Err.deriv_in_deriv
+       d f@(Integrate _i _e _w _v) _var = eqFail f Err.deriv_no_integration
+       d f@(Matrix _ _ _formulas) _var = eqFail f Err.deriv_no_matrix
+       d f@(Truth _) _ = eqFail f Err.deriv_no_bool
+       d (Block _ _ _) _var = eqFail (Block 0 1 1) Err.deriv_block
+

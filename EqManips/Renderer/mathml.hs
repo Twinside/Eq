@@ -10,7 +10,7 @@ mathmlRender :: Formula -> String
 mathmlRender f = (str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n")
                . semantics ( presMarkup 
                            . annotation "MathML-Content" contentMarkup
-                           . annotation "Eq-language" (unparseS f)
+                           . annotation "Eq-language" (str . cleanify $ unparse f)
                            . annotation "LaTeX" (str . cleanify $ latexRender f))
                . (str "</math>\n") $ ""
     where contentMarkup = content treefied

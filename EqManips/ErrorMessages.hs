@@ -49,3 +49,21 @@ matrix_diff_size = "Sorry can't apply this operation on matrix of different size
 ----            MetaEval
 --------------------------------------------------
 wrong_lambda_format = "Your lambda definition doesn't have the good format"
+
+--------------------------------------------------
+----            Derivative
+--------------------------------------------------
+deriv_no_multi_app = "Ok, now solution for app with multi argument"
+deriv_no_eq_expr = "Can't derivate expression with a '='"
+deriv_no_sum = "Sum differentiation is not defined"
+deriv_no_product = "Product differentiation is not defined"
+deriv_floor_not_continuous = "The floor function is not continuous"
+deriv_ceil_not_continuous = "The ceil function in not continuous"
+deriv_frac_not_continuous = "I don't know how to derivate the fractional part"
+deriv_in_deriv = "No nested differentiation allowed"
+deriv_no_integration = "No integration allowed in differentiation"
+deriv_no_matrix = "No matrix allowed in differentiation"
+deriv_no_bool = "No Boolean value allowed in differentiation"
+deriv_lambda = "Differentiation of lambdas"
+deriv_block = "An error as previously occured during evaluation, can't differentiate"
+deriv_no_factorial = "Differentiation of factorials is undefined"
