@@ -51,6 +51,18 @@ sub x y = Right (x,y)
 ----                '*'
 ----------------------------------------------
 mul :: BiRuler
+-- Eq:format (1/denom) * x = x / denom
+mul (BinOp OpDiv [CInteger 1, denom]) x = Left $ x / denom
+-- Eq:format x * (1/denom) = x / denom
+mul x (BinOp OpDiv [CInteger 1, denom]) = Left $ x / denom
+
+-- Eq:format (-1/denom) * x = -x / denom
+mul (BinOp OpDiv [UnOp OpNegate (CInteger 1), denom]) x = Left $ (negate x) / denom
+-- Eq:format x * (-1/denom) = -x / denom
+mul x (BinOp OpDiv [UnOp OpNegate (CInteger 1), denom]) = Left $ (negate x) / denom
+
+-- Eq:format a ^ n * a ^ m = a ^ (n + m)
+mul (BinOp OpPow [a, n]) (BinOp OpPow [b, m]) | a == b = Left $ a ** (n + m)
 mul (CInteger 1) x = Left x
 mul x (CInteger 1) = Left x
 mul (CFloat 1.0) x = Left x
