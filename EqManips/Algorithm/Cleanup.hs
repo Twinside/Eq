@@ -53,6 +53,8 @@ sub x y = Right (x,y)
 mul :: BiRuler
 mul (CInteger 1) x = Left x
 mul x (CInteger 1) = Left x
+mul (CFloat 1.0) x = Left x
+mul x (CFloat 1.0) = Left x
 mul (CInteger i1) (CInteger i2) = Left . int $ i1 * i2
 mul x y = Right (x,y)
 

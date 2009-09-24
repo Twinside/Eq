@@ -1,7 +1,8 @@
 {-# LANGUAGE Rank2Types #-}
 module EqManips.Algorithm.Eval( reduce
-                              , runProgramm
-                              , evalGlobalStatement 
+                              , exactReduce 
+                              , evalGlobalLossyStatement 
+                              , evalGlobalLosslessStatement 
                               ) where
 
 import Data.Maybe
@@ -26,18 +27,22 @@ type FormulOperator = Formula -> Formula -> Formula
 type EvalOp = Formula -> Formula -> EqContext (Either Formula (Formula,Formula))
 type Evaluator = Formula -> EqContext Formula
 
+evalGlobalLossyStatement, evalGlobalLosslessStatement :: Evaluator
+evalGlobalLossyStatement = evalGlobalStatement reduce
+evalGlobalLosslessStatement = evalGlobalStatement exactReduce
+
 -- | Main function to evaluate another function
 reduce :: Formula -> EqContext Formula
 reduce f = (eval reduce $ cleanupRules f) >>= floatEvalRules
+
+exactReduce :: Formula -> EqContext Formula
+exactReduce = eval exactReduce . cleanupRules
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left
 
 right :: (Monad m) => b -> m (Either a b)
 right = return . Right
-
-runProgramm :: [Formula] -> EqContext [Formula]
-runProgramm = mapM evalGlobalStatement
 
 -----------------------------------------------
 ----        Top level evaluation
@@ -70,22 +75,22 @@ addVar varName body = do
          return ()
 
 -- | Evaluate top level declarations
-evalGlobalStatement :: Formula -> EqContext Formula
-evalGlobalStatement (BinOp OpEq [ (App (Variable funName) argList)
+evalGlobalStatement :: Evaluator -> Formula -> EqContext Formula
+evalGlobalStatement _ (BinOp OpEq [ (App (Variable funName) argList)
                                 , body ]) = do
     addLambda funName argList body
     return $ (BinOp OpEq [(App (Variable funName) argList), body])
 
-evalGlobalStatement (BinOp OpEq [(Variable varName), body]) = do
+evalGlobalStatement evaluator (BinOp OpEq [(Variable varName), body]) = do
     pushContext
-    body' <- reduce body
+    body' <- evaluator body
     popContext
     addVar varName body'
     return $ (BinOp OpEq [(Variable varName), body'])
 
-evalGlobalStatement e = do
+evalGlobalStatement evaluator e = do
     pushContext
-    a <- reduce e
+    a <- evaluator e
     popContext
     return a
 

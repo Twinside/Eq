@@ -2,6 +2,7 @@ module EqManips.Algorithm.MetaEval ( metaEval ) where
 
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Expand
+import EqManips.Algorithm.Cleanup
 import EqManips.Types
 import EqManips.EvaluationContext
 
@@ -9,6 +10,7 @@ import EqManips.EvaluationContext
 metaEval :: (Formula -> EqContext Formula) -> MetaOperation -> Formula
          -> EqContext Formula
 metaEval evaluator Force f = evaluator f
+metaEval evaluator Cleanup f = return . cleanup =<< evaluator f
 metaEval _ Hold f = return f
 metaEval evaluator Listify f = return . listifyBinOp =<< evaluator f
 metaEval evaluator Treefy f = return . treeIfyBinOp =<< evaluator f

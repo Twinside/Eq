@@ -97,6 +97,7 @@ data MetaOperation =
     | Listify   -- ^ Pack operation a list-like form.
     | Treefy    -- ^ Pack operation in a tree-like form
     | Expand    -- ^ trigger an expend operation
+    | Cleanup   -- ^ trigger a basic formula cleanup
     deriving (Eq, Show, Read)
 
 -- | Main type manipulated by the software.
@@ -174,6 +175,10 @@ instance Ord Formula where
             (BinOp OpPow [Variable v2, p2])
             | v1 == v2 = compare p1 p2
             | otherwise = compare v1 v2
+    
+    compare (BinOp OpPow _) _ = GT
+    compare _ (BinOp OpPow _) = LT
+
     compare (BinOp op [BinOp OpPow (Variable v1: p1: _)])
             (BinOp op' [BinOp OpPow (Variable v2: p2: _)])
         | op == op' && v1 == v2
@@ -453,7 +458,7 @@ unparseS  = deparse maxPrio False
 -- and tree direction
 deparse :: Int -> Bool -> Formula -> ShowS
 -- INVISIBLE META NINJA !!
-deparse i r (Meta _ f) = deparse i r f
+deparse i r (Meta op f) = (++) (show op) . ('(' :) . deparse i r f . (')':)
 deparse _ _ (Truth True) = ("true" ++)
 deparse _ _ (Truth False) = ("false" ++)
 deparse _ _ (BinOp _ []) =

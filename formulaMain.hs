@@ -98,9 +98,9 @@ transformParseFormula operation args = do
                {-mapM (\a-> do hPutStr finalFile $ show a-}
                              {-hPutStr finalFile "\n\n") formulal-}
 #ifdef _DEBUG
-               {-hPutStrLn finalFile "\n####### <TRACE> #########"-}
-               {-printTrace finalFile rez-}
-               {-hPutStrLn finalFile "####### </TRACE> #########\n"-}
+               hPutStrLn finalFile "\n####### <TRACE> #########"
+               printTrace finalFile rez
+               hPutStrLn finalFile "####### </TRACE> #########\n"
 #endif
                printErrors $ errorList rez
                hPutStr finalFile . formatFormula $ result rez
@@ -143,7 +143,9 @@ commandList =
     [ ("cleanup", "Perform trivial simplification on formula"
             , transformParseFormula (return . cleanup), commonOption)
     , ("eval", "Try to evaluate/reduce the formula"
-            , transformParseFormula evalGlobalStatement, commonOption)
+            , transformParseFormula evalGlobalLossyStatement, commonOption)
+    , ("exacteval", "Try to evaluate/reduce the formula, without performing lossy operation"
+            , transformParseFormula evalGlobalLosslessStatement, commonOption)
     , ("format", "Load and display the formula in ASCII Art"
             , formatCommand formatFormula, commonOption)
     , ("latexify", "Translate the formula into latex"
