@@ -12,6 +12,7 @@ import EqManips.Propreties
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Utils
 
+import Data.Maybe( fromMaybe )
 import Data.List( sort )
 
 type EvalOp = Formula -> Formula -> EqContext (Either Formula (Formula,Formula))
@@ -116,7 +117,8 @@ floatEvalRules (UnOp OpFrac f) = fracEval f
 floatEvalRules (UnOp OpNegate f) = fNegate f
 floatEvalRules (UnOp OpAbs f) = fAbs f
 
-floatEvalRules (UnOp op f) = unOpReduce (funOf op) f
+floatEvalRules formula@(UnOp op f) =
+  return . fromMaybe formula $ unOpReduce (funOf op) f
     where funOf OpSqrt = sqrt
           funOf OpSin = sin
           funOf OpSinh = sinh
@@ -145,8 +147,8 @@ floatEvalRules end = return end
 --------------------------------------------------------------
 ---- Scalar related function
 --------------------------------------------------------------
-unOpReduce :: (forall a. (Floating a) => a -> a) -> Formula -> EqContext Formula
+unOpReduce :: (forall a. (Floating a) => a -> a) -> Formula -> Maybe Formula
 unOpReduce f (CInteger i) = unOpReduce f . CFloat $ toEnum i
-unOpReduce f (CFloat num) = return . CFloat $ f num
-unOpReduce _ formula = return formula
+unOpReduce f (CFloat num) = Just . CFloat $ f num
+unOpReduce _ _ = Nothing
 
