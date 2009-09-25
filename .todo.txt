@@ -6,4 +6,3 @@
 2:Make an integrator algorithm (urgh)
 1:Make real formatting for a.. GUI
 0:Make some HLSL/GLSL output
-0:Make some C output (quid matrix?)

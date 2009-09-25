@@ -3,9 +3,13 @@ derivaten( f, var, 0 ) = f;
 derivaten( f, var, 1 ) = derivate( Force(f), Force(var) );
 derivaten( f, var, n ) = derivate( Force(derivaten( f, var, n-1 ))
                                  , Force(var) );
+-- if( condition (boolean), then, else )
 if( true, a, b ) = a;
 if( false, a, b ) = b;
 if( otherwise, a, b ) = undefined;
+
+eq( a, a ) = true;
+eq( a, b ) = false;
 
 -- taylor( function (as a lambda!!), derivation var, onVar, order )
 taylorin( f, var, a, 0 ) = f(a);
@@ -15,4 +19,4 @@ taylorin( f, var, a, n ) = taylorin( f, var, a, n - 1 )
 -- taylor( formula, derivation var, onVar, order )
 taylor( f, var, a, n ) = Cleanup( Listify( taylorin( Lambda( var, f ), var, a, n )));
 
-
+taylor( exp(x), x, 0, 7)

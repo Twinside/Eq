@@ -110,6 +110,13 @@ cosinus (CInteger 0) = int 1
 cosinus (NumEntity Pi) = int (-1)
 cosinus i = cos i
 
+--------------------------------------------------
+----            'exp'
+--------------------------------------------------
+exponential :: Formula -> Formula
+exponential (CInteger 0) = int 1
+exponential (CFloat 0.0) = int 1
+exponential f = exp f
 
 reOp :: BinOperator -> [Formula] -> Formula
 reOp _ [] = error "reOp Empty formula? WTF"
@@ -122,6 +129,7 @@ reOp op lst = BinOp op lst
 rules :: Formula -> Formula
 rules (UnOp OpSin f) = sinus f
 rules (UnOp OpCos f) = cosinus f
+rules (UnOp OpExp f) = exponential f
 rules (BinOp OpAdd fs) = reOp OpAdd $ biAssoc add add fs
 rules (BinOp OpSub fs) = reOp OpSub $ biAssoc sub add fs
 rules (BinOp OpDiv fs) = reOp OpDiv $ biAssoc divide mul fs

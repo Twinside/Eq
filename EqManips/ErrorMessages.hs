@@ -67,3 +67,14 @@ deriv_no_bool = "No Boolean value allowed in differentiation"
 deriv_lambda = "Differentiation of lambdas"
 deriv_block = "An error as previously occured during evaluation, can't differentiate"
 deriv_no_factorial = "Differentiation of factorials is undefined"
+
+--------------------------------------------------
+----            C output
+--------------------------------------------------
+c_out_lambda = "We can't output lambda function in C"
+c_out_integrate = "We can't output integrals function in C"
+c_out_derivate = "We can't output derivative function in C"
+c_out_block = "We can't output evaluation errors in C"
+c_out_matrix = "We can't output matrix in C for now (maybe in the future)"
+c_out_bad_iteration = "We can't translate product or sum to a meaningfull loop"
+c_out_bad_binop = "The binary operator has a wrong internal form"

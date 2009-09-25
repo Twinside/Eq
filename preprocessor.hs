@@ -6,6 +6,7 @@ import Control.Applicative
 import EqManips.Algorithm.Eval
 import EqManips.Algorithm.Utils
 import EqManips.Renderer.Ascii
+import EqManips.Renderer.Cpp
 import EqManips.EvaluationContext
 
 data LangDef = LangDef {
