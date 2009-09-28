@@ -1,5 +1,5 @@
-fact(x - 1) = (x - 1) * (x - 2);
-fact(0) = 1;
-fact(n) = n * fact( n - 1 );
+fact(x - 1) := (x - 1) * (x - 2);
+fact(0) := 1;
+fact(n) := n * fact( n - 1 );
 fact(y - 1) + fact( 4 )
 

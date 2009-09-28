@@ -1,6 +1,6 @@
-factAcc( acc, 0 ) = acc;
-factAcc( acc, n ) = factAcc( acc * n, n - 1 );
+factAcc( acc, 0 ) := acc;
+factAcc( acc, n ) := factAcc( acc * n, n - 1 );
 
-fact( n ) = factAcc( 1, n );
+fact( n ) := factAcc( 1, n );
 
 fact( 5 )
