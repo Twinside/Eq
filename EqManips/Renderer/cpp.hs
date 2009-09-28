@@ -19,7 +19,7 @@ convertToCpp :: Formula -> String
 convertToCpp f = convertToCppS f ""
 
 convertToCppS :: Formula -> ShowS
-convertToCppS f = fst $ runState (cNo f) defaultConf
+convertToCppS f = fst $ runState (cNo $ treeIfyFormula f) defaultConf
 
 instance Applicative (State s) where
     pure = return
@@ -57,8 +57,8 @@ cNo = cOut Nothing
 
 cppBinOps :: BinOperator -> ShowS
 cppBinOps op = case lookup op localDef of
-        Just s -> str s
-        Nothing -> str $ binopString op
+        Just s -> str (' ' : s ++ " ")
+        Nothing -> str (' ' : binopString op ++ " ")
     where localDef = [ (OpAnd, "&&"), (OpOr, "||")
                      , (OpEq, "=="), (OpNe, "!=")
                      , (OpAttrib, "=")

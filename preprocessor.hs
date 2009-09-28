@@ -167,12 +167,18 @@ produce lang (initSpace, command, eqData) =
           commentLine = initSpace ++ " "
           commentEnd = " " ++ emark
 
+          spaceCount acc ' ' = 1 + acc
+          spaceCount acc '\t' = 4 + acc
+          spaceCount acc _ = acc
+
+          unCommentedLine = replicate (foldl' spaceCount 0 initSpace) ' '
+
           process _ (Left err) = map (commentLine++) . lines $ show err
           process "format" (Right f) = printResult f
           process "eval" (Right f) = 
             let rez = performTransformation $ reduce f
             in case (errorList rez) of
-                    [] -> reverse . formater lang $ result rez
+                    [] -> reverse . map (unCommentedLine ++) . formater lang $ result rez
                     errs@(_:_) -> concat
                         [ (commentLine ++ txt ++ commentEnd) : printResult form
                                     | (form, txt) <- errs ]
