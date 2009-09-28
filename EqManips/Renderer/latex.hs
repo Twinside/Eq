@@ -53,6 +53,7 @@ stringOfBinOp OpLt = " < "
 stringOfBinOp OpGt = " > "
 stringOfBinOp OpGe = " \\ge "
 stringOfBinOp OpLe = " \\le "
+stringOfBinOp OpAttrib = " := "
 stringOfBinOp _ = error "stringOfBinOp - unknown op"
 
 lno :: Formula -> ShowS

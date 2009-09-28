@@ -190,6 +190,7 @@ stringOfBinOp OpNe = "<neq/>"
 stringOfBinOp OpOr = "<or/>"
 stringOfBinOp OpPow = "<power/>"
 stringOfBinOp OpSub = "<minus/>"
+stringOfBinOp OpAttrib = "<!-- Attrib -->"
 
 bigOperator :: [Char] -> String -> Formula -> Formula -> Formula
             -> ShowS

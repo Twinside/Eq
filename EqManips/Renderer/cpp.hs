@@ -61,6 +61,7 @@ cppBinOps op = case lookup op localDef of
         Nothing -> str $ binopString op
     where localDef = [ (OpAnd, "&&"), (OpOr, "||")
                      , (OpEq, "=="), (OpNe, "!=")
+                     , (OpAttrib, "=")
                      ]
 
 unOpEr :: UnOperator -> String
@@ -103,6 +104,9 @@ cOut _ (App func args) =
 
 cOut _ (UnOp op f) =
     (\sub -> str (unOpEr op) . char '(' . sub . char ')') <$> cNo f
+
+cOut _ (BinOp OpAttrib [a,b]) =
+    (\left right -> left . str " = " . right . str ";\n") <$> cNo a <*> cNo b
 
 cOut _ (BinOp OpPow [a,b]) =
     (\left right -> str "pow( " . left . str ", " . right . str " ) ") <$> cNo a <*> cNo b

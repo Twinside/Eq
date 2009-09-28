@@ -46,6 +46,7 @@ derivationRules evaluator variable func = d func variable
        d f@(BinOp _ []) _ = eqFail f $ Err.empty_binop "derivate - "
        d f@(BinOp _ [_]) _ = eqFail f $ Err.single_binop "derivate - "
        d f@(BinOp OpEq _) _ = eqFail f Err.deriv_no_eq_expr
+       d f@(BinOp OpAttrib _) _ = eqFail f Err.deriv_no_attrib_expr
      
        -- Eq:format derivate(f + g, x) = derivate( f, x ) + 
        --                          derivate( g, x )

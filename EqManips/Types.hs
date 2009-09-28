@@ -63,6 +63,8 @@ data BinOperator  =
 	| OpGt -- ^ '>'
 	| OpGe -- ^ '>='
 	| OpLe -- ^ '<='
+
+    | OpAttrib -- ^ ':='
     deriving (Eq,Show,Read)
 
 -- | All `unary` operators are in there. some are mathematical
@@ -272,6 +274,7 @@ instance Property BinOperator OpProp BinOperator where
     getProps OpGt = []
 
     getProps OpPow = []
+    getProps OpAttrib = []
 
     getProps OpSub = [(InverseOp, OpAdd)]
     getProps OpAdd =
@@ -334,7 +337,8 @@ instance Property UnOperator OperatorText String where
 -- of binary operators
 binopDefs :: [(BinOperator, (Int,String))]
 binopDefs =
-	[ (OpAnd, (6, "&"))
+	[ (OpAttrib, (7, ":="))
+    , (OpAnd, (6, "&"))
     , (OpOr, (6, "|"))
     , (OpEq, (5, "="))
     , (OpNe, (5, "/="))
@@ -637,6 +641,7 @@ operatorDefs =
       ,binary "<" (binop OpLt)  AssocLeft,  binary ">"  (binop OpGt) AssocLeft
       ,binary "<=" (binop OpLe) AssocLeft,  binary ">=" (binop OpGe) AssocLeft]
     , [binary "&" (binop OpAnd) AssocLeft, binary "|" (binop OpOr) AssocLeft]
+    , [binary ":=" (binop OpAttrib) AssocRight]
     ]
 
 funCall :: Parsed st Formula

@@ -17,6 +17,7 @@ def_already = (++ " is already defined")
 --------------------------------------------------
 ----            Eval errors
 --------------------------------------------------
+attrib_in_expr = "You can't attribute a value in an expression"
 div_undefined_matrixes = "Division is not defined for matrixes"
 div_by_0 = "This expression evaluate to 0, and is used in a division."
 
@@ -55,6 +56,7 @@ wrong_lambda_format = "Your lambda definition doesn't have the good format"
 --------------------------------------------------
 deriv_no_multi_app = "Ok, now solution for app with multi argument"
 deriv_no_eq_expr = "Can't derivate expression with a '='"
+deriv_no_attrib_expr = "Can't derivate an assignation ':='"
 deriv_no_sum = "Sum differentiation is not defined"
 deriv_no_product = "Product differentiation is not defined"
 deriv_floor_not_continuous = "The floor function is not continuous"

@@ -76,12 +76,12 @@ addVar varName body = do
 
 -- | Evaluate top level declarations
 evalGlobalStatement :: Evaluator -> Formula -> EqContext Formula
-evalGlobalStatement _ (BinOp OpEq [ (App (Variable funName) argList)
+evalGlobalStatement _ (BinOp OpAttrib [ (App (Variable funName) argList)
                                 , body ]) = do
     addLambda funName argList body
     return $ (BinOp OpEq [(App (Variable funName) argList), body])
 
-evalGlobalStatement evaluator (BinOp OpEq [(Variable varName), body]) = do
+evalGlobalStatement evaluator (BinOp OpAttrib [(Variable varName), body]) = do
     pushContext
     body' <- evaluator body
     popContext
@@ -358,6 +358,12 @@ eval evaluator (BinOp OpEq [v@(Variable _),f2]) = do
 
 eval evaluator (BinOp OpAnd fs) = binEval OpAnd binand binand =<< mapM evaluator fs
 eval evaluator (BinOp OpOr fs) = binEval OpOr binor binor =<< mapM evaluator fs
+
+-- | Special case for programs, don't evaluate left :]
+eval evaluator (BinOp OpAttrib [a,b]) =
+    evaluator b >>= return . BinOp OpAttrib . (a:) . (:[])
+
+eval _ f@(BinOp OpAttrib _) = eqFail f Err.attrib_in_expr 
 
 eval evaluator (UnOp OpFactorial f) = factorial =<< evaluator f
 eval evaluator (UnOp OpFloor f) = floorEval =<< evaluator f
