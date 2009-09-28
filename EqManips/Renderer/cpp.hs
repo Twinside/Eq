@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module EqManips.Renderer.Cpp where
+module EqManips.Renderer.Cpp( convertToCpp, convertToCppS ) where
 
 import Control.Monad.State.Lazy
 import Control.Applicative
@@ -14,6 +14,12 @@ data CppConf = CppConf
     }
 
 type OutContext a = State CppConf a
+
+convertToCpp :: Formula -> String
+convertToCpp f = convertToCppS f ""
+
+convertToCppS :: Formula -> ShowS
+convertToCppS f = fst $ runState (cNo f) defaultConf
 
 instance Applicative (State s) where
     pure = return
@@ -57,6 +63,30 @@ cppBinOps op = case lookup op localDef of
                      , (OpEq, "=="), (OpNe, "!=")
                      ]
 
+unOpEr :: UnOperator -> String
+unOpEr OpNegate = "-"
+unOpEr OpAbs =  "abs"
+unOpEr OpSqrt =  "sqrt"
+unOpEr OpLn = "log"
+unOpEr OpLog = "log10"
+unOpEr OpExp = "exp"
+unOpEr OpSin =  "sin"
+unOpEr OpCos =  "cos"
+unOpEr OpTan = "tan"
+unOpEr OpSinh = "sinh"
+unOpEr OpCosh = "cosh"
+unOpEr OpTanh = "tanh"
+unOpEr OpASin = "asin"
+unOpEr OpACos = "acos"
+unOpEr OpATan = "atan"
+unOpEr OpCeil = "ceil"
+unOpEr OpFloor = "floor"
+unOpEr OpFrac = ""
+unOpEr OpFactorial = ""
+unOpEr OpASinh = ""
+unOpEr OpACosh = ""
+unOpEr OpATanh = ""
+
 cOut :: Maybe (BinOperator, Bool) -> Formula -> OutContext ShowS
 cOut _ (CInteger i) = return $ shows i
 cOut _ (CFloat i) = return $ shows i
@@ -71,7 +101,9 @@ cOut _ (App func args) =
     <$> cNo func 
     <*> mapM cNo args
 
-cOut _ (UnOp _ _) = error "DA"
+cOut _ (UnOp op f) =
+    (\sub -> str (unOpEr op) . char '(' . sub . char ')') <$> cNo f
+
 cOut _ (BinOp OpPow [a,b]) =
     (\left right -> str "pow( " . left . str ", " . right . str " ) ") <$> cNo a <*> cNo b
 

@@ -1,5 +1,5 @@
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.EmptyMonad where
+module EqManips.Algorithm.EmptyMonad( fromEmptyMonad, asAMonad )  where
 
 import Control.Applicative
 

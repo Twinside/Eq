@@ -1,4 +1,4 @@
-module Preprocessor where
+module Preprocessor( processFile ) where
 
 import System.FilePath
 import Data.List
@@ -8,26 +8,28 @@ import EqManips.Algorithm.Utils
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.Cpp
 import EqManips.EvaluationContext
+import EqManips.Types
 
 data LangDef = LangDef {
           initComm :: String
-          , endLineComm :: String
+        , endLineComm :: String
+        , formater :: Formula -> [String]
     }
 
-cppLang :: LangDef
-cppLang = LangDef { initComm = "//", endLineComm = "" }
 
-shellLang :: LangDef
-shellLang = LangDef { initComm = "#", endLineComm = "" }
+voidLang :: LangDef
+voidLang = LangDef
+    { initComm = ""
+    , endLineComm = ""
+    , formater = formulaTextTable 
+    }
 
-cLang :: LangDef
-cLang = LangDef { initComm = "/*", endLineComm = "*/" }
-
-haskellLang :: LangDef
-haskellLang = LangDef { initComm = "--", endLineComm = "" }
-
-ocamlLang :: LangDef
-ocamlLang = LangDef { initComm = "(*", endLineComm = "*)" }
+shellLang, cppLang, cLang, ocamlLang, haskellLang :: LangDef
+cppLang = voidLang { initComm = "//", endLineComm = "", formater = (\f -> [convertToCpp f]) }
+shellLang = voidLang { initComm = "#", endLineComm = "" }
+cLang = voidLang { initComm = "/*", endLineComm = "*/" }
+haskellLang = voidLang { initComm = "--", endLineComm = "" }
+ocamlLang = voidLang { initComm = "(*", endLineComm = "*)" }
 
 kindAssociation :: [(String, LangDef)]
 kindAssociation =
@@ -110,6 +112,8 @@ removeBeginComment langDef line = do
         return ( iniSpace ++ (initComm langDef)
                , stripSuffix (endLineComm langDef) rest)
 
+-- | Grab a word from a string, returning it and
+-- the tail.
 word :: String -> (String, String)
 word = w []
     where w acc [] = (reverse acc, [])
@@ -168,7 +172,7 @@ produce lang (initSpace, command, eqData) =
           process "eval" (Right f) = 
             let rez = performTransformation $ reduce f
             in case (errorList rez) of
-                    [] -> printResult $ result rez
+                    [] -> reverse . formater lang $ result rez
                     errs@(_:_) -> concat
                         [ (commentLine ++ txt ++ commentEnd) : printResult form
                                     | (form, txt) <- errs ]

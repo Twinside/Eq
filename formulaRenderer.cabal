@@ -12,7 +12,7 @@ Executable eq
     ghc-options:-Wall
     extensions: CPP
     cpp-options: -D_DEBUG
-    Build-Depends: base >= 4.0
+    Build-Depends: base >= 4.1
                  , parsec >= 3.0
                  , array
                  , mtl

@@ -68,6 +68,8 @@ mul x (CInteger 1) = Left x
 mul (CFloat 1.0) x = Left x
 mul x (CFloat 1.0) = Left x
 mul (CInteger i1) (CInteger i2) = Left . int $ i1 * i2
+mul (BinOp OpDiv [a,b]) (BinOp OpDiv [c,d])
+    | b == d = Left $ (a * c) / d
 mul x y = Right (x,y)
 
 ----------------------------------------------
