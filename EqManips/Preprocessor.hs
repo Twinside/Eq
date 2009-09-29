@@ -1,4 +1,4 @@
-module Preprocessor( processFile ) where
+module EqManips.Preprocessor ( processFile ) where
 
 import System.FilePath
 import Data.List

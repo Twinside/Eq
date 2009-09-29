@@ -14,7 +14,7 @@ import Data.List( find )
 -- Just to be able to compile...
 import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
-import Preprocessor
+import EqManips.Preprocessor
 
 data Flag =
       Output
