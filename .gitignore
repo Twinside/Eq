@@ -1,8 +1,13 @@
 *.swp
 *.o
+*.hi
+*.a
 *.obj
 .svn
 *.exe
+*.user
+formulaDll_stub.c
+formulaDll_stub.h
 Debug
 Release
 Build
