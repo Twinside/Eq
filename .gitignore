@@ -5,6 +5,7 @@
 *.obj
 .svn
 *.exe
+*.ncb
 *.user
 formulaDll_stub.c
 formulaDll_stub.h
