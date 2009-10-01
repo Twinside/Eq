@@ -13,6 +13,9 @@ showdoc:
 doc:
 	runhaskell Setup.hs haddock --executables
 
+dll:
+	ghc -shared -o formulaDll.dll -cpp --make .\formulaDll.hs dllMain.cpp
+
 conf:
 	runhaskell Setup.hs configure
 
