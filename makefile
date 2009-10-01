@@ -1,36 +1,24 @@
 
-build:
-	runhaskell Setup.hs build
-	cp dist/build/eq/eq.exe .
-	cp dist/build/iotest/iotest.exe .
+SHELL = cmd
+MAKESHELL = cmd
+
+build: dll
 
 clean:
-	runhaskell Setup.hs clean
-
-showdoc:
-	echo dist\doc\html\FormulaRenderer\eq\index.html
-
-doc:
-	runhaskell Setup.hs haddock --executables
+	unixfind . | grep "\.o$$" | xargs rm -f
+	unixfind . | grep "\.hi$$" | xargs rm -f
+	rm formulaDll_stub*
+	rm formulaDll.dll.a
+	rm formulaDll.dll
 
 dll:
-	ghc -shared -o formulaDll.dll -cpp --make .\formulaDll.hs dllMain.cpp
-
-conf:
-	runhaskell Setup.hs configure
-
-test:
-	./iotest
-
-debug:
-	./eq.exe eval -o out.txt -f taylor.txt
-
-run:
-	dist/build/eq/eq.exe preprocess -f tests/preprocess/test.cc -o rez.cc
-	dist/build/eq/eq.exe preprocess -f rez.cc -o rez2.cc
-	dist/build/eq/eq.exe preprocess -f tests/preprocess/test.c -o rez.c
-	dist/build/eq/eq.exe preprocess -f rez.c -o rez2.c
-
-help:
-	dist/build/eq/eq.exe help
-
+	ghc -c --make -cpp formulaDll.hs
+	ghc -c dllMain.cpp
+	unixfind . | grep "\.o$$" | xargs ghc -shared \
+										-o formulaDll.dll \
+										-package parsec \
+										-package array \
+										-package mtl \
+										-package containers \
+										-package filepath \
+										formulaDll.def
