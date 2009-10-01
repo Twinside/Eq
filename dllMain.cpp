@@ -1,5 +1,4 @@
 #include <Windows.h>
-#include <stdio.h>
 #include "HsFFI.h"
 
 #define EQ_API __attribute__((dllexport))
@@ -35,20 +34,13 @@ extern "C"
         char **argv = internArgv;
         int argc = 1;
 
-        // Initialize Haskell runtime
         hs_init(&argc, &argv);
-
-        // Tell Haskell about all root modules
         hs_add_root(__stginit_FormulaDll);
-
-        // do any other initialization here and
-        // return false if there was a problem
         return HS_BOOL_TRUE;
     }
 
     EQ_API wchar_t* eq_eval( wchar_t *in )
     {
-        wchar_t *ret = NULL;
         checkLastResultFreeing();
         lastResult = (wchar_t*)eqEval( (HsPtr)in );
         return lastResult;

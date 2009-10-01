@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -29,30 +28,32 @@ namespace WinGui
         /// </summary>
         private static bool alreadyUsed = false;
 
+        #region Dll imports
+        
         [DllImport("kernel32.dll")]
         private static extern IntPtr LoadLibrary(string fileName);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
-        public static extern UIntPtr GetProcAddress(IntPtr hModule, string procName);
+        public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
 
         private delegate void ForeignAction();
-        private delegate String Evaluator( String input );
+        private delegate bool ForeignTruth();
 
-        #region Dll imports
-        [DllImport("formulaDll.dll", EntryPoint = "eq_begin_runtime", CallingConvention=CallingConvention.Cdecl)]
-        private static extern bool InitRuntime();
-        
-        [DllImport("formulaDll.dll", EntryPoint = "eq_end_runtime")]
-        private static extern void EndRuntime();
-        
-        [DllImport("formulaDll.dll", EntryPoint = "eq_cleanup_last_result")]
-        private static extern void CleanupLastResult();
-        
-        [DllImport("formulaDll.dll", CharSet = CharSet.Unicode, EntryPoint = "eq_eval")]
-        private static extern String Eval(String input);
-        
+        [return: MarshalAs(UnmanagedType.LPWStr)]
+        private delegate String Evaluator([MarshalAs(UnmanagedType.LPWStr)] String input);
+                
+        private static ForeignTruth InitRuntime;
+        private static ForeignAction EndRuntime;
+        private static ForeignAction CleanupLastResult;
+        private static Evaluator Eval;
+
         #endregion /* Dll imports */        
     
+        public EqBridge()
+        {
+            Init();
+        }
+
         private void Init()
         {
             if (alreadyUsed)
@@ -61,8 +62,23 @@ namespace WinGui
             if (initialized) return;
 
             IntPtr formulaLib = LoadLibrary("formulaDll.dll");
-            UIntPtr 
-            
+
+            if (formulaLib == IntPtr.Zero)
+                throw new DllNotFoundException("formulaDll.dll");
+
+            IntPtr initRuntime = GetProcAddress(formulaLib, "eq_begin_runtime");
+            IntPtr endRuntime = GetProcAddress(formulaLib, "eq_end_runtime");
+            IntPtr cleanupLastResult = GetProcAddress(formulaLib, "eq_cleanup_last_result");
+            IntPtr eqEval = GetProcAddress(formulaLib, "eq_eval");
+
+            if (initRuntime == IntPtr.Zero || endRuntime == IntPtr.Zero || cleanupLastResult == IntPtr.Zero || eqEval == IntPtr.Zero)
+                throw new BadImageFormatException("The dll doesn't export the good functions");
+
+            InitRuntime = (ForeignTruth)Marshal.GetDelegateForFunctionPointer(initRuntime, typeof(ForeignTruth));
+            EndRuntime = (ForeignAction)Marshal.GetDelegateForFunctionPointer(endRuntime, typeof(ForeignAction));
+            CleanupLastResult = (ForeignAction)Marshal.GetDelegateForFunctionPointer(cleanupLastResult, typeof(ForeignAction));
+            Eval = (Evaluator)Marshal.GetDelegateForFunctionPointer(eqEval, typeof(Evaluator));
+
             if (!initialized)
             {
                 if (!InitRuntime())
@@ -82,8 +98,6 @@ namespace WinGui
 
         public String EvalProgram(String program)
         {
-            if (!initialized) Init();
-
             String rez = Eval(program);
             CleanupLastResult();
             return rez;

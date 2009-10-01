@@ -1,7 +1,7 @@
 
 SHELL = cmd
 MAKESHELL = cmd
-
+DEBUG := -debug
 build: dll
 
 clean:
@@ -12,9 +12,9 @@ clean:
 	rm formulaDll.dll
 
 dll:
-	ghc -c --make -cpp formulaDll.hs
-	ghc -c dllMain.cpp
-	unixfind . | grep "\.o$$" | xargs ghc -shared \
+	ghc $(DEBUG) -c --make -cpp formulaDll.hs
+	ghc $(DEBUG) -c dllMain.cpp
+	unixfind . | grep "\.o$$" | xargs ghc $(DEBUG) -shared -optl-mwindows \
 										-o formulaDll.dll \
 										-package parsec \
 										-package array \

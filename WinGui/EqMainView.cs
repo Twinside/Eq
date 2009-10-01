@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
@@ -26,7 +25,7 @@ namespace WinGui
                 String result = computationKernel.EvalProgram(txtEntry.Text);
                 txtEntry.Text = "";
                 txtResult.AppendText("------------------------------\n");
-                txtResult.AppendText(result);
+                txtResult.AppendText(result.Replace("\n","\r\n"));
             }
         }
     }
