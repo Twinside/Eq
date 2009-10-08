@@ -11,6 +11,7 @@ clean:
 	rm formulaDll.dll.a
 	rm formulaDll.dll
 
+# 
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs
 	ghc $(DEBUG) -c dllMain.cpp
@@ -21,4 +22,5 @@ dll:
 										-package mtl \
 										-package containers \
 										-package filepath \
+										-lOle32 \
 										formulaDll.def

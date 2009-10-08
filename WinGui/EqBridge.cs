@@ -40,11 +40,10 @@ namespace WinGui
         private delegate bool ForeignTruth();
 
         [return: MarshalAs(UnmanagedType.LPWStr)]
-        private delegate String Evaluator([MarshalAs(UnmanagedType.LPWStr)] String input);
-                
+        private delegate String Evaluator([MarshalAs(UnmanagedType.LPWStr)][In] String input);
+
         private static ForeignTruth InitRuntime;
         private static ForeignAction EndRuntime;
-        private static ForeignAction CleanupLastResult;
         private static Evaluator Eval;
 
         #endregion /* Dll imports */        
@@ -66,17 +65,16 @@ namespace WinGui
             if (formulaLib == IntPtr.Zero)
                 throw new DllNotFoundException("formulaDll.dll");
 
+            
             IntPtr initRuntime = GetProcAddress(formulaLib, "eq_begin_runtime");
             IntPtr endRuntime = GetProcAddress(formulaLib, "eq_end_runtime");
-            IntPtr cleanupLastResult = GetProcAddress(formulaLib, "eq_cleanup_last_result");
-            IntPtr eqEval = GetProcAddress(formulaLib, "eq_eval");
+            IntPtr eqEval = GetProcAddress(formulaLib, "eq_evalW");
 
-            if (initRuntime == IntPtr.Zero || endRuntime == IntPtr.Zero || cleanupLastResult == IntPtr.Zero || eqEval == IntPtr.Zero)
+            if (initRuntime == IntPtr.Zero || endRuntime == IntPtr.Zero || eqEval == IntPtr.Zero)
                 throw new BadImageFormatException("The dll doesn't export the good functions");
 
             InitRuntime = (ForeignTruth)Marshal.GetDelegateForFunctionPointer(initRuntime, typeof(ForeignTruth));
             EndRuntime = (ForeignAction)Marshal.GetDelegateForFunctionPointer(endRuntime, typeof(ForeignAction));
-            CleanupLastResult = (ForeignAction)Marshal.GetDelegateForFunctionPointer(cleanupLastResult, typeof(ForeignAction));
             Eval = (Evaluator)Marshal.GetDelegateForFunctionPointer(eqEval, typeof(Evaluator));
 
             if (!initialized)
@@ -90,17 +88,12 @@ namespace WinGui
         {
             if (initialized)
             {
-                CleanupLastResult();
                 EndRuntime();
                 initialized = false;
             }
         }
 
         public String EvalProgram(String program)
-        {
-            String rez = Eval(program);
-            CleanupLastResult();
-            return rez;
-        }
+            { return Eval(program); }
     }
 }
