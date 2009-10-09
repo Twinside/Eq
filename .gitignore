@@ -1,6 +1,7 @@
 *.swp
 *.o
 *.obj
+*.hi
 .svn
 *.exe
 Debug
