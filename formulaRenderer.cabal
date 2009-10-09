@@ -14,6 +14,7 @@ Executable eq
     cpp-options: -D_DEBUG
     Build-Depends: base >= 4.1
                  , parsec >= 3.0
+                 , HaXmL >= 1.9
                  , array
                  , mtl
                  , containers
