@@ -16,6 +16,8 @@ import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 import EqManips.Preprocessor
 
+import EqManips.InputParser.MathML
+
 data Flag =
       Output
     | Input
@@ -43,6 +45,16 @@ getInputOutput opts args = (inputFile, outputFile)
                             (lookup Output opts)
          inputFile = maybe (return $ args !! 0) readFile
                            (lookup Input opts)
+
+filterCommand :: (String -> String) -> [String] -> IO Bool
+filterCommand transformator args = do
+    text <- input
+    output <- outputFile
+    hPutStrLn output $ transformator text
+    hClose output
+    return True
+     where (opt, left, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt left
 
 -- | Command which just format an equation
 -- without affecting it's form.
@@ -158,6 +170,8 @@ commandList =
             , helpCommand, [])
     , ("preprocess", "Parse a source file and apply inline action in it"
             , preprocessCommand, commonOption)
+    , ("demathmlify", "Try to transform a MathML Input to EQ language"
+            , filterCommand mathMlToEqLang', commonOption)
     ]
 
 reducedCommand :: [(String, [String] -> IO Bool)]
