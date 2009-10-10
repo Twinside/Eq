@@ -24,14 +24,16 @@ namespace WinGui
             }
             catch (DllNotFoundException)
             {
+                /*
                 MessageBox.Show( "The application is installed incorectly"
                                , "Missing an application part"
                                , MessageBoxButtons.OK
                                , MessageBoxIcon.Error
                                );
+                 //*/
             }
 
-            if (kernel != null)
+            if (/*kernel != null*/true)
             {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
