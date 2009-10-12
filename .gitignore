@@ -6,6 +6,7 @@
 .svn
 *.exe
 *.ncb
+*.suo
 *.user
 formulaDll_stub.c
 formulaDll_stub.h
