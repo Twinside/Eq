@@ -11,6 +11,8 @@ import System.Console.GetOpt
 
 import Data.List( find )
 
+import qualified System.IO.UTF8 as Utf8
+
 -- Just to be able to compile...
 import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
@@ -43,14 +45,17 @@ getInputOutput :: [(Flag, String)] -> [String] -> (IO String, IO Handle)
 getInputOutput opts args = (inputFile, outputFile)
    where outputFile = maybe (return stdout) (\name -> openFile name WriteMode)
                             (lookup Output opts)
-         inputFile = maybe (return $ args !! 0) readFile
+         inputFile = maybe (return $ args !! 0) Utf8.readFile
                            (lookup Input opts)
 
 filterCommand :: (String -> String) -> [String] -> IO Bool
 filterCommand transformator args = do
     text <- input
     output <- outputFile
+    putStr text
+    putStr "==========================================\n"
     hPutStrLn output $ transformator text
+    putStr "==========================================\n\n"
     hClose output
     return True
      where (opt, left, _) = getOpt Permute formatOption args

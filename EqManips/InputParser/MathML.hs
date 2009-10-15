@@ -21,12 +21,13 @@ data ReducedXmlTree =
     | Xfrac ReducedXmlTree ReducedXmlTree
     | Xsup ReducedXmlTree ReducedXmlTree
     | XunderOver ReducedXmlTree ReducedXmlTree ReducedXmlTree
+    | Xfenced String String ReducedXmlTree
     | Xrow [ReducedXmlTree]
     | Xtable [[ReducedXmlTree]]
     deriving (Show)
 
 mathMlToEqLang' :: String -> String
-mathMlToEqLang' txt = either (const "") id (mathMlToEqLang txt)
+mathMlToEqLang' txt = either id id (mathMlToEqLang txt)
 
 -- | Input XML code encoded in a string
 -- output a string in Eq Language, ready to
@@ -39,6 +40,8 @@ toProgramString :: ReducedXmlTree -> Either String String
 toProgramString tree = (\s -> s "") <$> translate tree
 
 simplifyXml :: Document a -> Either String ReducedXmlTree
+simplifyXml (Document a b (Elem "m:math" c lst) l) =
+    simplifyXml (Document a b (Elem "math" c lst) l)
 simplifyXml (Document _ _ (Elem "math" _ lst) _) =
     Xrow <$> (eitherMap $ map simplifyContent lst)
 simplifyXml _ = error "The xml document has the wrong format"
@@ -92,15 +95,20 @@ simplify (Elem "munderover" _ [a,b,c]) =
 simplify (Elem "mtable" _ lst) = Xtable <$> lineList
     where lineList = eitherMap $ map (unrow . elemOfContent) lst
 
+          unrow (Elem "m:mtr" a b) = unrow (Elem "mtr" a b)
           unrow (Elem "mtr" _ cells) = eitherMap $ map (uncell . elemOfContent) cells
-          unrow _ = Left "Ill formed MathML Matrix"
+          unrow _ = Left $ "Ill formed MathML Matrix"
 
-          uncell (Elem "mtd" _ [cell]) = simplifyContent cell
+          uncell (Elem "m:mtd" a b) = uncell (Elem "mtd" a b)
+          uncell (Elem "mtd" _ cellList) = Xrow <$> eitherMap (map simplifyContent cellList)
           uncell _ = Left "Ill format MathML Matrix cell"
 
-simplify (Elem "mfenced" [ ("open", AttValue [Left "("])
-                         , ("close", AttValue [Left "("]) ] lst) =
-    Xrow <$> (eitherMap $ map simplifyContent lst)
+simplify (Elem "mfenced" [ ("open", AttValue [Left openChar])
+                         , ("close", AttValue [Left closeChar]) ] lst) =
+
+    Xfenced openChar closeChar . Xrow <$> (eitherMap $ map simplifyContent lst)
+
+simplify (Elem "mfenced" attrs _lst) = Left $ show attrs
     
 simplify (Elem elemName _ _) = Left $ "Unknown MathMl element : " ++ elemName
 
@@ -124,16 +132,24 @@ unicodeTranslation =
     , (Uni.identicalTo, "==")
     , (Uni.lessThanOrEqualTo, "<=")
     , (Uni.greaterThanOrEqualTo, ">=")
+    , (Uni.multiplicationSign , "*")
     ]
 
 vardeclFinder :: [ReducedXmlTree]
               -> Maybe ([ReducedXmlTree],[ReducedXmlTree], String)
 vardeclFinder = declFind []
     where declFind   _ [] = Nothing
-          declFind acc (Xsymb ['d']:Xsymb var: next) = Just (reverse acc, next, var)
+          declFind acc (Xop [op]:next) 
+            | fromEnum op == Uni.doubleStruckItalicSmalld = obtainVar acc next
+          declFind acc (Xsymb ['d']:next) = obtainVar acc next
           declFind acc (Xsymb ['d', var]:next) = Just (reverse acc, next, [var])
           declFind acc (Xrow lst:next) = declFind acc (lst ++ next)
           declFind acc (x:xs) = declFind (x:acc) xs
+
+          obtainVar _ [] = Nothing
+          obtainVar acc (Xsymb var:next) = Just (reverse acc, next, var)
+          obtainVar acc (Xrow lst:next) = obtainVar acc (lst ++ next)
+          obtainVar _ _ = Nothing
 
 -- | Real transformation =)
 translate :: ReducedXmlTree -> Either String ShowS
@@ -144,6 +160,19 @@ translate (Xop [s]) = case lookup (fromEnum s) unicodeTranslation of
 translate (Xsymb [s]) = case lookup (fromEnum s) uniSymbolTranslation of
        Nothing -> Right $ char s
        Just v -> Right $ str v
+
+-- Special case to handle matrix
+translate (Xfenced op en body@(Xtable _)) 
+    | (op == "(" && en == ")") || (op == "[" && en == "]") = translate body
+translate (Xfenced op en (Xrow [body@(Xtable _)]))
+    | (op == "(" && en == ")") || (op == "[" && en == "]") = translate body
+
+translate (Xfenced "(" ")" body) =
+    (\sub -> char '(' . sub . char ')') <$> translate body
+translate (Xfenced "|" "|" body) =
+    (\sub -> str "abs(" . sub . char ')') <$> translate body
+translate (Xfenced str1 str2 body) =
+    (\sub -> shows body . str str1 . sub . str str2) <$> translate body
 
 translate (Xrow ((XunderOver (Xop [bigop]) lowerBound upperBound):rs))
     | fromEnum bigop == Uni.sum =
@@ -180,11 +209,13 @@ translate (Xsqrt subTree) = (\sub -> str "sqrt(" . sub . char ')')
 translate (Xfrac a b) = (\a' b' -> char '(' . a' . str ") / (" . b' . char ')')
                      <$> translate a 
                      <*> translate b
+
 translate (Xsup a b) = (\a' b' -> char '(' . a' . str ") ^ (" . b' . char ')')
                     <$> translate a 
                     <*> translate b
-translate (Xrow lst) =
-    (\translist -> char '(' . concatS translist . char ')') <$> eitherMap (map translate lst)
+
+translate (Xrow []) = Right id
+translate (Xrow lst) = concatS <$> eitherMap (map translate lst)
 
 translate (Xtable []) = Left "Wrong table format"
 translate (Xtable lst) =

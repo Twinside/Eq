@@ -59,6 +59,9 @@ sum       = 0x2211 -- ^ ∑
 minus :: Int
 minus          = 0x2212 -- ^ −
 
+multiplicationSign :: Int
+multiplicationSign = 0x00D7 -- ^ ×
+
 minusorplus :: Int
 minusorplus    = 0x2213 -- ^ ∓
 
@@ -128,6 +131,11 @@ parrallelto  = 0x2225 -- ^ ∥
 unparallelto :: Int
 unparallelto = 0x2226 -- ^ ∦
 
+--------------------------------------------------
+----            Weird letters
+--------------------------------------------------
+doubleStruckItalicSmalld :: Int 
+doubleStruckItalicSmalld = 0x2146
 
 -----------------------------------
 -- Logical and sets operators
