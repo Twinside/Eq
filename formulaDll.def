@@ -2,5 +2,6 @@ EXPORTS
  eq_begin_runtime       = eq_begin_runtime
  eq_eval                = eq_eval
  eq_evalW               = eq_evalW
+ eq_translate_mathml	= eq_translate_mathml
  eq_end_runtime         = eq_end_runtime
 

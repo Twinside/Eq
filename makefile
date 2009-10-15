@@ -22,5 +22,7 @@ dll:
 										-package mtl \
 										-package containers \
 										-package filepath \
+										-package utf8-string\
+										-package HaXml \
 										-lOle32 \
 										formulaDll.def

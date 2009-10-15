@@ -7,6 +7,7 @@ import Foreign.C.String( CString, CWString
 
 import Foreign.Marshal.Alloc( free )
 import EqManips.Types
+import EqManips.InputParser.MathML
 import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Utils
@@ -38,6 +39,9 @@ eqFormulaParser operation formulaText =
                         errs = formatErrors $ errorList rez
                         finalForm = formatFormula $ result rez
 
+eqMathMLTranslate :: CWString -> IO CWString
+eqMathMLTranslate = eqWDoForeign $ mathMlToEqLang'
+
 eqWEval :: CWString -> IO CWString
 eqWEval = eqWDoForeign $ eqFormulaParser evalGlobalLossyStatement
 
@@ -50,4 +54,5 @@ freeHaskell = free
 foreign export ccall "eqWEval" eqWEval :: CWString -> IO CWString
 foreign export ccall "eqEval" eqEval :: CString -> IO CString
 foreign export ccall "eqFreeHaskellString" freeHaskell :: CWString -> IO ()
+foreign export ccall "eqMathMLTranslate" eqMathMLTranslate :: CWString -> IO CWString
 

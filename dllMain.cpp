@@ -72,6 +72,9 @@ extern "C"
         return HS_BOOL_TRUE;
     }
 
+	EQ_API wchar_t* eq_translate_mathml( wchar_t *in )
+		{ return dotNetizeW( (wchar_t*)eqMathMLTranslate( (HsPtr)in ) ); }
+
     EQ_API wchar_t* eq_evalW( wchar_t *in )
         { return dotNetizeW( (wchar_t*)eqWEval( (HsPtr)in ) ); }
 
