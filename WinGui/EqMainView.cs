@@ -35,8 +35,7 @@ namespace WinGui
 
         void mathInput_Insert(string RecoResult)
         {
-            MessageBox.Show("Copied : \n" + RecoResult, "MathML Pasted");
-            Clipboard.SetData(DataFormats.UnicodeText, RecoResult);
+            txtEntry.Text = computationKernel.TranslateMathMLToEq(RecoResult);
         }
 
         private void txtEntry_KeyUp(object sender, KeyEventArgs e)

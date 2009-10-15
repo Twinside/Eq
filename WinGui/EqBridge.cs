@@ -45,6 +45,7 @@ namespace WinGui
         private static ForeignTruth InitRuntime;
         private static ForeignAction EndRuntime;
         private static Evaluator Eval;
+        private static Evaluator MathMLTranslate;
 
         #endregion /* Dll imports */        
     
@@ -69,13 +70,15 @@ namespace WinGui
             IntPtr initRuntime = GetProcAddress(formulaLib, "eq_begin_runtime");
             IntPtr endRuntime = GetProcAddress(formulaLib, "eq_end_runtime");
             IntPtr eqEval = GetProcAddress(formulaLib, "eq_evalW");
+            IntPtr mmlTranslate = GetProcAddress(formulaLib, "eq_translate_mathml");
 
-            if (initRuntime == IntPtr.Zero || endRuntime == IntPtr.Zero || eqEval == IntPtr.Zero)
+            if (initRuntime == IntPtr.Zero || endRuntime == IntPtr.Zero || eqEval == IntPtr.Zero || mmlTranslate == IntPtr.Zero)
                 throw new BadImageFormatException("The dll doesn't export the good functions");
 
             InitRuntime = (ForeignTruth)Marshal.GetDelegateForFunctionPointer(initRuntime, typeof(ForeignTruth));
             EndRuntime = (ForeignAction)Marshal.GetDelegateForFunctionPointer(endRuntime, typeof(ForeignAction));
             Eval = (Evaluator)Marshal.GetDelegateForFunctionPointer(eqEval, typeof(Evaluator));
+            MathMLTranslate = (Evaluator)Marshal.GetDelegateForFunctionPointer(mmlTranslate, typeof(Evaluator));
 
             if (!initialized)
             {
@@ -95,5 +98,8 @@ namespace WinGui
 
         public String EvalProgram(String program)
             { return Eval(program); }
+
+        public String TranslateMathMLToEq( String prog )
+            { return MathMLTranslate(prog); }
     }
 }
