@@ -3,6 +3,8 @@
 *.obj
 *.hi
 .svn
+*_stub.*
+*.dll.a
 *.exe
 Debug
 Release
