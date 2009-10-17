@@ -1,5 +1,5 @@
 
-build:
+build: EqManips/BaseLibrary.hs
 	runhaskell Setup.hs build
 	cp dist/build/eq/eq.exe .
 	cp dist/build/iotest/iotest.exe .
@@ -7,13 +7,16 @@ build:
 clean:
 	runhaskell Setup.hs clean
 
+EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.txt
+	runhaskell -cpp EqManips\libMaker.hs
+
 showdoc:
 	echo dist\doc\html\FormulaRenderer\eq\index.html
 
 doc:
 	runhaskell Setup.hs haddock --executables
 
-conf:
+conf: EqManips/BaseLibrary.hs
 	runhaskell Setup.hs configure
 
 test:

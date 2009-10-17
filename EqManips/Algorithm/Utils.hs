@@ -166,15 +166,20 @@ biAssocM f finv lst = assocInner f lst
               Left v -> assocInner f' (v:xs)
               Right (v1, v2) -> assocInner finv (v2:xs) >>= return . (v1:) 
 
-concatS :: [ShowS] -> ShowS
+-- | Work like concat on list, but instead
+-- just combine functions of kind of ShowS.
+-- The function is generalized
+concatS :: [a -> a] -> (a -> a)
 concatS = foldr1 (.)
 
-concatMapS :: (a -> ShowS) -> [a] -> ShowS
+-- | Work like concatMap, but instead use 
+-- function combination.
+concatMapS :: (a -> b -> b) -> [a] -> (b -> b)
 concatMapS f = concatS . map f
 
 -- | Same functionality as intersperse but combine function
 -- instead of concatenation
-interspereseS :: ShowS -> [ShowS] -> ShowS
+interspereseS :: (a -> a) -> [a -> a] -> a -> a
 interspereseS what within =
    foldl' (\acc e -> e . what . acc) lastOne reversed
     where (lastOne : reversed) = reverse within
