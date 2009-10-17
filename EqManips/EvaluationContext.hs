@@ -1,7 +1,9 @@
 module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , EqContext
                                  , performTransformation 
+                                 , performTransformationWithContext
                                  , performLastTransformation 
+                                 , performLastTransformationWithContext 
                                  , obtainEqResult 
                                  , cleanErrorList 
                                  , addSymbols 
@@ -161,12 +163,25 @@ cleanErrorList = EqContext $ \c -> (c { errorList = [] }, ())
 -- | Public function of the API to retrieve the result of
 -- a formula transformation. The type is opaque otherwise.
 performTransformation :: EqContext Formula -> EqTransformInfo
-performTransformation m = ctxt { result = formula }
-    where (ctxt, formula) = runEqTransform m emptyContext
+performTransformation = performTransformationWithContext Map.empty
 
+-- | Evaluate a formula, you can provide variable bindings
+performTransformationWithContext :: Map String Formula -> EqContext Formula
+								 -> EqTransformInfo
+performTransformationWithContext base m = ctxt { result = formula }
+    where (ctxt, formula) = runEqTransform m $ emptyContext { context = base }
+
+-- | Evaluate a programm, with no pre-definitions
 performLastTransformation :: EqContext [Formula] -> EqTransformInfo
-performLastTransformation m = ctxt { result = last formula }
-    where (ctxt, formula) = runEqTransform m emptyContext
+performLastTransformation =
+	performLastTransformationWithContext Map.empty
+
+-- | Run a programm and get the last statement.
+-- You can run programm with your pre-defined symbols
+performLastTransformationWithContext :: Map String Formula -> EqContext [Formula]
+									 -> EqTransformInfo
+performLastTransformationWithContext c m = ctxt { result = last formula }
+    where (ctxt, formula) = runEqTransform m $ emptyContext { context = c }
 
 obtainEqResult :: EqContext a -> a
 obtainEqResult m = snd $ runEqTransform m emptyContext

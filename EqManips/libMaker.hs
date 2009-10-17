@@ -21,7 +21,7 @@ main = do
 						mapM evalGlobalLosslessStatement formulal
 		in do
 		outFile <- openFile "EqManips\\BaseLibrary.hs" WriteMode
-		hPutStr outFile "module BaseLibrary( defaultSymbolTable ) where\n"
+		hPutStr outFile "module EqManips.BaseLibrary( defaultSymbolTable ) where\n"
 		hPutStr outFile "\n"
 		hPutStr outFile "import EqManips.Types\n"
 		hPutStr outFile "import Data.Map\n"

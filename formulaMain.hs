@@ -18,6 +18,7 @@ import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 import EqManips.Preprocessor
 
+import EqManips.BaseLibrary
 import EqManips.InputParser.MathML
 
 data Flag =
@@ -110,8 +111,8 @@ transformParseFormula operation args = do
     let formulaList = parseProgramm formulaText
     either (parseErrorPrint finalFile)
            (\formulal -> do
-               let rez = performLastTransformation $
-                                mapM operation formulal
+               let rez = performLastTransformationWithContext defaultSymbolTable
+                       $ mapM operation formulal
                mapM (\a-> do hPutStr finalFile $ show a
                              hPutStr finalFile "\n\n") formulal
 #ifdef _DEBUG
