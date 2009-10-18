@@ -25,7 +25,7 @@ link (App (Variable "Lambda") [arg, body]) = Meta LambdaBuild $ Lambda [([arg], 
 
 -- Special cases
 link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
-    Block i1 i2 i3
+    Block (fromEnum i1) (fromEnum i2) (fromEnum i3)
 link (App (Variable "abs") [x]) = UnOp OpAbs $ link x
 link (App (Variable "sqrt") [x]) = UnOp OpSqrt $ link x
 link (App (Variable "exp") [x]) = UnOp OpExp $ link x
@@ -76,9 +76,9 @@ link (App (Variable "integrate") [what, dvar]) =
     Integrate (Variable "") (Variable "") (link what) (link dvar)
 
 link (App (Variable "matrix") (CInteger n: CInteger m: exps))
-    | n * m > length exps = error "The matrix has not enough expressions"
-    | n * m < length exps = error "The matrix has too much expressions"
-    | otherwise = Matrix n m $ splitMatrix exps
+    | fromEnum n * fromEnum m > length exps = error "The matrix has not enough expressions"
+    | fromEnum n * fromEnum m < length exps = error "The matrix has too much expressions"
+    | otherwise = Matrix (fromEnum n) (fromEnum m) $ splitMatrix exps
         where splitMatrix  [] = []
               splitMatrix lst =
                 let (matrixLine, matrixRest) = genericSplitAt n lst

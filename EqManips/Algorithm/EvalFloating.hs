@@ -148,7 +148,7 @@ floatEvalRules end = return end
 ---- Scalar related function
 --------------------------------------------------------------
 unOpReduce :: (forall a. (Floating a) => a -> a) -> Formula -> Maybe Formula
-unOpReduce f (CInteger i) = unOpReduce f . CFloat $ toEnum i
+unOpReduce f (CInteger i) = unOpReduce f . CFloat $ (fromInteger i)
 unOpReduce f (CFloat num) = Just . CFloat $ f num
 unOpReduce _ _ = Nothing
 

@@ -2,10 +2,10 @@ module EqManips.Renderer.CharRender( CharacterSoup, CharacterSoupS
 								   , renderFormula, renderFormulaS
 								   ) where
 
-import Data.List( foldl' )
+{-import Data.List( foldl' )-}
 import EqManips.Types
 import EqManips.Renderer.Placer
-import EqManips.Algorithm.Utils
+{-import EqManips.Algorithm.Utils-}
 import EqManips.Propreties
 
 type PosX = Int

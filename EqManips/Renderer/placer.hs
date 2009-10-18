@@ -35,7 +35,7 @@ data SizeTree =
 data Dimensioner = Dimensioner
     { unaryDim :: UnOperator -> RelativePlacement -> RelativePlacement
     , varSize :: String -> RelativePlacement
-    , intSize :: Int -> RelativePlacement
+    , intSize :: Integer -> RelativePlacement
     , floatSize :: Double -> RelativePlacement
     , addParens :: Dimension -> Dimension
     , remParens :: Dimension -> Dimension

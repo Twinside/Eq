@@ -422,7 +422,7 @@ eval _ end = return end
 ---- iteration
 --------------------------------------------------------------
 iterateFormula :: (Formula -> EqContext Formula)
-               -> ([Formula] -> Formula) -> String -> Int -> Int -> Formula
+               -> ([Formula] -> Formula) -> String -> Integer -> Integer -> Formula
                -> EqContext Formula
 iterateFormula evaluator op ivar initi endi what = do
     pushContext

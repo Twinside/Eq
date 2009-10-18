@@ -12,7 +12,7 @@ cleanup = depthFirstFormula `asAMonad` rules
 cleanupRules :: Formula -> Formula
 cleanupRules = rules
 
-int :: Int -> Formula
+int :: Integer -> Formula
 int = CInteger
 
 zero :: Formula -> Bool

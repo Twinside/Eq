@@ -110,7 +110,7 @@ data Formula =
       Variable String
     | NumEntity Entity
     | Truth Bool
-    | CInteger Int
+    | CInteger Integer
     | CFloat Double
     -- | FunName arguments
     | App Formula [Formula]
@@ -150,6 +150,12 @@ data Formula =
     -- normal output.
     | Meta MetaOperation Formula
     deriving (Eq, Show, Read)
+
+-- | This type store polynome in a recursive way, as presented
+-- in chapter 3 of "Algorithm for Computer Algebra". It's a
+-- recursive linked list
+{-data Polyome = Polynome-}
+{-data PowerSerie-}
 
 infixl 4 <<>>
 

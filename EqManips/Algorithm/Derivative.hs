@@ -15,7 +15,7 @@ import EqManips.Algorithm.Utils
 type Var = String
 
 -- | just an helper function
-int :: Int -> Formula
+int :: Integer -> Formula
 int = CInteger
 
 -- | Public function to perform a derivation on a
