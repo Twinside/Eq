@@ -8,6 +8,13 @@ if( true, a, b ) := a;
 if( false, a, b ) := b;
 if( otherwise, a, b ) := undefined;
 
+-- well, a max function
+max( a, b ) := if( a > b, a, b );
+
+-- well, a min function
+min( a, b ) := if( a < b, a, b );
+
+-- provide equality when everything else is undefined :-P
 eq( a, a ) := true;
 eq( a, b ) := false;
 
