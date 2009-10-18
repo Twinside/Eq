@@ -1,4 +1,12 @@
-module EqManips.Renderer.Placer where
+module EqManips.Renderer.Placer( SizeTree( .. )
+							   , Dimensioner( .. )
+							   , Dimension, BaseLine, RelativePlacement
+							   , sizeExtract 
+							   , baseLineOfTree 
+                               , sizeTreeOfFormula 
+							   , sizeOfTree 
+							   , maxPrio
+							   ) where
 
 import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
@@ -64,6 +72,11 @@ baseLineOfTree = fst . sizeExtract
 
 maxPrio :: Int
 maxPrio = 100
+
+-- | Obtain a size tree for a formula given
+-- an desired outputter.
+sizeTreeOfFormula :: Dimensioner -> Formula -> SizeTree
+sizeTreeOfFormula dim = sizeOfFormula dim False maxPrio
 
 -- | Compute a size tree for a formula.
 -- This size-tree can be used for a following render

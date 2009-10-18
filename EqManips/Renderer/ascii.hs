@@ -146,7 +146,7 @@ renderFormula :: Formula -- ^ Formula to render
               -> (UArray (Int,Int) Char,SizeTree) -- ^ Rendered formula
 renderFormula formula = 
     (accumArray (flip const) ' ' size writeList, sizeTree)
-        where sizeTree = sizeOfFormula asciiSizer False maxPrio formula
+        where sizeTree = sizeTreeOfFormula asciiSizer formula
               size = ((0,0), sizeOfTree sizeTree)
               writeList = renderF formula sizeTree (0,0) []
 

@@ -15,14 +15,22 @@ type Height = Int
 type CharacterSoup = [(PosX, PosY, Width, Height, Char)]
 type CharacterSoupS = CharacterSoup -> CharacterSoup 
 
+type Pos = (PosX, PosY)
+
+textOfEntity :: Entity -> ((Int,(Int,Int)), [String])
+textOfEntity Pi = ((0,(2,1)),["pi"])
+textOfEntity Infinite = ((0,(length "infinite",1)), ["infinite"])
+textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
+
 --------------------------------------------------
 ----            API
 --------------------------------------------------
 renderFormula :: Formula -> CharacterSoup
-renderFormula f = renderFormula' f []
+renderFormula f = renderFormulaS f []
 
 renderFormulaS :: Formula -> CharacterSoupS
-renderFormula = render
+renderFormulaS f = render f formulaSize (0,0)
+	where formulaSize = sizeTreeOfFormula charSizer f
 
 --------------------------------------------------
 ----            Constants
@@ -152,60 +160,60 @@ charSizer = Dimensioner
     }
 
 render :: Formula -> SizeTree -> Pos -> CharacterSoupS
-render (Meta _ f) node pos = renderF f node pos
+render (Meta _ f) node pos = render f node pos
 
 -- In the following matches, we render parenthesis and
 -- then recurse to the normal flow for the regular render.
-render node (MonoSizeNode True (base, dim) st) (x,y) =
--- Parentheses for binop
-render node (BiSizeNode True (base, dim) st1 st2) (x,y) =
--- Parenthesis for something else
-render node (SizeNodeList True (base, dim) abase stl) (x,y) =
+{-render node (MonoSizeNode True (base, dim) st) (x,y) =-}
+{--- Parentheses for binop-}
+{-render node (BiSizeNode True (base, dim) st1 st2) (x,y) =-}
+{--- Parenthesis for something else-}
+{-render node (SizeNodeList True (base, dim) abase stl) (x,y) =-}
 
--- Here we make the "simple" rendering, just a conversion.
-render (Block _ w h) _ (x,y) =
-render (Variable s) _ (x,y) =
-render (CInteger i) _ (x,y) =
-render (CFloat d)   _ (x,y) =
-render (NumEntity e) _ (x,y) =
-    [ [((x + xi,y + yi),c) | (xi, c) <- zip [0..] elines]
-        | (yi, elines) <- zip [0..] $ snd $ textOfEntity e]
-render (Truth True) _ (x,y) =
-render (Truth False) _ (x,y) =
-render (BinOp _ []) _ _ = error "render - rendering BinOp with no operand."
-render (BinOp _ [_]) _ _ = error "render - rendering BinOp with only one operand."
+{--- Here we make the "simple" rendering, just a conversion.-}
+{-render (Block _ w h) _ (x,y) =-}
+{-render (Variable s) _ (x,y) =-}
+{-render (CInteger i) _ (x,y) =-}
+{-render (CFloat d)   _ (x,y) =-}
+{-render (NumEntity e) _ (x,y) =-}
+    {-[ [((x + xi,y + yi),c) | (xi, c) <- zip [0..] elines]-}
+        {-| (yi, elines) <- zip [0..] $ snd $ textOfEntity e]-}
+{-render (Truth True) _ (x,y) =-}
+{-render (Truth False) _ (x,y) =-}
+{-render (BinOp _ []) _ _ = error "render - rendering BinOp with no operand."-}
+{-render (BinOp _ [_]) _ _ = error "render - rendering BinOp with only one operand."-}
 
-render (BinOp OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =
--- Division is of another kind :]
-render (BinOp OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
-render (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
-render f@(BinOp _ _) node pos = render (treeIfyBinOp f) node pos
-render (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) (x,y) =
-render (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
-render (UnOp OpCeil f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
-render (UnOp OpFloor f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
-render (UnOp OpFrac f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
-render (UnOp OpFactorial f) (MonoSizeNode _ (b,(w,_)) s) (x,y) =
-render (UnOp OpNegate f) (MonoSizeNode _ (b,_) s) (x,y) =
-render (UnOp OpExp f) (MonoSizeNode _ (_,(_,h)) s) (x,y) =
-render (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
-render (UnOp op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
-render (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
-        (x,y) =
-render (Lambda clauses) (SizeNodeClause _ (_,(w,h)) subTrees) (x,y) =
-render (Integrate ini end what var)
-        (SizeNodeList False
-            (_, (w,_h)) _ [iniSize,endSize,whatSize, derVarSize])
-        (x,y) =
-render (Product ini end what)
-        (SizeNodeList False
-             (_, (w,_h)) _ [iniSize,endSize,whatSize])
-        (x,y) =
-render (Derivate what var) (BiSizeNode _ (_,(w,_)) whatSize vardSize) (x,y) =
-render (Sum ini end what)
-        (SizeNodeList False
-              (_, (w,_h)) _ [iniSize,endSize,whatSize])
-        (x,y) =
-render (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
+{-render (BinOp OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =-}
+{--- Division is of another kind :]-}
+{-render (BinOp OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =-}
+{-render (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =-}
+{-render f@(BinOp _ _) node pos = render (treeIfyBinOp f) node pos-}
+{-render (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) (x,y) =-}
+{-render (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =-}
+{-render (UnOp OpCeil f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =-}
+{-render (UnOp OpFloor f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =-}
+{-render (UnOp OpFrac f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =-}
+{-render (UnOp OpFactorial f) (MonoSizeNode _ (b,(w,_)) s) (x,y) =-}
+{-render (UnOp OpNegate f) (MonoSizeNode _ (b,_) s) (x,y) =-}
+{-render (UnOp OpExp f) (MonoSizeNode _ (_,(_,h)) s) (x,y) =-}
+{-render (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =-}
+{-render (UnOp op f) (MonoSizeNode _ nodeSize subSize) (x,y) =-}
+{-render (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) -}
+        {-(x,y) =-}
+{-render (Lambda clauses) (SizeNodeClause _ (_,(w,h)) subTrees) (x,y) =-}
+{-render (Integrate ini end what var)-}
+        {-(SizeNodeList False-}
+            {-(_, (w,_h)) _ [iniSize,endSize,whatSize, derVarSize])-}
+        {-(x,y) =-}
+{-render (Product ini end what)-}
+        {-(SizeNodeList False-}
+             {-(_, (w,_h)) _ [iniSize,endSize,whatSize])-}
+        {-(x,y) =-}
+{-render (Derivate what var) (BiSizeNode _ (_,(w,_)) whatSize vardSize) (x,y) =-}
+{-render (Sum ini end what)-}
+        {-(SizeNodeList False-}
+              {-(_, (w,_h)) _ [iniSize,endSize,whatSize])-}
+        {-(x,y) =-}
+{-render (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =-}
 render _ _ _ = error "render - unmatched case"
 

@@ -21,6 +21,8 @@ import EqManips.Preprocessor
 import EqManips.BaseLibrary
 import EqManips.InputParser.MathML
 
+-- Debugging
+import EqManips.Renderer.CharRender
 data Flag =
       Output
     | Input
