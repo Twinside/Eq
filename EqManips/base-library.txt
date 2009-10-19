@@ -17,5 +17,6 @@ taylorin( f, var, a, n ) := taylorin( f, var, a, n - 1 )
                           + (derivaten(f, var, Force(n)))( a ) / n! * (x - a) ^ n;
 
 -- taylor( formula, derivation var, onVar, order )
-taylor( f, var, a, n ) := Cleanup( Listify( taylorin( Lambda( var, f ), var, a, n )))
+taylor( f, var, a, n ) :=
+    Sort( Cleanup( Listify( taylorin( Lambda( var, f ), var, a, n ))))
 

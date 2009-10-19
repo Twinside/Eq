@@ -17,6 +17,7 @@ metaEval _ Hold f = return f
 metaEval evaluator Listify f = return . listifyBinOp =<< evaluator f
 metaEval evaluator Treefy f = return . treeIfyBinOp =<< evaluator f
 metaEval _ Expand f = return $ expand f
+metaEval evaluator Sort f = return . sortFormula =<< evaluator f
 metaEval evaluator LambdaBuild (Lambda [([arg], body)]) = do
     arg' <- evaluator arg 
     body' <- evaluator body

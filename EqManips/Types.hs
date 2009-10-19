@@ -101,6 +101,7 @@ data MetaOperation =
     | Expand    -- ^ trigger an expend operation
     | Cleanup   -- ^ trigger a basic formula cleanup
     | LambdaBuild -- ^ To generate a full blown Lambda
+    | Sort      -- ^ To sort the formula
     deriving (Eq, Show, Read)
 
 -- | Main type manipulated by the software.
@@ -154,7 +155,7 @@ data Formula =
 -- | This type store polynome in a recursive way, as presented
 -- in chapter 3 of "Algorithm for Computer Algebra". It's a
 -- recursive linked list
-data Polyome =
+data Polynome =
       Polynome String [(Int, Polynome)]
     | PolyCoeff
     deriving (Eq, Show, Read)
@@ -176,18 +177,22 @@ instance Ord Formula where
     compare (Meta _ f) f2 = compare f f2
     compare f (Meta _ f2) = compare f f2
 
-    -- To avoid some hypothetical problems :-S
-    compare (Matrix _ _ _) (Matrix _ _ _) = EQ
-    compare _ (Matrix _ _ _) = LT
-    compare (Matrix _ _ _) _ = LT
-    
-    compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
     compare (NumEntity e1) (NumEntity e2) = compare e1 e2
     compare (CInteger i) (CInteger i2) = compare i i2
     compare (CFloat f) (CFloat f2) = compare f f2
     compare (CInteger i) (CFloat f) = compare (fromIntegral i) f
     compare (CFloat f) (CInteger i) = compare f $ fromIntegral i
     compare (Variable v) (Variable v1) = compare v v1
+    compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
+
+    -- we don't sort matrixes, because the mul
+    compare (Matrix _ _ _) (Matrix _ _ _) = EQ
+    compare _ (Matrix _ _ _) = LT
+    compare (Matrix _ _ _) _ = LT
+    
+    compare (Variable _) _ = LT
+    compare (CFloat _) _ = LT
+    compare (CInteger _) _ = LT
 
     compare (BinOp OpPow [Variable v1, p1])
             (BinOp OpPow [Variable v2, p2])
