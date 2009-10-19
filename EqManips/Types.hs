@@ -20,6 +20,7 @@ module EqManips.Types( Formula( .. )
                      , OperatorText(..)
 
                      , MetaOperation( .. )
+                     , Polynome( .. )
                      , foldf
                      , canDistributeOver 
                      , distributeOver 
@@ -104,6 +105,8 @@ data MetaOperation =
     | Sort      -- ^ To sort the formula
     deriving (Eq, Show, Read)
 
+type FloatingValue = Double
+
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types
 -- are provided for ease of use
@@ -112,7 +115,7 @@ data Formula =
     | NumEntity Entity
     | Truth Bool
     | CInteger Integer
-    | CFloat Double
+    | CFloat FloatingValue
     -- | FunName arguments
     | App Formula [Formula]
     -- | LowBound highbound expression
@@ -157,7 +160,8 @@ data Formula =
 -- recursive linked list
 data Polynome =
       Polynome String [(Int, Polynome)]
-    | PolyCoeff
+    | PolyCoeffF FloatingValue
+    | PolyCoeffI Integer
     deriving (Eq, Show, Read)
 
 {-data PowerSerie-}
@@ -178,21 +182,27 @@ instance Ord Formula where
     compare f (Meta _ f2) = compare f f2
 
     compare (NumEntity e1) (NumEntity e2) = compare e1 e2
+    compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
+
     compare (CInteger i) (CInteger i2) = compare i i2
     compare (CFloat f) (CFloat f2) = compare f f2
     compare (CInteger i) (CFloat f) = compare (fromIntegral i) f
     compare (CFloat f) (CInteger i) = compare f $ fromIntegral i
+    compare (CFloat _) _ = LT
+    compare (CInteger _) _ = LT
+
     compare (Variable v) (Variable v1) = compare v v1
-    compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
+    compare (Variable _) _ = LT
+
+    compare _ (CInteger _) = GT
+    compare _ (CFloat _) = GT
+    compare _ (Block _ _ _) = LT
+    compare _ (NumEntity _) = GT
 
     -- we don't sort matrixes, because the mul
     compare (Matrix _ _ _) (Matrix _ _ _) = EQ
     compare _ (Matrix _ _ _) = LT
     compare (Matrix _ _ _) _ = LT
-    
-    compare (Variable _) _ = LT
-    compare (CFloat _) _ = LT
-    compare (CInteger _) _ = LT
 
     compare (BinOp OpPow [Variable v1, p1])
             (BinOp OpPow [Variable v2, p2])
@@ -212,11 +222,6 @@ instance Ord Formula where
 
     compare (BinOp _ f1) (BinOp _ f2) = compare f1 f2
 
-    compare _ (Block _ _ _) = LT
-    compare _ (CInteger _) = GT
-    compare _ (CFloat _) = GT
-    compare _ (NumEntity _) = GT
-
     compare (Derivate w _) (Derivate w' _) = compare w w'
     compare (Derivate _ _) (Integrate _ _ _ _) = LT
     compare (Derivate _ _) _ = GT
@@ -234,8 +239,6 @@ instance Ord Formula where
     compare (App _ _) _ = LT
 
     compare (Block _ _ _) _ = GT
-    compare (CInteger _) _ = LT
-    compare (CFloat _) _ = LT
     compare (NumEntity _) _ = LT
     compare f1 f2 = compare (nodeCount f1) $ nodeCount f2
         where nodeCount = getSum . foldf 
