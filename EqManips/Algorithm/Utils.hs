@@ -4,6 +4,7 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , fromEmptyMonad 
                                 , treeIfyFormula,  treeIfyBinOp 
                                 , listifyFormula, listifyBinOp 
+                                , isFormulaConstant 
                                 , parseFormula
                                 , parseProgramm 
                                 , sortFormula 
@@ -18,6 +19,7 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 ) where
 
 import qualified Data.Monoid as Monoid
+import Data.Monoid( All( .. ), mempty )
 import Text.Parsec.Error( ParseError )
 import Text.ParserCombinators.Parsec.Prim( runParser )
 import EqManips.Algorithm.EmptyMonad
@@ -190,4 +192,27 @@ collectSymbols :: Formula -> [String]
 collectSymbols = foldf symbolCollector []
     where symbolCollector (Variable v) acc = v:acc
           symbolCollector _ acc = acc
+
+-- | Tell if a formula can be reduced to a scalar somehow
+isFormulaConstant :: Formula -> Bool
+isFormulaConstant = getAll . foldf isConstant mempty
+    where isConstant (Variable _) _ = All False
+          isConstant (Sum _ _ _) _ = All False
+          isConstant (Product _ _ _) _ = All False
+          isConstant (Derivate _ _) _ = All False
+          isConstant (Integrate _ _ _ _) _ = All False
+          isConstant (Lambda _) _ = All False
+          isConstant (App _ _) _ = All False
+          isConstant (Block _ _ _) _ = All False
+          --
+          isConstant (CFloat _) _ = All True
+          isConstant (CInteger _) _ = All True
+          isConstant (Truth _) _ = All True
+          isConstant (NumEntity _) _ = All True
+          --
+          isConstant (UnOp _ _) a = a
+          isConstant (BinOp _ _) a = a
+          isConstant (Meta _ _) a = a
+          isConstant (Matrix 1 1 _) a = a
+          isConstant (Matrix _ _ _) _ = All False
 

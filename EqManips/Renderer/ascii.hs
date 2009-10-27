@@ -154,15 +154,17 @@ renderFormula formula =
 -- use function composition instead which seem to be cheaper
 type PoserS = [(Pos, Char)] -> [(Pos, Char)]
 
+{- else we try to render something like that :
+-- @
+--     /        \
+--     |        |
+--     |        |
+--     \        /
+-- @
+-- Kept away from normal haddock comment, because it crash...
+-}
 -- | One function to render them all! (parenthesis)
 -- for one line ( ... )
--- else we try to render something like that :
--- @
--- /        \
--- |        |
--- |        |
--- \        /
--- @
 renderParens :: Pos -> Dimension -> PoserS
 renderParens (x,y) (w,1) = ([((x,y), '('), ((x + w - 1, y), ')')] ++)
 renderParens (x,y) (w,h) =
@@ -196,7 +198,7 @@ renderSquareBracket (x,y) (w,h) top bottom =
              downer = if bottom then bottomSymbols '_' else []
 
 
--- | Hope to render this :
+{- Just try to get that
 -- @
 --
 --  /
@@ -207,7 +209,9 @@ renderSquareBracket (x,y) (w,h) top bottom =
 --  |
 --  |
 --  \
---  @
+--  @ -}
+
+-- | Hope to render { and } for all sizes
 renderBraces :: Pos -> Dimension -> Bool -> Bool -> PoserS
 renderBraces (x,y) (w, 1) left right = leftChar . rightChar
     where leftChar = if left then (:) ((x,y), '{') else id

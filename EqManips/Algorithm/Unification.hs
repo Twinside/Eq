@@ -15,9 +15,14 @@ instance Applicative (State s) where
     
 type UnificationContext a = State [(String, Formula)] a
 
+-- | Just a little shortcut to be able to write more
+-- consise code.
 (=~=) :: Formula -> Formula -> UnificationContext Bool
 a =~= b = unifyFormula a b
 
+-- | Return the first pattern matching the given formula
+-- and a list of substitution to be made on the function
+-- body.
 getFirstUnifying :: [([Formula], Formula)] -> [Formula]
                  -> Maybe (Formula,[(String,Formula)])
 getFirstUnifying matches toMatch = foldl' unif Nothing matches
@@ -27,11 +32,14 @@ getFirstUnifying matches toMatch = foldl' unif Nothing matches
                         else Nothing
           unif j@(Just _) _ = j
           
-
+-- | Try to Unify two formula, return a list of substitution
+-- to transform a into b in case of success.
 unify :: Formula -> Formula -> Maybe [(String, Formula)]
 unify a b = if rez then Nothing else Just list
     where (rez, list) = runState (a =~= b) []
 
+-- | Helper function to unify list of formula side by side.
+-- Used for "tuples"/arguments
 unifyList :: [Formula] -> [Formula] -> UnificationContext Bool
 unifyList l1 l2 
 	| length l1 == length l2 =
@@ -39,8 +47,11 @@ unifyList l1 l2
 		in foldM valid True $ zip l1 l2
 	| otherwise = return False
 
--- | origin pattern (function args...), to unify
-unifyFormula :: Formula -> Formula -> UnificationContext Bool
+-- | Real function that implement unification.
+-- origin pattern (function args...), to unify
+unifyFormula :: Formula -- ^ Pattern
+             -> Formula -- ^ to apply
+             -> UnificationContext Bool
 unifyFormula (App f1 l1) (App f2 l2) =
     (&&) . valid <$> (f1 =~= f2) <*> unifyList l1 l2
         where valid = (&&) $ length l1 == length l2 

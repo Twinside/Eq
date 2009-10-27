@@ -177,7 +177,7 @@ render (Meta _ f) node pos = render f node pos
 {-render (CFloat d)   _ (x,y) =-}
 {-render (NumEntity e) _ (x,y) =-}
     {-[ [((x + xi,y + yi),c) | (xi, c) <- zip [0..] elines]-}
-        {-| (yi, elines) <- zip [0..] $ snd $ textOfEntity e]-}
+        -- \| (yi, elines) <- zip [0..] $ snd $ textOfEntity e]
 {-render (Truth True) _ (x,y) =-}
 {-render (Truth False) _ (x,y) =-}
 {-render (BinOp _ []) _ _ = error "render - rendering BinOp with no operand."-}

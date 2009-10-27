@@ -191,7 +191,9 @@ instance Ord Formula where
     compare (CFloat _) _ = LT
     compare (CInteger _) _ = LT
 
+    -- x < y
     compare (Variable v) (Variable v1) = compare v v1
+    -- Variable last
     compare (Variable _) _ = LT
 
     compare _ (CInteger _) = GT

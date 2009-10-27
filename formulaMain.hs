@@ -23,6 +23,7 @@ import EqManips.InputParser.MathML
 
 -- Debugging
 import EqManips.Renderer.CharRender
+import EqManips.Algorithm.Polynome
 data Flag =
       Output
     | Input
@@ -121,6 +122,7 @@ transformParseFormula operation args = do
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"
+               hPutStrLn finalFile . show $ result rez
 #endif
                printErrors $ errorList rez
                hPutStr finalFile . formatFormula $ result rez
