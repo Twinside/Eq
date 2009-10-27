@@ -26,12 +26,12 @@ main = do
 		hPutStr outFile "import EqManips.Types\n"
 		hPutStr outFile "import Data.Map\n"
 		hPutStr outFile "\n"
-		hPutStr outFile "defaultSymbolTable :: Map String Formula\n"
-		hPutStr outFile "defaultSymbolTable = read \""
+		hPutStr outFile "defaultSymbolTable :: Map String FormulaPrim\n"
+		hPutStr outFile "defaultSymbolTable = read $ "
 
 		hPutStr outFile . concatMap escQuote . show $ context rez
 
-		hPutStr outFile "\"\n\n"
+		hPutStr outFile "\n\n"
 		hClose outFile
 	  ) formulaList
 

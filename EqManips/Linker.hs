@@ -5,13 +5,15 @@ module EqManips.Linker( linkFormula ) where
 import EqManips.Types
 import Data.List
 
-linkFormula :: Formula -> Formula
-linkFormula = link
+-- | Linking formula doesn't change it's form,
+-- so we can keep it
+linkFormula :: Formula anyForm -> Formula anyForm
+linkFormula (Formula a) = Formula $ link a
 
 -- | Function associating variables to symbol.
 -- It's a crude way to do it... 
 -- may need to change it to a real symbol table later
-link :: Formula -> Formula
+link :: FormulaPrim -> FormulaPrim
 link (Variable "infinite") = NumEntity Infinite
 link (Variable "pi") = NumEntity Pi
 -- Meta cases

@@ -13,18 +13,20 @@ instance Applicative (State s) where
     a <*> b = 
         do { a' <- a; b' <- b; return $ a' b' }
     
-type UnificationContext a = State [(String, Formula)] a
+type UnificationContext a = State [(String, FormulaPrim)] a
 
 -- | Just a little shortcut to be able to write more
 -- consise code.
-(=~=) :: Formula -> Formula -> UnificationContext Bool
+(=~=) :: FormulaPrim -> FormulaPrim
+      -> UnificationContext Bool
 a =~= b = unifyFormula a b
 
 -- | Return the first pattern matching the given formula
 -- and a list of substitution to be made on the function
 -- body.
-getFirstUnifying :: [([Formula], Formula)] -> [Formula]
-                 -> Maybe (Formula,[(String,Formula)])
+getFirstUnifying :: [([FormulaPrim], FormulaPrim)]
+                 -> [FormulaPrim]
+                 -> Maybe (FormulaPrim, [(String,FormulaPrim)])
 getFirstUnifying matches toMatch = foldl' unif Nothing matches
     where unif Nothing (args, body) =
               let (rez, list) = runState (unifyList args toMatch) []
@@ -34,13 +36,17 @@ getFirstUnifying matches toMatch = foldl' unif Nothing matches
           
 -- | Try to Unify two formula, return a list of substitution
 -- to transform a into b in case of success.
-unify :: Formula -> Formula -> Maybe [(String, Formula)]
-unify a b = if rez then Nothing else Just list
+unify :: Formula anyKind -> Formula anyKind
+      -> Maybe [(String, Formula TreeForm)]
+unify (Formula a) (Formula b) =
+     if rez
+        then Nothing
+        else Just $ [(s, Formula f) | (s,f) <- list]
     where (rez, list) = runState (a =~= b) []
 
 -- | Helper function to unify list of formula side by side.
 -- Used for "tuples"/arguments
-unifyList :: [Formula] -> [Formula] -> UnificationContext Bool
+unifyList :: [FormulaPrim] -> [FormulaPrim] -> UnificationContext Bool
 unifyList l1 l2 
 	| length l1 == length l2 =
 		let valid acc (a,b) = (acc &&) <$> (a =~= b)
@@ -49,8 +55,8 @@ unifyList l1 l2
 
 -- | Real function that implement unification.
 -- origin pattern (function args...), to unify
-unifyFormula :: Formula -- ^ Pattern
-             -> Formula -- ^ to apply
+unifyFormula :: FormulaPrim -- ^ Pattern
+             -> FormulaPrim -- ^ to apply
              -> UnificationContext Bool
 unifyFormula (App f1 l1) (App f2 l2) =
     (&&) . valid <$> (f1 =~= f2) <*> unifyList l1 l2

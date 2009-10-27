@@ -4,18 +4,20 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , fromEmptyMonad 
                                 , treeIfyFormula,  treeIfyBinOp 
                                 , listifyFormula, listifyBinOp 
-                                , isFormulaConstant 
+                                , isFormulaConstant, isFormulaConstant' 
                                 , parseFormula
                                 , parseProgramm 
                                 , sortFormula 
-                                , nodeCount
+
+                                , nodeCount     -- ^ Count nodes in basic formula
+                                , nodeCount'    -- ^ Same version with form info.
                                 , needParenthesis 
                                 , needParenthesisPrio 
 
                                 , interspereseS 
                                 , concatS 
                                 , concatMapS 
-                                , collectSymbols 
+                                , collectSymbols, collectSymbols'
                                 ) where
 
 import qualified Data.Monoid as Monoid
@@ -34,27 +36,30 @@ import Data.List( foldl', sort )
 -----------------------------------------------------------
 -- | Helper function to parse a formula and apply all
 -- needed algorithm to be able to apply them
-parseFormula :: String -> Either ParseError Formula
-parseFormula text = rez
-    where parsed = runParser expr () "FromFile" text
-          rez = case parsed of
-             Left _ -> parsed
-             Right f -> Right . listifyFormula $ linkFormula f
+parseFormula :: String -> Either ParseError (Formula ListForm)
+parseFormula text = case runParser expr () "FromFile" text of
+             Left e -> Left e
+             Right f -> Right . listifyFormula
+                              . linkFormula
+                              $ Formula f
 
 -- | Count the number of nodes in a formula.
-nodeCount :: Formula -> Int
+nodeCount :: FormulaPrim -> Int
 nodeCount f = Monoid.getSum $ foldf 
    (\_ a -> Monoid.Sum $ Monoid.getSum a + 1)
    (Monoid.Sum 0) f
 
+nodeCount' :: Formula anyForm -> Int
+nodeCount' (Formula a) = nodeCount a
+
 -- | Perform a semantic sorting on formula, trying to put numbers
 -- front and rassembling terms
-sortFormula :: Formula -> Formula
-sortFormula = depthFirstFormula `asAMonad` sortBinOp
+sortFormula :: Formula ListForm -> Formula ListForm
+sortFormula (Formula a) = Formula $ (depthFormulaPrimTraversal `asAMonad` sortBinOp) a
 
 -- | Sort a binary operator, used by sortFormula to sort globally
 -- a formula
-sortBinOp :: Formula -> Formula
+sortBinOp :: FormulaPrim -> FormulaPrim
 sortBinOp (BinOp op lst)
     | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sort lst
 sortBinOp a = a
@@ -62,21 +67,22 @@ sortBinOp a = a
 -- | Helper function to use to parse a programm.
 -- Perform some transformations to get a usable
 -- formula.
-parseProgramm :: String -> Either ParseError [Formula]
+parseProgramm :: String -> Either ParseError [Formula ListForm]
 parseProgramm text = rez
     where parsed = runParser program () "FromFile" text
           rez = case parsed of
-                 Left _ -> parsed
-                 Right f -> Right $ map (listifyFormula . linkFormula) f
+                 Left a -> parsed
+                 Right f -> Right $ map (listifyFormula . linkFormula . Formula) f
 
 -- | listify a whole formula
-listifyFormula :: Formula -> Formula
-listifyFormula = depthFirstFormula `asAMonad` listifyBinOp 
+listifyFormula :: Formula TreeForm -> Formula ListForm
+listifyFormula (Formula a) = Formula $
+    (depthFormulaPrimTraversal `asAMonad` listifyBinOp) a
 
 
 -- | Given a binary operator in binary tree form,
 -- transform it in list form.
-listifyBinOp :: Formula -> Formula
+listifyBinOp :: FormulaPrim -> FormulaPrim
 listifyBinOp (BinOp op lst) = BinOp op $ translate lst
     where translate = flatten (op `obtainProp` AssocSide)
           flatten OpAssocRight = rightLister
@@ -100,12 +106,14 @@ listifyBinOp (BinOp op lst) = BinOp op $ translate lst
 listifyBinOp a = a
 
 -- | treeify a whole formula
-treeIfyFormula :: Formula -> Formula
-treeIfyFormula = depthFirstFormula `asAMonad` treeIfyBinOp
+treeIfyFormula :: Formula ListForm -> Formula TreeForm
+treeIfyFormula (Formula a) = Formula f
+    where f :: FormulaPrim
+          f = depthFormulaPrimTraversal `asAMonad` treeIfyBinOp $ a
 
 -- | Given a formula where all binops are in list
 -- forms, transform it back to binary tree.
-treeIfyBinOp :: Formula -> Formula
+treeIfyBinOp :: FormulaPrim -> FormulaPrim
 treeIfyBinOp (BinOp _ []) = error "treeIfyBinOp - empty binop"
 treeIfyBinOp (BinOp _ [_]) = error "treeIfyBinOp - Singleton binop"
 treeIfyBinOp f@(BinOp _ [_,_]) = f
@@ -188,13 +196,16 @@ interspereseS what within =
 
 -- | Collect all the symbols present in the formula.
 -- Symbols can be present multiple times
-collectSymbols :: Formula -> [String]
+collectSymbols :: FormulaPrim -> [String]
 collectSymbols = foldf symbolCollector []
     where symbolCollector (Variable v) acc = v:acc
           symbolCollector _ acc = acc
 
+collectSymbols' :: Formula anyKind -> [String]
+collectSymbols' (Formula a) = collectSymbols a
+
 -- | Tell if a formula can be reduced to a scalar somehow
-isFormulaConstant :: Formula -> Bool
+isFormulaConstant :: FormulaPrim -> Bool
 isFormulaConstant = getAll . foldf isConstant mempty
     where isConstant (Variable _) _ = All False
           isConstant (Sum _ _ _) _ = All False
@@ -215,4 +226,7 @@ isFormulaConstant = getAll . foldf isConstant mempty
           isConstant (Meta _ _) a = a
           isConstant (Matrix 1 1 _) a = a
           isConstant (Matrix _ _ _) _ = All False
+
+isFormulaConstant' :: Formula anyKind -> Bool
+isFormulaConstant' (Formula a) = isFormulaConstant a
 

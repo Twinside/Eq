@@ -1,30 +1,38 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module EqManips.Types( Formula( .. )
-                     , BinOperator( .. )
-                     , UnOperator( .. )
-                     , Entity( .. )
+{-# LANGUAGE EmptyDataDecls #-}
+module EqManips.Types
+         ( FormulaPrim( .. )
+         , Formula( .. )
+         , ListForm -- ^ Tell that the formula is in form
+                    -- binop op [a,b ...]
+         , TreeForm -- ^ Tell that the formula is in form
+                    -- binop op [a,b]
 
-                     , program  -- if you want to define some definition before
-                     , expr     -- if you want to evaluate just an expression
-                     , unparse  -- regurgitation in parsed language.
-                     , unparseS -- regurgitation with type ShowS
+         , BinOperator( .. )
+         , UnOperator( .. )
+         , Entity( .. )
 
-                     , binopString
-                     , unopString
-                     , AssocSide(..) -- To query associativity side
-                     , OpAssoc( .. ) -- Return type for associativity side
-                     , Priority(.. ) -- Gain access to operator's priority
-                     , LeafNode( .. )
-                     , OpProp( .. ) 
-                     , OperatorText(..)
+         , program  -- if you want to define some definition before
+         , expr     -- if you want to evaluate just an expression
+         , unparse  -- regurgitation in parsed language.
+         , unparseS -- regurgitation with type ShowS
 
-                     , MetaOperation( .. )
-                     , Polynome( .. )
-                     , foldf
-                     , canDistributeOver 
-                     , distributeOver 
-                     ) where
+         , binopString
+         , unopString
+         , AssocSide(..) -- To query associativity side
+         , OpAssoc( .. ) -- Return type for associativity side
+         , Priority(.. ) -- Gain access to operator's priority
+         , LeafNode( .. )
+         , OpProp( .. ) 
+         , OperatorText(..)
+
+         , MetaOperation( .. )
+         , Polynome( .. )
+         , foldf
+         , canDistributeOver 
+         , distributeOver 
+         ) where
 
 import Control.Applicative( (<$>), (<*) )
 import Control.Monad.Identity
@@ -110,41 +118,41 @@ type FloatingValue = Double
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types
 -- are provided for ease of use
-data Formula =
+data FormulaPrim =
       Variable String
     | NumEntity Entity
     | Truth Bool
     | CInteger Integer
     | CFloat FloatingValue
     -- | FunName arguments
-    | App Formula [Formula]
+    | App FormulaPrim [FormulaPrim]
     -- | LowBound highbound expression
-    | Sum Formula Formula Formula
+    | Sum FormulaPrim FormulaPrim FormulaPrim
     -- | LowBound highbound expression
-    | Product Formula Formula Formula
+    | Product FormulaPrim FormulaPrim FormulaPrim
 
     -- | Derivate expression withVar
-    | Derivate Formula Formula
+    | Derivate FormulaPrim FormulaPrim
 
     -- | lowBound highBound expression dx
-    | Integrate Formula Formula Formula Formula
+    | Integrate FormulaPrim FormulaPrim FormulaPrim FormulaPrim
 
     -- | -1 for example
-    | UnOp UnOperator Formula
+    | UnOp UnOperator FormulaPrim
 
     -- | Represent a function. a function
     -- can have many definitions. The applied
     -- one must be the first in the list which
     -- unify with the applied parameters.
-    | Lambda [( [Formula] {- clause args -}
-              , Formula {- clause body -})
+    | Lambda [( [FormulaPrim] {- clause args -}
+              , FormulaPrim {- clause body -})
              ] {- clauses -}
 
     -- | f1 op f2
-    | BinOp BinOperator [Formula]
+    | BinOp BinOperator [FormulaPrim]
 
     -- | Width, Height, all formulas
-    | Matrix Int Int [[Formula]]
+    | Matrix Int Int [[FormulaPrim]]
 
     -- | Used for debug
     | Block Int Int Int
@@ -152,8 +160,19 @@ data Formula =
     -- | A meta operation is an operation used
     -- by the sysem, but that doesn't appear in the
     -- normal output.
-    | Meta MetaOperation Formula
+    | Meta MetaOperation FormulaPrim
     deriving (Eq, Show, Read)
+
+-- | Type used to carry some meta information
+-- with the type system.
+-- - formula Form : how is handled the binop form
+newtype Formula formulaForm = Formula { unTagFormula :: FormulaPrim }
+    deriving (Eq, Show, Ord)
+
+-- | Type token for format of the form [a,b,c,d,e...]
+data ListForm
+-- | Type token for format of the form [a,b]
+data TreeForm
 
 -- | This type store polynome in a recursive way, as presented
 -- in chapter 3 of "Algorithm for Computer Algebra". It's a
@@ -176,7 +195,7 @@ a <<>> b = ordIt a
 -----------------------------------------------------------
 --  Ord def, used to sort-out '+' list for exemples
 -----------------------------------------------------------
-instance Ord Formula where
+instance Ord FormulaPrim where
     -- Ignoring meta in comparisons
     compare (Meta _ f) f2 = compare f f2
     compare f (Meta _ f2) = compare f f2
@@ -332,7 +351,7 @@ instance Property UnOperator Priority Int where
 -----------------------------------------------------------
 data LeafNode = LeafNode deriving Eq
 
-instance Property Formula LeafNode Bool where
+instance Property FormulaPrim LeafNode Bool where
     getProps (Variable _) = [(LeafNode, True)]
     getProps (CInteger _) = [(LeafNode, True)]
     getProps (CFloat _) = [(LeafNode, True)]
@@ -414,7 +433,8 @@ unOpNames =
 -------------------------------------------
 ---- Formula Folding
 -------------------------------------------
-foldf :: (Monoid b) => (Formula -> b -> b) -> b -> Formula -> b
+foldf :: (Monoid b)
+      => (FormulaPrim -> b -> b) -> b -> FormulaPrim -> b
 foldf f acc m@(Meta _ fo) = f m $ foldf f acc fo
 foldf f acc fo@(UnOp _ sub) = f fo $ foldf f acc sub
 foldf f acc fo@(App def args) =
@@ -460,7 +480,7 @@ foldf f acc fo = f fo acc
 -------------------------------------------
     
 -- | used to render functions' arguments
-argListToString :: [Formula] -> ShowS
+argListToString :: [FormulaPrim] -> ShowS
 argListToString [] = id
 argListToString [f] = deparse maxPrio False f
 argListToString lst = foldl' accum (unprint lastElem) reved
@@ -478,15 +498,15 @@ maxPrio = 15
 
 -- | Public function to translate a formula back to it's
 -- original notation. NOTE : it's not used as a Show instance...
-unparse :: Formula -> String
+unparse :: FormulaPrim -> String
 unparse f = unparseS f ""
 
-unparseS :: Formula -> ShowS
+unparseS :: FormulaPrim -> ShowS
 unparseS  = deparse maxPrio False
 
 -- | Real conversion function, pass down priority
 -- and tree direction
-deparse :: Int -> Bool -> Formula -> ShowS
+deparse :: Int -> Bool -> FormulaPrim -> ShowS
 -- INVISIBLE META NINJA !!
 deparse i r (Meta op f) = (++) (show op) . ('(' :) . deparse i r f . (')':)
 deparse _ _ (Truth True) = ("true" ++)
@@ -572,7 +592,7 @@ deparse _ _ (Matrix n m fl) =
 ----------------------------------------
 ----  Strong and valid instances    ----
 ----------------------------------------
-instance Num Formula where
+instance Num FormulaPrim where
     a + b = BinOp OpAdd [a,b]
     a - b = BinOp OpSub [a,b]
     a * b = BinOp OpMul [a,b]
@@ -583,14 +603,14 @@ instance Num Formula where
     signum _ = CInteger 0
     fromInteger = CInteger . fromInteger
 
-instance Fractional Formula where
+instance Fractional FormulaPrim where
     a / b = BinOp OpDiv [a,b]
     recip b = BinOp OpDiv [CInteger 1, b]
     fromRational a = BinOp OpDiv [ int $ numerator a
                                  , int $ denominator a]
             where int = CInteger . fromInteger
     
-instance Floating Formula where
+instance Floating FormulaPrim where
     pi = CFloat pi 
     exp = UnOp OpExp
     sqrt = UnOp OpSqrt
@@ -641,16 +661,16 @@ lexer  = P.makeTokenParser
 -----------------------------------------------------------
 type Parsed st b = ParsecT String st Identity b
 
-program :: Parsed st [Formula]
+program :: Parsed st [FormulaPrim]
 program = sepBy expr (whiteSpace >> char ';' >> whiteSpace) <* whiteSpace
        <?> "program"
 
 -- | Parser for the mini language is defined here
-expr :: Parsed st Formula
+expr :: Parsed st FormulaPrim
 expr = whiteSpace >> buildExpressionParser operatorDefs funCall
     <?> "expression"
 
-operatorDefs :: OperatorTable String st Identity Formula
+operatorDefs :: OperatorTable String st Identity FormulaPrim
 operatorDefs = 
     [ [postfix "!" (UnOp OpFactorial)]
     , [prefix "-" (UnOp OpNegate) ]
@@ -664,7 +684,7 @@ operatorDefs =
     , [binary ":=" (binop OpAttrib) AssocRight]
     ]
 
-funCall :: Parsed st Formula
+funCall :: Parsed st FormulaPrim
 funCall =  do
     caller <- term
     (App caller <$> argList) <|> return caller
@@ -672,11 +692,11 @@ funCall =  do
               exprList = sepBy expr argSeparator
               argList = parens (whiteSpace >> (exprList <* whiteSpace))
 
-variable :: Parsed st Formula
+variable :: Parsed st FormulaPrim
 variable = Variable <$> identifier
         <?> "variable"
 
-term :: Parsed st Formula
+term :: Parsed st FormulaPrim
 term = try trueConst
     <|> try falseConst
     <|> variable
@@ -685,10 +705,10 @@ term = try trueConst
     <|> parens expr
     <?> "Term error"
 
-trueConst :: Parsed st Formula
+trueConst :: Parsed st FormulaPrim
 trueConst = (return $ Truth True) <* (string "true" >> whiteSpace)
 
-falseConst :: Parsed st Formula
+falseConst :: Parsed st FormulaPrim
 falseConst = (return $ Truth False) <* (string "false" >> whiteSpace)
 -----------------------------------------------
 ----        Little helpers
@@ -702,6 +722,6 @@ prefix  name fun       = Prefix (do{ reservedOp name; return fun })
 postfix :: String -> (a -> a) -> Operator String st Identity a
 postfix name fun = Postfix (do{ reservedOp name; return fun })
 
-binop :: BinOperator -> Formula -> Formula -> Formula
+binop :: BinOperator -> FormulaPrim -> FormulaPrim -> FormulaPrim
 binop op left right = BinOp op [left, right]
 
