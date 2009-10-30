@@ -25,12 +25,12 @@ textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 --------------------------------------------------
 ----            API
 --------------------------------------------------
-renderFormula :: Formula -> CharacterSoup
+renderFormula :: Formula TreeForm -> CharacterSoup
 renderFormula f = renderFormulaS f []
 
-renderFormulaS :: Formula -> CharacterSoupS
-renderFormulaS f = render f formulaSize (0,0)
-	where formulaSize = sizeTreeOfFormula charSizer f
+renderFormulaS :: Formula TreeForm -> CharacterSoupS
+renderFormulaS forig@(Formula f) = render f formulaSize (0,0)
+	where formulaSize = sizeTreeOfFormula charSizer forig
 
 --------------------------------------------------
 ----            Constants
@@ -159,7 +159,7 @@ charSizer = Dimensioner
         (mHeight `div` 2, (2 + mWidth, mHeight))
     }
 
-render :: Formula -> SizeTree -> Pos -> CharacterSoupS
+render :: FormulaPrim -> SizeTree -> Pos -> CharacterSoupS
 render (Meta _ f) node pos = render f node pos
 
 -- In the following matches, we render parenthesis and

@@ -71,7 +71,7 @@ parseProgramm :: String -> Either ParseError [Formula ListForm]
 parseProgramm text = rez
     where parsed = runParser program () "FromFile" text
           rez = case parsed of
-                 Left a -> parsed
+                 Left a -> Left a
                  Right f -> Right $ map (listifyFormula . linkFormula . Formula) f
 
 -- | listify a whole formula

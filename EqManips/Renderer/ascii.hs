@@ -128,13 +128,13 @@ textOfEntity Infinite = ((0,(length "infinite",1)), ["infinite"])
 textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
 
 -- | Little helper for ready to parse string
-formatFormula :: Formula -> String
+formatFormula :: Formula TreeForm -> String
 formatFormula = unlines . formulaTextTable
 
 -- | The function to call to render a formula.
 -- Return a list of lines containing the formula.
 -- You can indent the lines do whatever you want with it.
-formulaTextTable :: Formula -> [String]
+formulaTextTable :: Formula TreeForm -> [String]
 formulaTextTable = linesOfArray . fst . renderFormula
 
 -------------------------------------------------------------
@@ -142,11 +142,11 @@ formulaTextTable = linesOfArray . fst . renderFormula
 -------------------------------------------------------------
 -- | This function return a char matrix containing the rendered
 -- formula. This function might not stay public in the future...
-renderFormula :: Formula -- ^ Formula to render
+renderFormula :: Formula TreeForm -- ^ Formula to render
               -> (UArray (Int,Int) Char,SizeTree) -- ^ Rendered formula
-renderFormula formula = 
+renderFormula originalFormula@(Formula formula) = 
     (accumArray (flip const) ' ' size writeList, sizeTree)
-        where sizeTree = sizeTreeOfFormula asciiSizer formula
+        where sizeTree = sizeTreeOfFormula asciiSizer originalFormula
               size = ((0,0), sizeOfTree sizeTree)
               writeList = renderF formula sizeTree (0,0) []
 
@@ -255,7 +255,7 @@ renderBraces (x,y) (w, h) renderLeft renderRight = leftChar . rightChar
 renderArgs :: Pos -- ^ Where to render the arguments
            -> Int -- ^ The baseline for all the arguments
            -> Int 
-           -> [(Formula, SizeTree)] -- ^ Arguments to be rendered
+           -> [(FormulaPrim, SizeTree)] -- ^ Arguments to be rendered
            -> (Int, PoserS) -- ^ Width & charList
 renderArgs (x,y) argBase argsMaxHeight mixedList = (xla, params
     . renderParens (x , y) (xla - argBegin, argsMaxHeight))
@@ -272,7 +272,7 @@ renderArgs (x,y) argBase argsMaxHeight mixedList = (xla, params
 
 -- | The real rendering function, return a list of position and char
 -- to be used in accumArray function.
-renderF :: Formula -- ^ CurrentNode
+renderF :: FormulaPrim -- ^ CurrentNode
         -> SizeTree -- ^ Previously calculated size
         -> Pos -- ^ Where to render
         -> PoserS -- ^ Result to be used in accumArray

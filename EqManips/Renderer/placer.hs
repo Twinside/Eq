@@ -75,12 +75,12 @@ maxPrio = 100
 
 -- | Obtain a size tree for a formula given
 -- an desired outputter.
-sizeTreeOfFormula :: Dimensioner -> Formula -> SizeTree
-sizeTreeOfFormula dim = sizeOfFormula dim False maxPrio
+sizeTreeOfFormula :: Dimensioner -> Formula TreeForm -> SizeTree
+sizeTreeOfFormula dim (Formula a) = sizeOfFormula dim False maxPrio a
 
 -- | Compute a size tree for a formula.
 -- This size-tree can be used for a following render
-sizeOfFormula :: Dimensioner -> Bool -> OpPriority -> Formula -> SizeTree
+sizeOfFormula :: Dimensioner -> Bool -> OpPriority -> FormulaPrim -> SizeTree
 -- INVISIBLE META NINJA
 sizeOfFormula sizer a b (Meta _ f) = sizeOfFormula sizer a b f
 -- Simply the size of rendered text

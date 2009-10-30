@@ -4,18 +4,18 @@ import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.Algorithm.Utils
 
-type BiRuler = Formula -> Formula -> Either Formula (Formula, Formula)
+type BiRuler = FormulaPrim -> FormulaPrim -> Either FormulaPrim (FormulaPrim, FormulaPrim)
 
-cleanup :: Formula -> Formula
-cleanup = depthFirstFormula `asAMonad` rules
+cleanup :: Formula anyForm -> Formula anyForm
+cleanup = depthFirstFormula `asAMonad` (Formula . rules . unTagFormula)
 
-cleanupRules :: Formula -> Formula
-cleanupRules = rules
+cleanupRules :: Formula anyForm -> Formula anyForm
+cleanupRules (Formula a) = Formula $ rules a
 
-int :: Integer -> Formula
+int :: Integer -> FormulaPrim
 int = CInteger
 
-zero :: Formula -> Bool
+zero :: FormulaPrim -> Bool
 zero f = f == int 0 || f == CFloat 0.0
 
 ----------------------------------------------
@@ -83,7 +83,7 @@ power x y = Right (x,y)
 ----------------------------------------------
 ----                '/'
 ----------------------------------------------
-divide :: Formula -> Formula -> Either Formula (Formula,Formula)
+divide :: BiRuler
 divide (CInteger 0) _ = Left $ int 0
 divide x (CInteger 1) = Left x
 divide x y = Right (x,y)
@@ -91,7 +91,7 @@ divide x y = Right (x,y)
 ----------------------------------------------
 ----                'sinus'
 ----------------------------------------------
-sinus :: Formula -> Formula
+sinus :: FormulaPrim -> FormulaPrim
 sinus (CInteger 0) = int 0
 sinus (NumEntity Pi) = int 0
 -- Here we handle the more general case, for 2k * pi + 1
@@ -107,7 +107,7 @@ sinus i = sin i
 ----------------------------------------------
 ----                'cosinus'
 ----------------------------------------------
-cosinus :: Formula -> Formula
+cosinus :: FormulaPrim -> FormulaPrim
 cosinus (CInteger 0) = int 1
 cosinus (NumEntity Pi) = int (-1)
 cosinus i = cos i
@@ -115,12 +115,12 @@ cosinus i = cos i
 --------------------------------------------------
 ----            'exp'
 --------------------------------------------------
-exponential :: Formula -> Formula
+exponential :: FormulaPrim -> FormulaPrim
 exponential (CInteger 0) = int 1
 exponential (CFloat 0.0) = int 1
 exponential f = exp f
 
-reOp :: BinOperator -> [Formula] -> Formula
+reOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
 reOp _ [] = error "reOp Empty formula? WTF"
 reOp _ [x] = x
 reOp op lst = BinOp op lst
@@ -128,7 +128,7 @@ reOp op lst = BinOp op lst
 ---------------------------------------------
 ---- Linking all the rules together
 ---------------------------------------------
-rules :: Formula -> Formula
+rules :: FormulaPrim -> FormulaPrim
 rules (UnOp OpSin f) = sinus f
 rules (UnOp OpCos f) = cosinus f
 rules (UnOp OpExp f) = exponential f

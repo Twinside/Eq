@@ -173,6 +173,8 @@ newtype Formula formulaForm = Formula { unTagFormula :: FormulaPrim }
 data ListForm
 -- | Type token for format of the form [a,b]
 data TreeForm
+-- | Ok the data doesn't have any specific form
+data NoForm
 
 -- | This type store polynome in a recursive way, as presented
 -- in chapter 3 of "Algorithm for Computer Algebra". It's a
