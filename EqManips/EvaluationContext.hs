@@ -51,7 +51,7 @@ data EqTransformInfo = EqTransformInfo {
         , errorList  :: [(Formula TreeForm,String)]
 
         -- | The result of the formula computation
-        , result :: Formula TreeForm
+        , result :: Formula ListForm
 
 #ifdef _DEBUG
         -- | Used for debugging, can print everything
@@ -160,7 +160,7 @@ setContext newContext = EqContext $ \c ->
 cleanErrorList :: EqContext ()
 cleanErrorList = EqContext $ \c -> (c { errorList = [] }, ())
 
-type FormulaForm = TreeForm
+type FormulaForm = ListForm
 
 -- | Public function of the API to retrieve the result of
 -- a formula transformation. The type is opaque otherwise.
@@ -169,7 +169,7 @@ performTransformation = performTransformationWithContext Map.empty
 
 -- | Evaluate a formula, you can provide variable bindings
 performTransformationWithContext :: Map String (Formula ListForm)
-                                 -> EqContext (Formula FormulaForm)
+                                 -> EqContext (Formula ListForm)
 								 -> EqTransformInfo
 performTransformationWithContext base m = ctxt { result = formula }
     where (ctxt, formula) = runEqTransform m $ emptyContext { context = base }

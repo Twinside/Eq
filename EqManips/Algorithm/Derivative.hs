@@ -15,21 +15,21 @@ import EqManips.Algorithm.Utils
 type Var = String
 
 -- | just an helper function
-int :: Integer -> Formula
+int :: Integer -> FormulaPrim
 int = CInteger
 
 -- | Public function to perform a derivation on a
 -- variable.
-derivate :: (Formula -> EqContext Formula) -> Var -> Formula 
-         -> EqContext Formula
+derivate :: (Formula a -> EqContext (Formula a)) -> Var -> Formula a
+         -> EqContext (Formula TreeForm)
 derivate evaluator v f =
     derivationRules evaluator v f >>=
     return . sortFormula . listifyFormula
 
 -- | real function for derivation, d was choosen
 -- because I'm too lasy to type something else :]
-derivationRules :: (Formula -> EqContext Formula) -> String -> Formula
-                -> EqContext Formula
+derivationRules :: (FormulaPrim -> EqContext FormulaPrim) -> String -> FormulaPrim
+                -> EqContext FormulaPrim
 derivationRules evaluator variable func = d func variable
  where d (Meta m f) var = metaEval evaluator m f >>= flip d var
        d (Variable v) var
