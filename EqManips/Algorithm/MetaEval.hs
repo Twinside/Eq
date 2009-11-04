@@ -9,7 +9,9 @@ import EqManips.EvaluationContext
 import qualified EqManips.ErrorMessages as Err
 
 -- | The only meta evaluation avaible
-metaEval :: (Formula ListForm -> EqContext (Formula ListForm)) -> MetaOperation -> Formula ListForm
+metaEval :: (Formula ListForm -> EqContext (Formula ListForm))
+         -> MetaOperation
+         -> Formula ListForm
          -> EqContext (Formula ListForm)
 metaEval evaluator Force f = evaluator f
 metaEval evaluator Cleanup f = return . cleanup =<< evaluator f

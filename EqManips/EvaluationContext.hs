@@ -222,7 +222,7 @@ symbolLookup varName = EqContext $ \eqCtxt ->
 -- | Used to provide error messages at the end of the computation
 -- (when jumping back to IO), and also assure a nice partial evaluation,
 -- by replacing the faulty formula by a block.
-eqFail :: Formula TreeForm -> String -> EqContext (Formula FormulaForm) 
+eqFail :: Formula TreeForm -> String -> EqContext (Formula a)
 eqFail formula errorText = EqContext $ \eqCtxt ->
     let prevErr = errorList eqCtxt
     in ( eqCtxt {errorList = (formula, errorText):prevErr}, Formula $ Block 1 1 1)
