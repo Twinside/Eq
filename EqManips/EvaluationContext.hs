@@ -208,7 +208,7 @@ addSymbols adds = EqContext $ \eqCtxt ->
     ( eqCtxt { context = Map.fromList adds `Map.union` syms}, ())
 
 -- | Add a variable into the context
-addSymbol :: String -> (Formula ListForm) -> EqContext ()
+addSymbol :: String -> Formula ListForm -> EqContext ()
 addSymbol varName def = EqContext $ \eqCtxt ->
     let prevSymbol = context eqCtxt
     in ( eqCtxt{ context = Map.insert varName def prevSymbol }, ())

@@ -13,7 +13,7 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , nodeCount'    -- ^ Same version with form info.
                                 , needParenthesis 
                                 , needParenthesisPrio 
-
+                                , eqPrimFail 
                                 , interspereseS 
                                 , concatS 
                                 , concatMapS 
@@ -29,6 +29,7 @@ import EqManips.Propreties
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.Linker
+import EqManips.EvaluationContext
 import Data.List( foldl', sort )
 
 -----------------------------------------------------------
@@ -227,6 +228,14 @@ isFormulaConstant = getAll . foldf isConstant mempty
           isConstant (Matrix 1 1 _) a = a
           isConstant (Matrix _ _ _) _ = All False
 
+-- | Tell if a formula in any form can be reduced
+-- to a scalar somehow
 isFormulaConstant' :: Formula anyKind -> Bool
 isFormulaConstant' (Formula a) = isFormulaConstant a
+
+-- | Little helper to be able to use eqFail easily when
+-- manipulating FormulaPrim formula. Assume that FormulaPrim
+-- is in List Form. Use eqFail otherwise.
+eqPrimFail :: FormulaPrim -> String -> EqContext FormulaPrim
+eqPrimFail f s = unTagFormula `fmap` eqFail (treeIfyFormula $ Formula f) s
 

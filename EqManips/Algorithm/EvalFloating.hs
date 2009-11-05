@@ -11,12 +11,10 @@ import EqManips.Types
 import EqManips.Propreties
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Utils
+import EqManips.Algorithm.EvalTypes
 
 import Data.Maybe( fromMaybe )
 import Data.List( sort )
-
-type EvalOp = FormulaPrim -> FormulaPrim -> EqContext (Either FormulaPrim (FormulaPrim,FormulaPrim))
-type EvalFun = FormulaPrim -> EqContext FormulaPrim
 
 -- | General function favored to use the reduction rules
 -- as it preserve meta information about the formula form.
@@ -107,7 +105,7 @@ binEval op f inv formulaList
 ----        General evaluation
 -----------------------------------------------
 -- | All the rules for floats
-floatEvalRules :: FormulaPrim -> EqContext FormulaPrim
+floatEvalRules :: EvalFun
 floatEvalRules (NumEntity Pi) = return $ CFloat pi
 floatEvalRules (BinOp OpAdd fs) = binEval OpAdd add add fs
 floatEvalRules (BinOp OpSub fs) = binEval OpSub sub add fs
