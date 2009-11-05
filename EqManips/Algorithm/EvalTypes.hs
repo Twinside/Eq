@@ -8,7 +8,6 @@ module EqManips.Algorithm.EvalTypes( EvalOp
 
 import EqManips.Types
 import EqManips.EvaluationContext
-import Control.Applicative( (<$>) )
 
 type EvalOp = FormulaPrim
             -> FormulaPrim

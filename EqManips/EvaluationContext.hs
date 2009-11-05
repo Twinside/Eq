@@ -8,7 +8,7 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , cleanErrorList 
                                  , addSymbols 
                                  , addSymbol, delSymbol, updateSymbol 
-                                 , eqFail
+                                 , eqFail, eqPrimFail 
                                  , symbolLookup
                                  , pushContext, popContext, setContext 
 #ifdef _DEBUG
@@ -18,12 +18,13 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
 #endif /* _DEBUG */
                                  ) where
 
-import EqManips.Types
 import Data.List
-import Control.Applicative
-
 import Data.Map (Map)
+import Control.Applicative
 import qualified Data.Map as Map
+
+import EqManips.Types
+import EqManips.Algorithm.Utils
 
 #ifdef _DEBUG
 import System.IO
@@ -123,9 +124,15 @@ traceContext = EqContext $ \c ->
                   . map (\a -> printContext a ++ "\n/////////////////////////////////////////////////\n") 
                   . map Map.toList
                   $ contextStack c
-        printContext var = concat $ map (\(a,f) -> a ++ " =\n" ++ formatFormula f ++ "\n") var
+        printContext var = concat $ map (\(a,f) -> a ++ " =\n" 
+                                                ++ formatFormula (treeIfyFormula f)
+                                                ++ "\n")
+                                        var
     in
-    (c { trace = ("ContextStack | " ++ contextes, Variable ""): ("Context | " ++ (show $ context c), Variable "") : trace c }, ())
+    ( c { trace = ("ContextStack | " ++ contextes, Formula $ Variable "")
+                : ("Context | " ++ (show $ context c), Formula $ Variable "") : trace c }
+    , ()
+    )
 #endif /* _DEBUG */
 
 -- | Keep a track of current context, keep previous context clean
@@ -226,4 +233,10 @@ eqFail :: Formula TreeForm -> String -> EqContext (Formula a)
 eqFail formula errorText = EqContext $ \eqCtxt ->
     let prevErr = errorList eqCtxt
     in ( eqCtxt {errorList = (formula, errorText):prevErr}, Formula $ Block 1 1 1)
+
+-- | Little helper to be able to use eqFail easily when
+-- manipulating FormulaPrim formula. Assume that FormulaPrim
+-- is in List Form. Use eqFail otherwise.
+eqPrimFail :: FormulaPrim -> String -> EqContext FormulaPrim
+eqPrimFail f s = unTagFormula `fmap` eqFail (treeIfyFormula $ Formula f) s
 

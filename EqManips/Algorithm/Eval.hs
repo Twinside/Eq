@@ -26,18 +26,25 @@ import Data.List( foldl' , transpose, sort )
 
 
 evalGlobalLossyStatement, evalGlobalLosslessStatement :: FormulaEvaluator
-evalGlobalLossyStatement = evalGlobalStatement reduce
-evalGlobalLosslessStatement = evalGlobalStatement exactReduce
+evalGlobalLossyStatement = evalGlobalStatement reduce'
+evalGlobalLosslessStatement = evalGlobalStatement exactReduce'
 
 -- | Main function to evaluate another function
 reduce :: FormulaEvaluator
-reduce = taggedEvaluator e
-    where e f = (eval e $ cleaner f) >>= floatEvalRules
-          cleaner = unTagFormula . cleanupRules . Formula
+reduce = taggedEvaluator reduce'
 
+-- | Main function to evaluate raw formula
+reduce' :: EvalFun
+reduce' f = (eval reduce' $ cleaner f) >>= floatEvalRules
+    where cleaner = unTagFormula . cleanupRules . Formula
+
+-- | Only perform non-lossy transformations
 exactReduce :: FormulaEvaluator
-exactReduce = taggedEvaluator e
-    where e = eval e . (unTagFormula . cleanupRules . Formula)
+exactReduce = taggedEvaluator exactReduce'
+
+-- | same as exactReduce, but perform on raw formula.
+exactReduce' :: EvalFun
+exactReduce' = eval exactReduce' . (unTagFormula . cleanupRules . Formula)
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left
