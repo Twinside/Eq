@@ -7,11 +7,10 @@ import EqManips.Linker
 import EqManips.Propreties
 import EqManips.FormulaIterator
 import EqManips.EvaluationContext
-import EqManips.Algorithm.Cleanup
+import qualified EqManips.Algorithm.Cleanup as Cleanup
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Expand
 import EqManips.Algorithm.Eval
-import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.EmptyMonad
 
 import EqManips.Tests.FullGenerator()
@@ -22,14 +21,17 @@ import Test.QuickCheck
 
 import Text.ParserCombinators.Parsec.Prim( runParser )
 
+cleanup :: FormulaPrim -> FormulaPrim
+cleanup = unTagFormula . Cleanup.cleanup . Formula
+
 -----------------------------------------------
 ----        Helpers
 -----------------------------------------------
-preserveMeaning :: (Formula -> Formula) -> Formula -> Bool
+preserveMeaning :: (FormulaPrim -> FormulaPrim) -> FormulaPrim -> Bool
 preserveMeaning transformation f = 
   not (iniVal `hasProp` LeafNode) || comp (clean iniVal)
                                           (clean . eval $ transformation f)
-    where eval = result . performTransformation . reduce
+    where eval = unTagFormula . result . performTransformation . reduce . Formula
           iniVal = eval f
           clean (CFloat 0.0) = CInteger 0
           clean (CFloat 1.0) = CInteger 1
@@ -41,35 +43,37 @@ preserveMeaning transformation f =
             | otherwise = f1 == f2
           comp a b = a == b
 
-mustVerify :: (Formula -> Bool) -> Formula -> Bool
+mustVerify :: (FormulaPrim -> Bool) -> FormulaPrim -> Bool
 mustVerify f = getAll . foldf combiner mempty
     where combiner formula acc = acc `mappend` (All $ f formula)
 
 -----------------------------------------------
 ----        Propreties
 -----------------------------------------------
-prop_showBack :: Formula -> Bool
+prop_showBack :: FormulaPrim -> Bool
 prop_showBack formula = case eitherformula of
              Left _ -> False
              Right f -> 
-                (cleanup $ linkFormula f) == cleanup formula
+                (unTagFormula . Cleanup.cleanup . linkFormula $ Formula f) == cleanup formula
     where text = unparse formula
           eitherformula = runParser expr () "FromFile" text
 
-prop_ordering :: Formula -> Bool
+prop_ordering :: FormulaPrim -> Bool
 prop_ordering f = f <= f
 
-prop_nodeCount :: Formula -> Bool
+prop_nodeCount :: FormulaPrim -> Bool
 prop_nodeCount f = nodeCount f > 0
 
-prop_depthFirstFormula :: Formula -> Bool
-prop_depthFirstFormula f = (depthFirstFormula `asAMonad` id $ f) == f
+prop_depthFirstFormula :: FormulaPrim -> Bool
+prop_depthFirstFormula f = (depthFormulaPrimTraversal `asAMonad` id $ f) == f
 
-prop_treelistify :: Formula -> Bool
-prop_treelistify f = listifyFormula f == listifyFormula (treeIfyFormula f)
+prop_treelistify :: FormulaPrim -> Bool
+prop_treelistify f = listOnce == treeList 
+    where listOnce = unTagFormula . listifyFormula $ Formula f
+          treeList = unTagFormula . listifyFormula . treeIfyFormula $ Formula f
 
-prop_treefi2 :: Formula -> Bool
-prop_treefi2 f = mustVerify size2 $ treeIfyFormula f
+prop_treefi2 :: FormulaPrim -> Bool
+prop_treefi2 f = mustVerify size2 . unTagFormula . treeIfyFormula $ Formula f
     where size2 (BinOp _op lst) = length lst == 2
           size2 _ = True
 
@@ -78,16 +82,23 @@ prop_treefi2 f = mustVerify size2 $ treeIfyFormula f
 -----------------------------------------------
 globalTests :: [(String, Bool -> String -> Int -> IO ())]
 globalTests =
-    [ ("Formula ordering", testRunner prop_ordering)
-    , ("Formula tree/list", testRunner prop_treelistify)
-    , ("Formula folding", testRunner prop_nodeCount)
-    , ("Formula depth first traversal", testRunner prop_depthFirstFormula)
-    , ("Expand don't change meaning", testRunner $ preserveMeaning expand)
-    , ("Treeify don't change meaning", testRunner $ preserveMeaning treeIfyFormula)
-    , ("Treeify has BinOp of size 2", testRunner $ prop_treefi2)
-    , ("Listify don't change meaning", testRunner $ preserveMeaning listifyFormula)
+    [ ("FormulaPrim ordering", testRunner prop_ordering)
+    , ("FormulaPrim tree/list", testRunner prop_treelistify)
+    , ("FormulaPrim folding", testRunner prop_nodeCount)
+    , ("FormulaPrim depth first traversal", testRunner prop_depthFirstFormula)
+    , ("Expand don't change meaning", testRunner . preserveMeaning $ unTagFormula 
+                                                                   . expand
+                                                                   . treeIfyFormula
+                                                                   . Formula)
+    , ("Treeify don't change meaning", testRunner . preserveMeaning $ unTagFormula 
+                                                                    . treeIfyFormula
+                                                                    . Formula)
+    , ("Listify don't change meaning", testRunner . preserveMeaning $ unTagFormula 
+                                                                    . listifyFormula
+                                                                    . Formula)
     , ("Cleanup don't change meaning", testRunner $ preserveMeaning cleanup)
-    , ("Formula deparsing", testRunner prop_showBack)
+    , ("Treeify has BinOp of size 2", testRunner $ prop_treefi2)
+    , ("FormulaPrim deparsing", testRunner prop_showBack)
     ]
 
 -----------------------------------------------

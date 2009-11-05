@@ -1,6 +1,5 @@
 module EqManips.Algorithm.Inject( inject ) where
 
-import Data.Maybe( fromMaybe )
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.EvaluationContext

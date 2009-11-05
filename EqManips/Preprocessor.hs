@@ -3,6 +3,8 @@ module EqManips.Preprocessor ( processFile ) where
 import System.FilePath
 import Data.List
 import Control.Applicative
+import Text.Parsec.Error( ParseError )
+
 import EqManips.Algorithm.Eval
 import EqManips.Algorithm.Utils
 import EqManips.Renderer.Ascii
@@ -13,7 +15,7 @@ import EqManips.Types
 data LangDef = LangDef {
           initComm :: String
         , endLineComm :: String
-        , formater :: Formula -> [String]
+        , formater :: Formula TreeForm -> [String]
     }
 
 
@@ -21,7 +23,7 @@ voidLang :: LangDef
 voidLang = LangDef
     { initComm = ""
     , endLineComm = ""
-    , formater = formulaTextTable 
+    , formater = formulaTextTable
     }
 
 shellLang, cppLang, cLang, ocamlLang, haskellLang :: LangDef
@@ -173,17 +175,24 @@ produce lang (initSpace, command, eqData) =
 
           unCommentedLine = replicate (foldl' spaceCount 0 initSpace) ' '
 
+          process :: String -> Either ParseError (Formula ListForm) -> [String]
           process _ (Left err) = map (commentLine++) . lines $ show err
-          process "format" (Right f) = printResult f
+          process "format" (Right f) = printResult (treeIfyFormula f)
           process "eval" (Right f) = 
             let rez = performTransformation $ reduce f
             in case (errorList rez) of
-                    [] -> reverse . map (unCommentedLine ++) . formater lang $ result rez
+                    [] -> reverse . map (unCommentedLine ++) 
+                                  . formater lang 
+                                  . treeIfyFormula
+                                  $ result rez
                     errs@(_:_) -> concat
                         [ (commentLine ++ txt ++ commentEnd) : printResult form
                                     | (form, txt) <- errs ]
           process _ (Right _) = ["Unknown command " ++ command]
 
           printResult f =
-              reverse . map (\l -> commentLine ++ l ++ commentEnd) $ formulaTextTable f 
+              reverse . map (\l -> commentLine ++ l ++ commentEnd)
+                      $ formulaTextTable f
+                      
+
 

@@ -292,7 +292,7 @@ binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext Formula
 binEval op f inv formulaList 
     | op `hasProp` Associativ && op `hasProp` Commutativ = do
 #ifdef _DEBUG
-        addTrace ("Sorting => ", BinOp op formulaList)
+        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList)
 #endif
         biAssocM f inv (sort formulaList) >>= return . binOp op
 
@@ -323,7 +323,7 @@ eval evaluator (App def var) = do
     redDef <- evaluator def
     redVar <- mapM evaluator var
 #ifdef _DEBUG
-    addTrace ("Appbegin |", App redDef redVar)
+    addTrace ("Appbegin |", treeIfyFormula . Formula $ App redDef redVar)
 #endif
     needApply redDef redVar
    where needApply :: FormulaPrim -> [FormulaPrim] -> EqContext FormulaPrim
@@ -392,7 +392,7 @@ eval evaluator (UnOp op f) = return . UnOp op =<< evaluator f
 
 eval evaluator (Derivate what (Variable s)) = do
 #ifdef _DEBUG
-    addTrace ("Derivation on " ++ s, what)
+    addTrace ("Derivation on " ++ s, treeIfyFormula . Formula $ what)
 #endif
     derived <- derivate (taggedEvaluator evaluator) s (treeIfyFormula $ Formula what)
     return . unTagFormula $ cleanup derived

@@ -16,8 +16,6 @@ metaEval :: (Formula ListForm -> EqContext (Formula ListForm))
 metaEval evaluator Force f = evaluator f
 metaEval evaluator Cleanup f = return . cleanup =<< evaluator f
 metaEval _ Hold f = return f
-{-metaEval evaluator Listify f = return . listifyBinOp =<< evaluator f-}
-{-metaEval evaluator Treefy f = return . treeIfyBinOp =<< evaluator f-}
 metaEval _ Expand f = return . listifyFormula . expand . treeIfyFormula $ f
 
 metaEval evaluator Sort f = return . sortFormula =<< evaluator f

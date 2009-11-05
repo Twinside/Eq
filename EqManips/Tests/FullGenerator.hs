@@ -26,7 +26,7 @@ instance Arbitrary UnOperator where
                           , OpCeil, OpFloor, OpFrac
                           ]
 
-instance Arbitrary Formula where
+instance Arbitrary FormulaPrim where
     arbitrary = formulaGen 5
 
 
@@ -35,7 +35,7 @@ instance Arbitrary VarLetter where
         n <- choose (0, 25)
         return . VarLetter . toEnum $ n + fromEnum 'a'
 
-leafs :: [Gen Formula]
+leafs :: [Gen FormulaPrim]
 leafs = 
     [ liftM CInteger arbitrary
     -- Causing problem with equality check...
@@ -45,7 +45,7 @@ leafs =
     , liftM (\(VarLetter c) -> Variable [c]) arbitrary 
     ]
 
-formulaGen :: Int -> Gen Formula
+formulaGen :: Int -> Gen FormulaPrim
 formulaGen n  
     | n <= 0 = oneof leafs
     | otherwise = oneof $
@@ -63,7 +63,7 @@ formulaGen n
                 formulist = do genCount <- choose (2, 7)
                                replicateM genCount subFormul
 
-matrixGenerator :: Int -> Gen Formula
+matrixGenerator :: Int -> Gen FormulaPrim
 matrixGenerator deep = do
     n <- choose (1, 5)
     m <- choose (1, 5)

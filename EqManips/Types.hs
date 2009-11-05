@@ -105,8 +105,6 @@ data MetaOperation =
     -- | Inverse of hold, whenever encountered in
     -- evaluation, should force an evaluation.
     | Force
-    | Listify   -- ^ Pack operation a list-like form.
-    | Treefy    -- ^ Pack operation in a tree-like form
     | Expand    -- ^ trigger an expend operation
     | Cleanup   -- ^ trigger a basic formula cleanup
     | LambdaBuild -- ^ To generate a full blown Lambda
@@ -174,7 +172,7 @@ data ListForm
 -- | Type token for format of the form [a,b]
 data TreeForm
 -- | Ok the data doesn't have any specific form
-data NoForm
+{-data NoForm-}
 
 -- | This type store polynome in a recursive way, as presented
 -- in chapter 3 of "Algorithm for Computer Algebra". It's a

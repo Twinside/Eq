@@ -4,13 +4,13 @@ import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
 
-latexRender :: Formula -> String
+latexRender :: Formula TreeForm -> String
 latexRender f = latexRenderS f ""
 
-latexRenderS :: Formula -> ShowS
-latexRenderS f = (str "\\begin{equation}\n")
-              . lno (treeIfyFormula f) 
-              . (str "\n\\end{equation}\n")
+latexRenderS :: Formula TreeForm -> ShowS
+latexRenderS (Formula f) = (str "\\begin{equation}\n")
+                         . lno f 
+                         . (str "\n\\end{equation}\n")
 
 str :: String -> ShowS
 str = (++)
@@ -56,10 +56,10 @@ stringOfBinOp OpLe = " \\le "
 stringOfBinOp OpAttrib = " := "
 stringOfBinOp _ = error "stringOfBinOp - unknown op"
 
-lno :: Formula -> ShowS
+lno :: FormulaPrim -> ShowS
 lno = l (Nothing, False)
 
-l :: (Maybe BinOperator, Bool) -> Formula -> ShowS
+l :: (Maybe BinOperator, Bool) -> FormulaPrim -> ShowS
 l _ (Block _ _ _) = str "block"
 l _ (Variable v) = str v
 l _ (NumEntity e) = str $ latexOfEntity e

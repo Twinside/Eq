@@ -13,7 +13,7 @@ import EqManips.Types
 newtype ContinuousEntity = ContinuousEntity Entity
 newtype ContinuousBinop = ContinuousBinop BinOperator
 newtype ContinuousUnop = ContinuousUnop UnOperator
-newtype ContinuousFormula = ContinuousFormula Formula
+newtype ContinuousFormula = ContinuousFormula FormulaPrim
 
 instance Arbitrary ContinuousEntity where
     arbitrary  = elements [ Pi ] 

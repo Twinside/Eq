@@ -19,8 +19,6 @@ link (Variable "pi") = NumEntity Pi
 -- Meta cases
 link (App (Variable "Hold") [f]) = Meta Hold $ link f
 link (App (Variable "Force") [f]) = Meta Force $ link f
-link (App (Variable "Listify") [f]) = Meta Listify $ link f
-link (App (Variable "Treefy") [f]) = Meta Treefy $ link f
 link (App (Variable "Expand") [f]) = Meta Expand $ link f
 link (App (Variable "Cleanup") [f]) = Meta Cleanup $ link f
 link (App (Variable "Sort") [f]) = Meta Sort $ link f

@@ -6,20 +6,20 @@ import EqManips.Algorithm.Utils
 import EqManips.Propreties
 import EqManips.Renderer.Latex
 
-mathmlRender :: Formula -> String
-mathmlRender f = (str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n")
-               . semantics ( presMarkup 
-                           . annotation "MathML-Content" contentMarkup
-                           . annotation "Eq-language" (str . cleanify $ unparse f)
-                           . annotation "LaTeX" (str . cleanify $ latexRender f))
-               . (str "</math>\n") $ ""
-    where contentMarkup = content treefied
-          presMarkup = mrow $ prez treefied
-          treefied = treeIfyFormula f
-          semantics = tagger "semantics"
-          annotation kind c =
-              str ("<annotation-xml encoding=\"" ++ kind ++ "\">\n")
-                       . c . str "\n</annotation-xml>\n"
+mathmlRender :: Formula TreeForm -> String
+mathmlRender (Formula f) =
+    (str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n")
+    . semantics ( presMarkup 
+                . annotation "MathML-Content" contentMarkup
+                . annotation "Eq-language" (str . cleanify $ unparse f)
+                . annotation "LaTeX" (str . cleanify . latexRender $ Formula f))
+    . (str "</math>\n") $ ""
+        where contentMarkup = content f
+              presMarkup = mrow $ prez f
+              semantics = tagger "semantics"
+              annotation kind c =
+                  str ("<annotation-xml encoding=\"" ++ kind ++ "\">\n")
+                           . c . str "\n</annotation-xml>\n"
 
 str :: String -> ShowS
 str = (++)
@@ -63,10 +63,10 @@ mtr = tagger "mtr"
 enclose :: Char -> Char -> ShowS -> ShowS
 enclose beg end f = str ("<mo>" ++ (beg : "</mo>")) . f . str ("<mo>" ++ (end : "</mo>"))
 
-prez :: Formula -> ShowS
+prez :: FormulaPrim -> ShowS
 prez = presentation Nothing
 
-presentation :: Maybe (BinOperator, Bool) -> Formula -> ShowS
+presentation :: Maybe (BinOperator, Bool) -> FormulaPrim -> ShowS
 presentation _ (Block _ _ _) = mi $ str "block"
 presentation _ (Variable v) = mi $ str v
 presentation _ (NumEntity e) = mn $ str $ mathMlOfEntity e
@@ -192,7 +192,7 @@ stringOfBinOp OpPow = "<power/>"
 stringOfBinOp OpSub = "<minus/>"
 stringOfBinOp OpAttrib = "<!-- Attrib -->"
 
-bigOperator :: [Char] -> String -> Formula -> Formula -> Formula
+bigOperator :: [Char] -> String -> FormulaPrim -> FormulaPrim -> FormulaPrim
             -> ShowS
 bigOperator operator var def end what = 
     apply $ str operator
@@ -203,7 +203,7 @@ bigOperator operator var def end what =
 
 -- | Give 2 xml trees, one for presentation and one
 -- for content. Shitty MathML.
-content :: Formula -> ShowS
+content :: FormulaPrim -> ShowS
 content (Block _ _ _) = ci $ str "block"
 content (Variable v) = ci $ str v
 content (NumEntity e) = cn . str $ mathMlOfEntity e

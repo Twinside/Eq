@@ -91,13 +91,13 @@ binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext Formula
 binEval op f inv formulaList 
     | op `hasProp` Associativ && op `hasProp` Commutativ = do
 #ifdef _DEBUG
-        addTrace ("Sorting => ", BinOp op formulaList)
+        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList)
 #endif
         biAssocM f inv (sort formulaList) >>= return . binOp op
 
     | otherwise = do
 #ifdef _DEBUG
-        addTrace ("Basic Eval=>", BinOp op formulaList)
+        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ BinOp op formulaList)
 #endif
         biAssocM f inv formulaList >>= return . binOp op
 

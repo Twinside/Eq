@@ -24,6 +24,7 @@ import EqManips.InputParser.MathML
 -- Debugging
 import EqManips.Renderer.CharRender
 import EqManips.Algorithm.Polynome
+
 data Flag =
       Output
     | Input
@@ -67,21 +68,21 @@ filterCommand transformator args = do
 
 -- | Command which just format an equation
 -- without affecting it's form.
-formatCommand :: (Formula -> String) -> [String] -> IO Bool
+formatCommand :: (Formula TreeForm -> String) -> [String] -> IO Bool
 formatCommand formater args = do
     formulaText <- input
     let formula = parseFormula formulaText
     output <- outputFile
     either (parseErrorPrint output)
            (\formula' -> do 
-                hPutStrLn output $ formater formula'
+                hPutStrLn output . formater $ treeIfyFormula formula'
                 hClose output
                 return True)
            formula
      where (opt, left, _) = getOpt Permute formatOption args
            (input, outputFile) = getInputOutput opt left
 
-printErrors :: [(Formula, String)] -> IO ()
+printErrors :: [(Formula TreeForm, String)] -> IO ()
 printErrors =
     mapM_ (\(f,s) -> do putStrLn s
                         putStrLn $ formatFormula f) 
@@ -106,7 +107,7 @@ preprocessCommand args =
            inName = maybe "" id (lookup Input opts)
            outName = maybe inName id (lookup Output opts)
 
-transformParseFormula :: (Formula -> EqContext Formula) -> [String]
+transformParseFormula :: (Formula ListForm -> EqContext (Formula ListForm)) -> [String]
                       -> IO Bool
 transformParseFormula operation args = do
     formulaText <- input
@@ -125,7 +126,7 @@ transformParseFormula operation args = do
                hPutStrLn finalFile . show $ result rez
 #endif
                printErrors $ errorList rez
-               hPutStr finalFile . formatFormula $ result rez
+               hPutStr finalFile . formatFormula . treeIfyFormula $ result rez
                hClose finalFile
 
                return . null $ errorList rez)
