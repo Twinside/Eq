@@ -178,7 +178,7 @@ data TreeForm
 -- in chapter 3 of "Algorithm for Computer Algebra". It's a
 -- recursive linked list
 data Polynome =
-      Polynome String [(Int, Polynome)]
+      Polynome String [(Integer, Polynome)]
     | PolyCoeffF FloatingValue
     | PolyCoeffI Integer
     deriving (Eq, Show, Read)

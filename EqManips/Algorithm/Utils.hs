@@ -5,9 +5,10 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , treeIfyFormula,  treeIfyBinOp 
                                 , listifyFormula, listifyBinOp 
                                 , isFormulaConstant, isFormulaConstant' 
+                                , isFormulaInteger 
                                 , parseFormula
                                 , parseProgramm 
-                                , sortFormula 
+                                , sortFormula, invSortFormula 
 
                                 , nodeCount     -- ^ Count nodes in basic formula
                                 , nodeCount'    -- ^ Same version with form info.
@@ -28,7 +29,7 @@ import EqManips.Propreties
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.Linker
-import Data.List( foldl', sort )
+import Data.List( foldl', sort, sortBy )
 
 -----------------------------------------------------------
 --          Parsing formula
@@ -62,6 +63,19 @@ sortBinOp :: FormulaPrim -> FormulaPrim
 sortBinOp (BinOp op lst)
     | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sort lst
 sortBinOp a = a
+
+invSortFormula :: Formula ListForm -> Formula ListForm
+invSortFormula (Formula a) =
+    Formula $ (depthFormulaPrimTraversal `asAMonad` invSortBinOp) a
+
+invSortBinOp :: FormulaPrim -> FormulaPrim
+invSortBinOp (BinOp op lst)
+    | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sortBy cmp lst
+        where cmp a b = invOrd $ compare a b
+              invOrd GT = LT
+              invOrd LT = GT
+              invOrd EQ = EQ
+invSortBinOp a = a
 
 -- | Helper function to use to parse a programm.
 -- Perform some transformations to get a usable
@@ -202,6 +216,36 @@ collectSymbols = foldf symbolCollector []
 
 collectSymbols' :: Formula anyKind -> [String]
 collectSymbols' (Formula a) = collectSymbols a
+
+isFormulaInteger :: FormulaPrim -> Bool
+isFormulaInteger = getAll . foldf isConstant mempty
+    where isConstant (Variable _) _ = All False
+          isConstant (Sum _ _ _) _ = All False
+          isConstant (Product _ _ _) _ = All False
+          isConstant (Derivate _ _) _ = All False
+          isConstant (Integrate _ _ _ _) _ = All False
+          isConstant (Lambda _) _ = All False
+          isConstant (App _ _) _ = All False
+          isConstant (Block _ _ _) _ = All False
+          --
+          isConstant (CFloat _) _ = All False
+          isConstant (CInteger _) _ = All True
+          isConstant (Truth _) _ = All False
+          isConstant (NumEntity _) _ = All False
+          --
+          isConstant (UnOp op _) a = isValidUnop op a
+          isConstant (BinOp _ _) a = a
+          isConstant (Meta _ _) a = a
+          isConstant (Matrix 1 1 _) a = a
+          isConstant (Matrix _ _ _) _ = All False
+
+          isValidUnop OpNegate a = a
+          isValidUnop OpAbs a = a
+          isValidUnop OpFactorial _ = All True
+          isValidUnop OpCeil _ = All True
+          isValidUnop OpFloor _ = All True
+          isValidUnop _ _ = All False
+
 
 -- | Tell if a formula can be reduced to a scalar somehow
 isFormulaConstant :: FormulaPrim -> Bool
