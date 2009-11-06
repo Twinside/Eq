@@ -23,7 +23,7 @@ test:
 	./iotest
 
 debug:
-	./eq.exe eval -o out.txt -f taylor.txt
+	runhaskell EqManips/Tests/polyTest.hs
 
 run:
 	./eq exacteval -o out.txt "taylor( exp(x), x, 0, 5)"

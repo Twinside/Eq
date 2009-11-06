@@ -1,4 +1,4 @@
-module EqManips.Algorithm.Polynome  where
+module EqManips.Algorithm.Polynome( convertToPolynome ) where
 
 import Control.Applicative
 import Data.List( groupBy )
@@ -8,15 +8,36 @@ import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
-prepareFormula :: FormulaPrim -> FormulaPrim
-prepareFormula = unTagFormula . invSortFormula . Formula . formulaFlatter
+import EqManips.Renderer.Ascii
 
--- | We assume that the formula as been previously sorted
-resign :: FormulaPrim -> FormulaPrim
-resign (BinOp OpMul (CInteger n: xs)) = BinOp OpMul $ CInteger (-n) : xs
-resign (BinOp OpMul (CFloat n: xs)) = BinOp OpMul $ CFloat (-n) : xs
-resign (BinOp OpMul (a:xs)) | isFormulaInteger a = BinOp OpMul $ CInteger (-1):a:xs
-resign a = BinOp OpMul [CInteger (-1), a]
+convertToPolynome :: Formula ListForm -> IO (Maybe Polynome)
+convertToPolynome (Formula f) = do
+    let f' = prepareFormula f
+    putStr "\n=================================================\n"
+    putStr $ show f
+    putStr "\n=================================================\n\n"
+    putStr $ show f'
+    putStr "\n=================================================\n\n"
+    putStr $ formatFormula $ treeIfyFormula (Formula f')
+    putStr "\n=================================================\n\n"
+    return $ polynomize f'
+
+
+prepareFormula :: FormulaPrim -> FormulaPrim
+prepareFormula = unTagFormula
+               {-. invSortFormula-}
+               . Formula
+               . formulaFlatter
+
+-- | Called when we found an OpSub operator within the
+-- formula.
+-- We assume that the formula as been previously sorted
+resign :: FormulaPrim -> [FormulaPrim] -> [FormulaPrim]
+resign (BinOp OpMul (CInteger n: xs)) acc = BinOp OpMul (CInteger (-n) : xs) : acc
+resign (BinOp OpMul (CFloat n: xs)) acc = BinOp OpMul (CFloat (-n) : xs) : acc
+resign (BinOp OpMul (a:xs)) acc | isFormulaInteger a = BinOp OpMul (CInteger (-1):a:xs) : acc
+resign (BinOp OpAdd lst) acc = error "bah ??"
+resign a acc = BinOp OpMul [CInteger (-1), a] : acc
 
 formulaFlatter :: FormulaPrim -> FormulaPrim
 formulaFlatter = depthFormulaPrimTraversal `asAMonad` listFlatter
@@ -25,8 +46,13 @@ formulaFlatter = depthFormulaPrimTraversal `asAMonad` listFlatter
 -- with only Pluses.
 listFlatter :: FormulaPrim -> FormulaPrim
 listFlatter (BinOp OpAdd lst) = BinOp OpAdd $ foldr flatter [] lst
-    where flatter (BinOp OpSub (x:xs)) acc = x : map resign xs ++ acc
+    where flatter (BinOp OpSub (x:xs)) acc = x : foldr resign acc xs
+          flatter (BinOp OpAdd lst') acc = lst' ++ acc
           flatter x acc = x:acc
+listFlatter (BinOp OpSub ((BinOp OpAdd lst'):xs)) =
+    BinOp OpAdd $ lst' ++ foldr resign [] xs
+listFlatter (BinOp OpSub (x:xs)) =
+    BinOp OpAdd $ x : foldr resign [] xs
 listFlatter a = a
 
 -- | Helper to write minimal binop node.
@@ -35,7 +61,10 @@ opify _ [] = error $ Err.empty_binop "Polynome.opify"
 opify _ [x] = x
 opify op alist = BinOp op alist
 
+-- | /!\ INCOMPLETE !!!!!
+-- TO FIX LATER
 evalCoeff :: FormulaPrim -> Maybe Integer
+evalCoeff (CInteger i) = Just i
 evalCoeff _ = Nothing
 
 -- | TODO: add a real comment
