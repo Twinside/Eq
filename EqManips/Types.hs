@@ -184,6 +184,12 @@ instance Ord Formula where
             | p1 == p2 = compare v1 v2
             | otherwise = compare p1 p2
     
+    compare (BinOp OpPow a) (BinOp OpPow b) =
+        case compare (length a) (length b) of
+             LT -> LT
+             EQ -> foldl' (\acc (a', b') -> acc <<>> compare a' b') EQ $ zip a b
+             GT -> GT
+
     compare (BinOp OpPow _) _ = GT
     compare _ (BinOp OpPow _) = LT
 
