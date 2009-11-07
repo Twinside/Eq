@@ -8,7 +8,7 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , isFormulaInteger 
                                 , parseFormula
                                 , parseProgramm 
-                                , sortFormula, invSortFormula 
+                                , sortFormula, invSortFormula, sortBinOp  
 
                                 , nodeCount     -- ^ Count nodes in basic formula
                                 , nodeCount'    -- ^ Same version with form info.
@@ -29,7 +29,7 @@ import EqManips.Propreties
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.Linker
-import Data.List( foldl', sort, sortBy )
+import Data.List( foldl', sortBy )
 
 -----------------------------------------------------------
 --          Parsing formula
@@ -55,27 +55,23 @@ nodeCount' (Formula a) = nodeCount a
 -- | Perform a semantic sorting on formula, trying to put numbers
 -- front and rassembling terms
 sortFormula :: Formula ListForm -> Formula ListForm
-sortFormula (Formula a) = Formula $ (depthFormulaPrimTraversal `asAMonad` sortBinOp) a
+sortFormula (Formula a) = Formula 
+                        $ (depthFormulaPrimTraversal `asAMonad` (sortBinOp compare)) a
 
 -- | Sort a binary operator, used by sortFormula to sort globally
 -- a formula
-sortBinOp :: FormulaPrim -> FormulaPrim
-sortBinOp (BinOp op lst)
-    | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sort lst
-sortBinOp a = a
+sortBinOp :: (FormulaPrim -> FormulaPrim -> Ordering) -> FormulaPrim -> FormulaPrim
+sortBinOp f (BinOp op lst)
+    | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sortBy f lst
+sortBinOp _f a = a
 
 invSortFormula :: Formula ListForm -> Formula ListForm
-invSortFormula (Formula a) =
-    Formula $ (depthFormulaPrimTraversal `asAMonad` invSortBinOp) a
-
-invSortBinOp :: FormulaPrim -> FormulaPrim
-invSortBinOp (BinOp op lst)
-    | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sortBy cmp lst
+invSortFormula (Formula f) =
+    Formula $ (depthFormulaPrimTraversal `asAMonad` (sortBinOp cmp)) f
         where cmp a b = invOrd $ compare a b
               invOrd GT = LT
               invOrd LT = GT
               invOrd EQ = EQ
-invSortBinOp a = a
 
 -- | Helper function to use to parse a programm.
 -- Perform some transformations to get a usable

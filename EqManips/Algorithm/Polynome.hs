@@ -1,7 +1,7 @@
 module EqManips.Algorithm.Polynome( convertToPolynome ) where
 
 import Control.Applicative
-import Data.List( groupBy )
+import Data.List( groupBy, foldl' )
 import Data.Maybe( catMaybes )
 import EqManips.Types
 import EqManips.Algorithm.Utils
@@ -24,10 +24,29 @@ convertToPolynome (Formula f) = do
 
 
 prepareFormula :: FormulaPrim -> FormulaPrim
-prepareFormula = unTagFormula
+prepareFormula = 
+                 {-unTagFormula-}
+                 polySort
                {-. invSortFormula-}
-               . Formula
+               {-. Formula-}
                . formulaFlatter
+    where polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
+          sorter (Variable v1) (Variable v2) = invert $ compare v1 v2
+          sorter (BinOp OpPow [Variable v1, _p1])
+                 (BinOp OpPow [Variable v2, _p2]) = compare v1 v2
+
+          sorter (BinOp OpPow a) (BinOp OpPow b) =
+                case compare (length a) (length b) of
+                     LT -> LT
+                     GT -> GT
+                     EQ -> foldl' (\acc (a', b') -> if acc == EQ
+                                                        then acc
+                                                        else compare a' b') EQ $ zip a b
+          sorter a b = invert $ compare a b
+
+          invert LT = GT
+          invert EQ = EQ
+          invert GT = LT
 
 -- | Called when we found an OpSub operator within the
 -- formula.
@@ -36,7 +55,7 @@ resign :: FormulaPrim -> [FormulaPrim] -> [FormulaPrim]
 resign (BinOp OpMul (CInteger n: xs)) acc = BinOp OpMul (CInteger (-n) : xs) : acc
 resign (BinOp OpMul (CFloat n: xs)) acc = BinOp OpMul (CFloat (-n) : xs) : acc
 resign (BinOp OpMul (a:xs)) acc | isFormulaInteger a = BinOp OpMul (CInteger (-1):a:xs) : acc
-resign (BinOp OpAdd lst) acc = error "bah ??"
+resign (BinOp OpAdd lst) acc = foldr resign acc lst
 resign a acc = BinOp OpMul [CInteger (-1), a] : acc
 
 formulaFlatter :: FormulaPrim -> FormulaPrim
