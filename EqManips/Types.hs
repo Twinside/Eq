@@ -98,6 +98,7 @@ data Entity =
     | Infinite
     deriving (Eq, Show, Read, Ord)
 
+
 data MetaOperation =
     -- | Avoid an evaluation, replace itself by the
     -- without touching it.
@@ -178,9 +179,10 @@ data TreeForm
 -- in chapter 3 of "Algorithm for Computer Algebra". It's a
 -- recursive linked list
 data Polynome =
-      Polynome String [(Integer, Polynome)]
+      Polynome String [(FormulaPrim, Polynome)]
     | PolyCoeffF FloatingValue
     | PolyCoeffI Integer
+    | PolyCoeffFo FormulaPrim
     deriving (Eq, Show, Read)
 
 {-data PowerSerie-}
@@ -553,8 +555,8 @@ deparse _ _ (UnOp op f) =
     ((++) . fromJust $ lookup op unOpNames) . 
         ('(':) . deparse maxPrio False f . (')':)
 
--- Special case... as OpEq is right associative...
--- we must reverse shit for serialisation
+ -- Special case... as OpEq is right associative...
+ -- we must reverse shit for serialisation
 deparse oldPrio right (BinOp OpEq [f1,f2]) =
     let (prio, txt) = fromJust $ lookup OpEq binopDefs
     in
@@ -716,6 +718,7 @@ trueConst = (return $ Truth True) <* (string "true" >> whiteSpace)
 
 falseConst :: Parsed st FormulaPrim
 falseConst = (return $ Truth False) <* (string "false" >> whiteSpace)
+
 -----------------------------------------------
 ----        Little helpers
 -----------------------------------------------
