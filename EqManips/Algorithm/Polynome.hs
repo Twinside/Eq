@@ -2,8 +2,9 @@
 module EqManips.Algorithm.Polynome( convertToPolynome ) where
 
 import Control.Applicative
-import Data.List( groupBy, foldl' )
 import Data.Either( partitionEithers )
+import Data.List( groupBy, foldl' )
+import Data.Ratio
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
@@ -11,44 +12,48 @@ import qualified EqManips.ErrorMessages as Err
 
 import EqManips.Renderer.Ascii
 
-convertToPolynome :: Formula ListForm -> IO (Maybe Polynome)
-convertToPolynome (Formula f) = do
-    let f' = prepareFormula f
-    putStr "\n=================================================\n"
-    putStrLn $ show f'
-    putStr "=================================================\n\n"
-    putStr "\n=================================================\n"
-    putStrLn $ formatFormula $ treeIfyFormula (Formula f')
-    putStr "=================================================\n\n"
-    return $ polynomize f'
+convertToPolynome :: Formula ListForm -> ([FormulaPrim], Maybe Polynome)
+convertToPolynome (Formula f) = ([prepareFormula f], polynomize $ prepareFormula f)
 
--- Preparation de la formule {{{
 -- | Flatten the formula, remove all the OpSub and replace them
 -- by OpAdd. Also bring lowest variables to the front, regardless of
--- their order.
+-- their order. Ordering is very important in this function. All
+-- the polynome construction is built uppon the ordering created here.
 prepareFormula :: FormulaPrim -> FormulaPrim
 prepareFormula = polySort . formulaFlatter
     where polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
+
+          lexicalOrder EQ b = b
+          lexicalOrder a _ = a
+
           -- Special sort which bring x in front, followed by others. Lexical
           -- order first.
 
           -- Rules to fine-sort '*' elements
+          -- (x before y), no regard for formula degree
           sorter (Variable v1) (Variable v2) = invert $ compare v1 v2
           sorter (BinOp OpPow [Variable v1, _p1])
                  (BinOp OpPow [Variable v2, _p2]) = compare v1 v2
 
           sorter (Variable v1)
                  (BinOp OpPow (Variable v2:_)) = compare v1 v2
+          sorter (BinOp OpPow (Variable v1:_))
+                 (Variable v2) = compare v1 v2
 
-          -- Rules to fine sort the '+' elements
-          sorter (BinOp OpMul (BinOp OpPow (Variable v1:_):_))
-                 (BinOp OpMul (BinOp OpPow (Variable v2:_):_)) = compare v1 v2
+          sorter _ (BinOp OpPow (Variable v2:_)) = GT
+          sorter (BinOp OpPow (Variable v1:_)) _ = LT
+
+          -- Rules to fine sort the '+' elements, lowest variable
+          -- first (x before y), smallest order first (x before x ^ 15)
+          sorter (BinOp OpMul (BinOp OpPow (Variable v1: power1):_))
+                 (BinOp OpMul (BinOp OpPow (Variable v2: power2):_)) = 
+                    (compare v1 v2) `lexicalOrder` (compare power1 power2)
 
           sorter (BinOp OpMul (Variable v1:_))
-                 (BinOp OpMul (BinOp OpPow (Variable v2:_):_)) = compare v1 v2
+                 (BinOp OpMul (BinOp OpPow (Variable v2:_):_)) = (compare v1 v2) `lexicalOrder` LT
 
           sorter (BinOp OpMul (BinOp OpPow (Variable v1:_):_))
-                 (BinOp OpMul (Variable v2:_)) = compare v1 v2
+                 (BinOp OpMul (Variable v2:_)) = (compare v1 v2) `lexicalOrder` GT
 
           sorter (BinOp OpPow a) (BinOp OpPow b) =
                 case compare (length a) (length b) of
@@ -57,6 +62,11 @@ prepareFormula = polySort . formulaFlatter
                      EQ -> foldl' (\acc (a', b') -> if acc == EQ
                                                         then acc
                                                         else compare a' b') EQ $ zip a b
+          -- make sure weird things go at the end.
+          sorter (Variable _) _ = LT
+          sorter _ (Variable _) = GT
+
+          -- Just reverse the general readable order.
           sorter a b = invert $ compare a b
 
           invert LT = GT
@@ -64,15 +74,22 @@ prepareFormula = polySort . formulaFlatter
           invert GT = LT
 
 -- | Called when we found an OpSub operator within the
--- formula.
--- We assume that the formula as been previously sorted
+-- formula.  -- We assume that the formula as been previously sorted
 resign :: FormulaPrim -> [FormulaPrim] -> [FormulaPrim]
-resign (BinOp OpMul (CInteger n: xs)) acc = BinOp OpMul (CInteger (-n) : xs) : acc
-resign (BinOp OpMul (CFloat n: xs)) acc = BinOp OpMul (CFloat (-n) : xs) : acc
-resign (BinOp OpMul (a:xs)) acc | isFormulaInteger a = BinOp OpMul (CInteger (-1):a:xs) : acc
-resign (BinOp OpAdd lst) acc = foldr resign acc lst
-resign a acc = BinOp OpMul [CInteger (-1), a] : acc
+resign = globalResign
+    where globalResign (BinOp OpMul (a:xs)) acc
+            | isFormulaInteger a = case atomicResign a of
+                        Nothing -> BinOp OpMul (CInteger (-1):a:xs) : acc
+                        Just a' -> BinOp OpMul (a':xs) : acc
+          globalResign (BinOp OpAdd lst) acc = foldr resign acc lst
+          globalResign a acc = (maybe ((CInteger (-1)) * a) id (atomicResign a)) : acc
 
+          atomicResign (CInteger i) = Just $ CInteger (-i)
+          atomicResign (CFloat i) = Just $ CFloat (-i)
+          atomicResign (BinOp OpDiv [a,b]) = (\a' -> BinOp OpDiv [a', b]) <$> atomicResign a
+          atomicResign a = Nothing
+
+-- | Flatten a whole formula, by flattening from the leafs.
 formulaFlatter :: FormulaPrim -> FormulaPrim
 formulaFlatter = depthFormulaPrimTraversal `asAMonad` listFlatter
 
@@ -88,46 +105,36 @@ listFlatter (BinOp OpSub ((BinOp OpAdd lst'):xs)) =
 listFlatter (BinOp OpSub (x:xs)) =
     BinOp OpAdd $ x : foldr resign [] xs
 listFlatter a = a
--- }}}
 
--- | Helper to write minimal binop node.
-opify :: BinOperator -> [FormulaPrim] -> FormulaPrim
-opify _ [] = error $ Err.empty_binop "Polynome.opify"
-opify _ [x] = x
-opify op alist = BinOp op alist
-
--- | /!\ INCOMPLETE !!!!!
--- TO FIX LATER
-evalCoeff :: FormulaPrim -> Maybe FormulaPrim
-evalCoeff (CInteger i) = Just (CInteger i)
+evalCoeff :: [FormulaPrim] -> Maybe PolyCoeff
+evalCoeff [CInteger i] = Just $ CoeffInt i
+evalCoeff [CFloat f] = Just $ CoeffFloat f
+evalCoeff [BinOp OpDiv [CInteger a, CInteger b]] = Just . CoeffRatio $ a % b
 evalCoeff _ = Nothing
 
--- | TODO: add a real comment
 translator :: [FormulaPrim]                          -- Unnammed rest (var ^ 0)
            -> [(String, [(FormulaPrim, FormulaPrim)])] -- Named things x ^ n or y ^ n, n > 0
            -> Maybe Polynome
 translator [] [(var, coefs)] = do 
-        result <- mapM (\(rank,poly) -> (,) <$> evalCoeff rank <*> polynomize poly) coefs
+        result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
         return $ Polynome var result
 
-translator pow0 [(var, coefs)] = do 
-        result <- mapM (\(rank,poly) -> (,) <$> evalCoeff rank <*> polynomize poly) coefs
-        return . Polynome var $ (0, PolyCoeffFo $ BinOp OpAdd pow0):result
+translator pow0 [(var, coefs)] = do
+        result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
+        rest <- evalCoeff pow0
+        return . Polynome var $ (CoeffInt 0, PolyRest rest):result
 
 translator pow0 ((var,coefs):rest) = do
-    result <- mapM (\(rank,poly) -> (,) rank <$> polynomize poly) coefs
+    result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
     let subPolynome = translator pow0 rest
         finalList = case subPolynome of
                          Nothing -> result
-                         Just p -> (0, p) : result
+                         Just p -> (CoeffInt 0, p) : result
     return $ Polynome var finalList
 
-translator [pow0] [] = Just $ PolyCoeffFo pow0
-translator pow0 [] = Just $ PolyCoeffFo $ BinOp OpAdd pow0
-{-translator ba [] = error $ "EqManips.Algorithm.Polynome.translator " ++ "Empty bidule :-/"-}
+translator pow0 [] = PolyRest <$> evalCoeff pow0
 
--- | Try to transform a formula in polynome. Still not
--- finished.
+-- | Try to transform a formula in polynome.
 polynomize :: FormulaPrim -> Maybe Polynome
 polynomize (BinOp OpAdd lst) = translator pow0 
                              . packCoefs
@@ -148,7 +155,7 @@ polynomize (BinOp OpAdd lst) = translator pow0
                   coef ((_,c1,_):_) = c1
                   coef [] = error "EqManips.Algorithm.Polynome.polynomize.packCoefs.coef meh"
 
-polynomize a = Just $ PolyCoeffFo a
+polynomize _ = Nothing
 
 -- | Function in charge of extracting variable name (if any), and
 -- return the coeff function.
@@ -160,6 +167,25 @@ extractFirstTerm fullFormula@(BinOp OpMul lst) = varCoef lst
           varCoef ((Variable v):xs) = Left (v, CInteger 1, multify xs)
           varCoef _ = Right fullFormula
         
-          multify = opify OpMul
+          multify [] = error $ Err.empty_binop "Polynome.OpMul"
+          multify [x] = x
+          multify alist = BinOp OpMul alist
+
 extractFirstTerm a = Right a
+
+--------------------------------------------------
+----            Polynome instances
+--------------------------------------------------
+
+-- | polynome
+{-polyMap :: ((FormulaPrim, Polynome) -> (FormulaPrim, Polynome)) -> Polynome -> Polynome-}
+{-polyMap f (Polynome s lst) =-}
+
+{-polyOp :: Polynome-}
+{-polyOp op-}
+
+
+{-instance Num Polynome where-}
+    {-(Polynome v1 as) + (Polynome v2 bs)-}
+        {-| v1 == v2 =-}
 
