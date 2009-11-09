@@ -1,31 +1,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.Polynome( convertToPolynome, convertToFormula ) where
+module EqManips.Polynome( convertToPolynome, convertToFormula ) where
 
 import Control.Applicative( (<$>), (<*>) )
 import Control.Monad( join )
 import Data.Either( partitionEithers )
 import Data.List( groupBy, foldl' )
 import Data.Ratio
+
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
-
--- | Coefficient for polynoms
-data PolyCoeff =
-      CoeffFloat FloatingValue
-    | CoeffInt Integer
-    | CoeffRatio (Ratio Integer)
-    deriving (Eq, Show, Read)
-
--- | This type store polynome in a recursive way, as presented
--- in chapter 3 of "Algorithm for Computer Algebra". It's a
--- recursive linked list
-data Polynome =
-      Polynome String [(PolyCoeff, Polynome)]
-    | PolyRest PolyCoeff
-    deriving (Eq, Show, Read)
 
 -- | Given a formula, it'll try to convert it to a polynome.
 -- Formula should be expanded and in list form to get this
@@ -255,12 +241,12 @@ extractFirstTerm a = Right a
 
 -- | polynome mapping
 polyMap :: ((PolyCoeff, Polynome) -> (PolyCoeff, Polynome)) -> Polynome -> Polynome
-polyMap f (Polynome s lst) = $ map (polyMap f) lst
-polyMap f rest@(PolyRest _) = f (0, rest)
+polyMap f (Polynome s lst) = Polynome s $ map (\(c,p) -> (c, polyMap f p)) lst
+polyMap f rest@(PolyRest _) = snd $ f (CoeffInt 0, rest)
 
 -- | Little helpa fellow
 
-coeffOp :: (forall a. a -> a -> a) -> PolyCoeff -> PolyCoeff -> PolyCoeff
+coeffOp :: (forall a. (Num a) => a -> a -> a) -> PolyCoeff -> PolyCoeff -> PolyCoeff
 coeffOp op c1 c2 = eval $ samerizer c1 c2
     where eval (CoeffInt i1, CoeffInt i2) = CoeffInt $ i1 `op` i2
           eval (CoeffFloat f1, CoeffFloat f2) = CoeffFloat $ f1 `op` f2
@@ -309,21 +295,33 @@ isCoeffNull (CoeffFloat 0.0) = True
 isCoeffNull (CoeffRatio r) = numerator r == 0
 isCoeffNull _ = False
 
-polySimpleOp :: () -> Polynome -> Polynome -> Polynome
-polySimpleOp op (PolyRest c1) (PolyRest c2) = coeffOp op c1 c2
-polySimpleOp op (Polynome v1 ((coeff, def):xs)) (PolyRest c1)
-    | isCoeffNull coeff = Polynome v1 ((CoeffInt 0,coeffOpop def c1):xs)
-polySimpleOp op (PolyRest c1) (Polynome v1 ((coeff, def):xs))
-    | isCoeffNull coeff = Polynome v1 ((CoeffInt 0, coeffOp op c1 def):xs)
+polySimpleOp :: (forall a. (Num a) => a -> a -> a) -> Polynome -> Polynome -> Polynome
+polySimpleOp _ (Polynome _ []) _ = error Err.ill_formed_polynomial
+polySimpleOp _ _ (Polynome _ []) = error Err.ill_formed_polynomial
+polySimpleOp op (PolyRest c1) (PolyRest c2) = PolyRest $ coeffOp (flip op) c1 c2
+polySimpleOp op left@(PolyRest _) right@(Polynome _ _) = polySimpleOp (flip op) right left
+polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
+    | isCoeffNull coeff = case def of
+        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1):xs
+        _          -> Polynome v1 $ (coeff,polySimpleOp op def right):xs
+    | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1):as
 
-polySimpleOp op (Polynome v1@((c, d1):_) as) left@(Polynome v2 bs)
-    | v1 == v2 = lockStep op as bs
-    | v2 > v1 = polySimpleOp (Polynome v2 bs) (Polynome v1 as)
-    | isCoeffNull c = 
-    | otherwise = Polynome v1 $ (CoeffInt 0, left) : v1
+polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
+    | v2 > v1 = polySimpleOp op (Polynome v2 bs) (Polynome v1 as)
+    | v1 == v2 = Polynome v1 $ lockStep op as bs
+    | isCoeffNull c = case d1 of 
+          PolyRest a   -> polyMap executor left
+                where executor (c', PolyRest n) = (c', PolyRest $ coeffOp op a n)
+                      executor a' = a'
+          Polynome _ _ -> Polynome v1 $ (CoeffInt 0, polySimpleOp op d1 left) : rest
+    | otherwise = Polynome v1 $ (CoeffInt 0, left) : as
 
+instance Num Polynome where
+    (+) = polySimpleOp (+)
+    (-) = polySimpleOp (-)
+    (*) = error "Unimplemented"
+    abs = error "Unimplemented"
+    signum = error "Unimplemented"
+    fromInteger = error "Unimplemented"
 
-{-instance Num Polynome where-}
-    {-(+) = polySimpleOp (+)-}
-    {-(-) = polySimpleOp (-)-}
 

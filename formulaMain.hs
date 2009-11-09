@@ -23,7 +23,7 @@ import EqManips.InputParser.MathML
 
 -- Debugging
 import EqManips.Renderer.CharRender
-import EqManips.Algorithm.Polynome
+import EqManips.Polynome
 
 data Flag =
       Output

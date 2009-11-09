@@ -86,4 +86,4 @@ c_out_bad_binop = "The binary operator has a wrong internal form"
 --------------------------------------------------
 polynom_bad_casting = "Error, coefficients are not compatible, casting error"
 polynom_emptyCoeffPack = "Error, empty coeff, big bug!!"
-
+ill_formed_polynomial = "Error the polynome is ill formed, no element in it"
