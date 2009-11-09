@@ -1,7 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module EqManips.Algorithm.Polynome( convertToPolynome ) where
 
-import Control.Applicative
+import Control.Applicative( (<$>), (<*>) )
+import Control.Monad( join )
 import Data.Either( partitionEithers )
 import Data.List( groupBy, foldl' )
 import Data.Ratio
@@ -12,8 +13,11 @@ import qualified EqManips.ErrorMessages as Err
 
 import EqManips.Renderer.Ascii
 
-convertToPolynome :: Formula ListForm -> ([FormulaPrim], Maybe Polynome)
-convertToPolynome (Formula f) = ([prepareFormula f], polynomize $ prepareFormula f)
+-- | Given a formula, it'll try to convert it to a polynome.
+-- Formula should be expanded and in list form to get this
+-- function to work (nested shit shouldn't work)
+{-convertToPolynome :: Formula ListForm -> Maybe Polynome-}
+convertToPolynome (Formula f) = (prepareFormula f, polynomize $ prepareFormula f)
 
 -- | Flatten the formula, remove all the OpSub and replace them
 -- by OpAdd. Also bring lowest variables to the front, regardless of
@@ -86,9 +90,9 @@ resign = globalResign
 
           atomicResign (CInteger i) = Just $ CInteger (-i)
           atomicResign (CFloat i) = Just $ CFloat (-i)
+          atomicResign (UnOp OpNegate a) = Just a
           atomicResign (BinOp OpDiv [a,b]) = (\a' -> BinOp OpDiv [a', b]) <$> atomicResign a
           atomicResign a = Nothing
-
 -- | Flatten a whole formula, by flattening from the leafs.
 formulaFlatter :: FormulaPrim -> FormulaPrim
 formulaFlatter = depthFormulaPrimTraversal `asAMonad` listFlatter
@@ -104,39 +108,68 @@ listFlatter (BinOp OpSub ((BinOp OpAdd lst'):xs)) =
     BinOp OpAdd $ lst' ++ foldr resign [] xs
 listFlatter (BinOp OpSub (x:xs)) =
     BinOp OpAdd $ x : foldr resign [] xs
+
+-- Remove the maximum of negation in the multiplication.
+-- In the end, keep the needed negation into the first term
+listFlatter (BinOp OpMul lst) = if foldr countInversion False lst
+                then let (x:xs) = map cleanSign lst
+                     in BinOp OpMul $ resign x xs
+                else BinOp OpMul $ map cleanSign lst
+   where countInversion whole@(UnOp OpNegate _) acc =
+             if odd . fst $ getUnsignedRoot 0 whole
+                then not acc
+                else acc
+         countInversion _ acc = acc
+
+         getUnsignedRoot n (UnOp OpNegate something) = getUnsignedRoot (n+1) something
+         getUnsignedRoot n (something) = (n, something)
+
+         cleanSign whole@(UnOp OpNegate _) = snd $ getUnsignedRoot 0 whole
+         cleanSign a = a
+
 listFlatter a = a
 
+-- | Verify if the coefficient is valid in the context
+-- of polynomial. might add a reduction rule here.
 evalCoeff :: [FormulaPrim] -> Maybe PolyCoeff
 evalCoeff [CInteger i] = Just $ CoeffInt i
 evalCoeff [CFloat f] = Just $ CoeffFloat f
+evalCoeff [UnOp OpNegate (CInteger i)] = Just $ CoeffInt (-i)
+evalCoeff [UnOp OpNegate (CFloat f)] = Just $ CoeffFloat (-f)
 evalCoeff [BinOp OpDiv [CInteger a, CInteger b]] = Just . CoeffRatio $ a % b
+evalCoeff [UnOp OpNegate (BinOp OpDiv [CInteger a, CInteger b])] = Just . CoeffRatio $ (-a) % b
 evalCoeff _ = Nothing
 
-translator :: [FormulaPrim]                          -- Unnammed rest (var ^ 0)
+-- | Given a rest (a leading +c, where c is a constant) and
+-- a group of variable and coefficients, try to build a full
+-- blown polynomial out of it.
+translator :: [FormulaPrim]                            -- Unnammed rest (var ^ 0)
            -> [(String, [(FormulaPrim, FormulaPrim)])] -- Named things x ^ n or y ^ n, n > 0
-           -> Maybe Polynome
+           -> Maybe (Maybe Polynome)                   -- ^ First maybe: error, nested maybe: empty
 translator [] [(var, coefs)] = do 
         result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
-        return $ Polynome var result
+        return . Just $ Polynome var result
 
 translator pow0 [(var, coefs)] = do
         result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
         rest <- evalCoeff pow0
-        return . Polynome var $ (CoeffInt 0, PolyRest rest):result
+        return . Just . Polynome var $ (CoeffInt 0, PolyRest rest):result
 
 translator pow0 ((var,coefs):rest) = do
     result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
-    let subPolynome = translator pow0 rest
-        finalList = case subPolynome of
+    subPolynome <- translator pow0 rest
+    let finalList = case subPolynome of
                          Nothing -> result
                          Just p -> (CoeffInt 0, p) : result
-    return $ Polynome var finalList
+    return . Just $ Polynome var finalList
 
-translator pow0 [] = PolyRest <$> evalCoeff pow0
+translator pow0 [] = return $ PolyRest <$> evalCoeff pow0
 
 -- | Try to transform a formula in polynome.
 polynomize :: FormulaPrim -> Maybe Polynome
-polynomize (BinOp OpAdd lst) = translator pow0 
+polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula])
+polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don't distingate
+                             . translator pow0  -- cases at the upper level.
                              . packCoefs
                              $ varGroup polys
   where (polys, pow0) = partitionEithers $ map extractFirstTerm lst
