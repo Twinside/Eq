@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module EqManips.Algorithm.Polynome( convertToPolynome ) where
+{-# LANGUAGE Rank2Types #-}
+module EqManips.Algorithm.Polynome( convertToPolynome, convertToFormula ) where
 
 import Control.Applicative( (<$>), (<*>) )
 import Control.Monad( join )
@@ -11,13 +12,52 @@ import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
-import EqManips.Renderer.Ascii
+-- | Coefficient for polynoms
+data PolyCoeff =
+      CoeffFloat FloatingValue
+    | CoeffInt Integer
+    | CoeffRatio (Ratio Integer)
+    deriving (Eq, Show, Read)
+
+-- | This type store polynome in a recursive way, as presented
+-- in chapter 3 of "Algorithm for Computer Algebra". It's a
+-- recursive linked list
+data Polynome =
+      Polynome String [(PolyCoeff, Polynome)]
+    | PolyRest PolyCoeff
+    deriving (Eq, Show, Read)
 
 -- | Given a formula, it'll try to convert it to a polynome.
 -- Formula should be expanded and in list form to get this
 -- function to work (nested shit shouldn't work)
-{-convertToPolynome :: Formula ListForm -> Maybe Polynome-}
-convertToPolynome (Formula f) = (prepareFormula f, polynomize $ prepareFormula f)
+convertToPolynome :: Formula ListForm -> Maybe Polynome
+convertToPolynome (Formula f) = polynomize $ prepareFormula f
+
+
+convertToFormula :: Polynome -> Formula ListForm
+convertToFormula = Formula . convertToFormulaPrim
+
+-- | Convert a polynome into a simpler formula using only
+-- basic operators.
+convertToFormulaPrim :: Polynome -> FormulaPrim
+convertToFormulaPrim (PolyRest coeff) = coefToFormula coeff
+convertToFormulaPrim (Polynome var lst) = BinOp OpAdd $ map elemConverter lst
+    where fvar = Variable var
+          elemConverter (degree,def) = degreeOf (convertToFormulaPrim def) degree
+          degreeOf fdef degree = case coefToFormula degree of
+                   CInteger 0 -> fdef
+                   CInteger 1 -> fdef * fvar
+                   deg -> fdef * (fvar ** deg)
+
+-- | Conversion from coef to basic formula. ratio
+-- are converted to (a/b), like a division.
+coefToFormula :: PolyCoeff -> FormulaPrim
+coefToFormula (CoeffFloat f) = CFloat f
+coefToFormula (CoeffInt i) = CInteger i
+coefToFormula (CoeffRatio r) = if denominator r == 1
+        then CInteger $ numerator r
+        else (CInteger $ numerator r)
+           / (CInteger $ denominator r)
 
 -- | Flatten the formula, remove all the OpSub and replace them
 -- by OpAdd. Also bring lowest variables to the front, regardless of
@@ -44,8 +84,8 @@ prepareFormula = polySort . formulaFlatter
           sorter (BinOp OpPow (Variable v1:_))
                  (Variable v2) = compare v1 v2
 
-          sorter _ (BinOp OpPow (Variable v2:_)) = GT
-          sorter (BinOp OpPow (Variable v1:_)) _ = LT
+          sorter _ (BinOp OpPow (Variable _:_)) = GT
+          sorter (BinOp OpPow (Variable _:_)) _ = LT
 
           -- Rules to fine sort the '+' elements, lowest variable
           -- first (x before y), smallest order first (x before x ^ 15)
@@ -92,7 +132,8 @@ resign = globalResign
           atomicResign (CFloat i) = Just $ CFloat (-i)
           atomicResign (UnOp OpNegate a) = Just a
           atomicResign (BinOp OpDiv [a,b]) = (\a' -> BinOp OpDiv [a', b]) <$> atomicResign a
-          atomicResign a = Nothing
+          atomicResign _ = Nothing
+
 -- | Flatten a whole formula, by flattening from the leafs.
 formulaFlatter :: FormulaPrim -> FormulaPrim
 formulaFlatter = depthFormulaPrimTraversal `asAMonad` listFlatter
@@ -115,14 +156,16 @@ listFlatter (BinOp OpMul lst) = if foldr countInversion False lst
                 then let (x:xs) = map cleanSign lst
                      in BinOp OpMul $ resign x xs
                 else BinOp OpMul $ map cleanSign lst
-   where countInversion whole@(UnOp OpNegate _) acc =
-             if odd . fst $ getUnsignedRoot 0 whole
+   where iodd :: Int -> Bool
+         iodd = odd
+         countInversion whole@(UnOp OpNegate _) acc =
+             if iodd . fst $ getUnsignedRoot 0 whole
                 then not acc
                 else acc
          countInversion _ acc = acc
 
          getUnsignedRoot n (UnOp OpNegate something) = getUnsignedRoot (n+1) something
-         getUnsignedRoot n (something) = (n, something)
+         getUnsignedRoot n (something) = (n :: Int, something)
 
          cleanSign whole@(UnOp OpNegate _) = snd $ getUnsignedRoot 0 whole
          cleanSign a = a
@@ -179,14 +222,14 @@ polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don
         packCoefs :: [[(String,FormulaPrim,FormulaPrim)]] -> [(String, [(FormulaPrim,FormulaPrim)])]
         packCoefs varGrouped = map grouper varGrouped
             where nameOfGroup ((varName, _,_):_) = varName
-                  nameOfGroup [] = error "EqManips.Algorithm.Polynome.polynomize.packCoefs meh"
+                  nameOfGroup [] = error Err.polynom_emptyCoeffPack
 
                   grouper :: [(String,FormulaPrim,FormulaPrim)] -> (String, [(FormulaPrim,FormulaPrim)])
                   grouper lst' = (nameOfGroup lst'
                                  , [(coef group, BinOp OpAdd $ defs group) | group <- coeffGroup lst'])
                   defs = map (\(_,_,def) -> def)
                   coef ((_,c1,_):_) = c1
-                  coef [] = error "EqManips.Algorithm.Polynome.polynomize.packCoefs.coef meh"
+                  coef [] = error Err.polynom_emptyCoeffPack
 
 polynomize _ = Nothing
 
@@ -210,15 +253,77 @@ extractFirstTerm a = Right a
 ----            Polynome instances
 --------------------------------------------------
 
--- | polynome
-{-polyMap :: ((FormulaPrim, Polynome) -> (FormulaPrim, Polynome)) -> Polynome -> Polynome-}
-{-polyMap f (Polynome s lst) =-}
+-- | polynome mapping
+polyMap :: ((PolyCoeff, Polynome) -> (PolyCoeff, Polynome)) -> Polynome -> Polynome
+polyMap f (Polynome s lst) = $ map (polyMap f) lst
+polyMap f rest@(PolyRest _) = f (0, rest)
 
-{-polyOp :: Polynome-}
-{-polyOp op-}
+-- | Little helpa fellow
+
+coeffOp :: (forall a. a -> a -> a) -> PolyCoeff -> PolyCoeff -> PolyCoeff
+coeffOp op c1 c2 = eval $ samerizer c1 c2
+    where eval (CoeffInt i1, CoeffInt i2) = CoeffInt $ i1 `op` i2
+          eval (CoeffFloat f1, CoeffFloat f2) = CoeffFloat $ f1 `op` f2
+          eval (CoeffRatio r1, CoeffRatio r2) = CoeffRatio $ r1 `op` r2
+          eval _ = error Err.polynom_bad_casting 
+
+coeffPredicate :: (forall a. Ord a => a -> a -> Bool) -> PolyCoeff -> PolyCoeff -> Bool
+coeffPredicate op c1 c2 = eval $ samerizer c1 c2
+    where eval (CoeffInt i1, CoeffInt i2) = i1 `op` i2
+          eval (CoeffFloat f1, CoeffFloat f2) = f1 `op` f2
+          eval (CoeffRatio r1, CoeffRatio r2) = r1 `op` r2
+          eval _ = error Err.polynom_bad_casting 
+
+-- | Samerizer autocast to the same level
+samerizer :: PolyCoeff -> PolyCoeff -> (PolyCoeff, PolyCoeff)
+samerizer (CoeffInt i1) (CoeffInt i2) = (CoeffInt i1, CoeffInt i2)
+samerizer (CoeffFloat f1) (CoeffFloat f2) = (CoeffFloat f1,CoeffFloat f2)
+samerizer (CoeffRatio r1) (CoeffRatio r2) = (CoeffRatio r1, CoeffRatio r2)
+samerizer (CoeffInt i1) (CoeffRatio r2) = (CoeffRatio $ i1 % 1, CoeffRatio r2)
+samerizer (CoeffRatio r1) (CoeffInt i2) = (CoeffRatio r1, CoeffRatio $ i2 % 1)
+samerizer (CoeffInt i1) (CoeffFloat f2) = (CoeffFloat $ fromInteger i1, CoeffFloat f2)
+samerizer (CoeffFloat f1) (CoeffInt i2) = (CoeffFloat f1, CoeffFloat $ fromInteger i2)
+samerizer (CoeffFloat f1) (CoeffRatio r2) = (CoeffFloat f1, CoeffFloat $ fromRational r2)
+samerizer (CoeffRatio r1) (CoeffFloat f2) = (CoeffFloat $ fromRational r1, CoeffFloat f2)
+
+inf :: PolyCoeff -> PolyCoeff -> Bool
+inf = coeffPredicate ((<) :: forall a. (Ord a) => a -> a -> Bool)
+
+-- | Implement the same idea that the one used by the
+-- mergesort, only this time it's only used to perform
+-- addition or substraction on polynomial.
+lockStep :: (Polynome -> Polynome -> Polynome)
+         -> [(PolyCoeff, Polynome)] -> [(PolyCoeff, Polynome)]
+         -> [(PolyCoeff, Polynome)]
+lockStep  _ xs [] = xs
+lockStep  _ [] ys = ys
+lockStep op whole1@((c1, def1):xs) whole2@((c2, def2):ys)
+    | c1 `inf` c2 = (c1, def1) : lockStep op xs whole2
+    | c1  ==   c2 = (c1, def1 `op` def2) : lockStep op xs ys
+    | otherwise   = (c2, def2) : lockStep op whole1 ys
+
+-- | Tell if a coefficient can be treated as Null
+isCoeffNull :: PolyCoeff -> Bool
+isCoeffNull (CoeffInt 0) = True
+isCoeffNull (CoeffFloat 0.0) = True
+isCoeffNull (CoeffRatio r) = numerator r == 0
+isCoeffNull _ = False
+
+polySimpleOp :: () -> Polynome -> Polynome -> Polynome
+polySimpleOp op (PolyRest c1) (PolyRest c2) = coeffOp op c1 c2
+polySimpleOp op (Polynome v1 ((coeff, def):xs)) (PolyRest c1)
+    | isCoeffNull coeff = Polynome v1 ((CoeffInt 0,coeffOpop def c1):xs)
+polySimpleOp op (PolyRest c1) (Polynome v1 ((coeff, def):xs))
+    | isCoeffNull coeff = Polynome v1 ((CoeffInt 0, coeffOp op c1 def):xs)
+
+polySimpleOp op (Polynome v1@((c, d1):_) as) left@(Polynome v2 bs)
+    | v1 == v2 = lockStep op as bs
+    | v2 > v1 = polySimpleOp (Polynome v2 bs) (Polynome v1 as)
+    | isCoeffNull c = 
+    | otherwise = Polynome v1 $ (CoeffInt 0, left) : v1
 
 
 {-instance Num Polynome where-}
-    {-(Polynome v1 as) + (Polynome v2 bs)-}
-        {-| v1 == v2 =-}
+    {-(+) = polySimpleOp (+)-}
+    {-(-) = polySimpleOp (-)-}
 

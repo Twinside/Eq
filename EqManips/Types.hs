@@ -44,6 +44,7 @@ import Data.List( foldl', foldl1' )
 import Data.Maybe( fromJust )
 
 import EqManips.Propreties
+import EqManips.Polynome
 
 import Text.Parsec.Expr
 import Text.Parsec
@@ -174,23 +175,6 @@ data ListForm
 data TreeForm
 -- | Ok the data doesn't have any specific form
 {-data NoForm-}
-
--- | Coefficient for polynoms
-data PolyCoeff =
-      CoeffFloat FloatingValue
-    | CoeffInt Integer
-    | CoeffRatio (Ratio Integer)
-    deriving (Eq, Show, Read)
-
--- | This type store polynome in a recursive way, as presented
--- in chapter 3 of "Algorithm for Computer Algebra". It's a
--- recursive linked list
-data Polynome =
-      Polynome String [(PolyCoeff, Polynome)]
-    | PolyRest PolyCoeff
-    deriving (Eq, Show, Read)
-
-{-data PowerSerie-}
 
 infixl 4 <<>>
 
