@@ -1,6 +1,7 @@
 module EqManips.Renderer.Latex ( latexRender, latexRenderS ) where
 
 import EqManips.Types
+import EqManips.Polynome
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
 
@@ -60,6 +61,7 @@ lno :: FormulaPrim -> ShowS
 lno = l (Nothing, False)
 
 l :: (Maybe BinOperator, Bool) -> FormulaPrim -> ShowS
+l op (Poly p) = l op . unTagFormula . treeIfyFormula $ convertToFormula p
 l _ (Block _ _ _) = str "block"
 l _ (Variable v) = str v
 l _ (NumEntity e) = str $ latexOfEntity e

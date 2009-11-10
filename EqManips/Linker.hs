@@ -14,6 +14,8 @@ linkFormula (Formula a) = Formula $ link a
 -- It's a crude way to do it... 
 -- may need to change it to a real symbol table later
 link :: FormulaPrim -> FormulaPrim
+-- Nothing to see here.
+link p@(Poly _) = p
 link (Variable "infinite") = NumEntity Infinite
 link (Variable "pi") = NumEntity Pi
 -- Meta cases

@@ -42,6 +42,8 @@ derivationRules evaluator variable (Formula func) = d func variable
            let (Formula evaluated) = treeIfyFormula formula
            d evaluated var
 
+       -- TODO : I'm sure we can make an efficient derivation here.
+       d (Poly _) _ = error "Algorithm/Derivative - Polynome derivation is unimplemented"
        d (Variable v) var
            | v == var = return $ int 1
            | otherwise = return $ int 0

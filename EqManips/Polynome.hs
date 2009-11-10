@@ -1,6 +1,10 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Polynome( convertToPolynome, convertToFormula ) where
+module EqManips.Polynome( convertToPolynome
+                        , convertToFormula
+                        , polyMap
+                        ) where
 
 import Control.Applicative( (<$>), (<*>) )
 import Control.Monad( join )

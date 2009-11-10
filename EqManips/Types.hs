@@ -44,6 +44,7 @@ import Data.List( foldl', foldl1' )
 import Data.Maybe( fromJust )
 
 import EqManips.Propreties
+import {-# SOURCE #-} EqManips.Polynome
 
 import Text.Parsec.Expr
 import Text.Parsec
@@ -152,6 +153,9 @@ data FormulaPrim =
 
     -- | Width, Height, all formulas
     | Matrix Int Int [[FormulaPrim]]
+
+    -- | Form that can be used to make nice simplification.
+    | Poly Polynome
 
     -- | Used for debug
     | Block Int Int Int
@@ -520,6 +524,7 @@ unparseS  = deparse maxPrio False
 deparse :: Int -> Bool -> FormulaPrim -> ShowS
 -- INVISIBLE META NINJA !!
 deparse i r (Meta op f) = (++) (show op) . ('(' :) . deparse i r f . (')':)
+deparse i r (Poly p) = deparse i r . unTagFormula $ convertToFormula p
 deparse _ _ (Truth True) = ("true" ++)
 deparse _ _ (Truth False) = ("false" ++)
 deparse _ _ (BinOp _ []) =

@@ -40,6 +40,7 @@ reBoundVar (Lambda clauses) =
     Just $ concat [concatMap collectSymbols args
                         | (args, _) <- clauses]
 
+reBoundVar (Poly _) = Nothing
 reBoundVar (Variable _) = Nothing
 reBoundVar (NumEntity _) = Nothing
 reBoundVar (CInteger _) = Nothing

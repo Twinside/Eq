@@ -49,6 +49,7 @@ depthPrimTraversal :: (Monad m)
                    -> (FormulaPrim -> m FormulaPrim)
                    -> FormulaPrim
                    -> m FormulaPrim
+depthPrimTraversal _ f p@(Poly _) = f p
 depthPrimTraversal _ f v@(Variable _) = f v
 depthPrimTraversal _ f i@(CInteger _) = f i
 depthPrimTraversal _ f d@(CFloat _) = f d

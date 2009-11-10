@@ -217,6 +217,7 @@ isFormulaInteger :: FormulaPrim -> Bool
 isFormulaInteger = getAll . foldf isConstant mempty
     where isConstant (Variable _) _ = All False
           isConstant (Sum _ _ _) _ = All False
+          isConstant (Poly _) _ = All False
           isConstant (Product _ _ _) _ = All False
           isConstant (Derivate _ _) _ = All False
           isConstant (Integrate _ _ _ _) _ = All False
@@ -247,6 +248,7 @@ isFormulaInteger = getAll . foldf isConstant mempty
 isFormulaConstant :: FormulaPrim -> Bool
 isFormulaConstant = getAll . foldf isConstant mempty
     where isConstant (Variable _) _ = All False
+          isConstant (Poly _) _ = All False
           isConstant (Sum _ _ _) _ = All False
           isConstant (Product _ _ _) _ = All False
           isConstant (Derivate _ _) _ = All False

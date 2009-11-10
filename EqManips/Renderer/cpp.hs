@@ -4,7 +4,9 @@ module EqManips.Renderer.Cpp( convertToCpp, convertToCppS ) where
 import Control.Monad.State.Lazy
 import Control.Applicative
 import Data.Maybe
+
 import EqManips.Types
+import EqManips.Polynome
 import EqManips.Algorithm.Utils
 import qualified EqManips.ErrorMessages as Err
 
@@ -89,6 +91,7 @@ unOpEr OpACosh = ""
 unOpEr OpATanh = ""
 
 cOut :: Maybe (BinOperator, Bool) -> FormulaPrim -> OutContext ShowS
+cOut ctxt (Poly p) = cOut ctxt (unTagFormula . treeIfyFormula $ convertToFormula p)
 cOut _ (CInteger i) = return $ shows i
 cOut _ (CFloat i) = return $ shows i
 cOut _ (Variable v) = return $ str v

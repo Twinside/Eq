@@ -280,6 +280,10 @@ renderF :: FormulaPrim -- ^ CurrentNode
 -- INVISIBLE META NINJA
 renderF (Meta _ f) node pos = renderF f node pos
 
+renderF (Poly p) node pos =
+    renderF translated node pos
+        where translated = unTagFormula . treeIfyBinOp $ convertToFormula p
+
 -- In the following matches, we render parenthesis and
 -- then recurse to the normal flow for the regular render.
 renderF node (MonoSizeNode True (base, dim) st) (x,y) =
