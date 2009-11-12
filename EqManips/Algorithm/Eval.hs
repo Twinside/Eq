@@ -169,13 +169,8 @@ division _ f1 f2@(CFloat 0) = do
     eqPrimFail (f1 / f2) Err.div_by_0
     left $ Block 1 1 1
 
-division _ f1@(CInteger i1) f2@(CInteger i2)
+division _ (CInteger i1) (CInteger i2)
     | i1 `mod` i2 == 0 = left . CInteger $ i1 `div` i2
-    | otherwise = if greatestCommonDenominator > 1
-                        then left $ (CInteger $ i1 `quot` greatestCommonDenominator)
-                                  / (CInteger $ i2 `quot` greatestCommonDenominator)
-                        else right (f1,f2)
-        where greatestCommonDenominator = gcd i1 i2
 
 division evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (/) m s >>= left
 division evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (/) m s >>= left
