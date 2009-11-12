@@ -5,6 +5,7 @@ import EqManips.Algorithm.Cleanup
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.Latex
 import EqManips.Renderer.Mathml
+import EqManips.Renderer.Sexpr
 import System.Exit
 import System.IO
 import System.Console.GetOpt
@@ -122,7 +123,7 @@ transformParseFormula operation args = do
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"
-               hPutStrLn finalFile . show $ result rez
+               hPutStrLn finalFile . sexprRender $ result rez
 #endif
                printErrors $ errorList rez
                hPutStr finalFile . formatFormula . treeIfyFormula $ result rez
