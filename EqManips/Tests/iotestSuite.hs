@@ -12,7 +12,7 @@ import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Expand
 import EqManips.Algorithm.Eval
 import EqManips.Algorithm.EmptyMonad
-
+import EqManips.Renderer.EqCode
 import EqManips.Tests.FullGenerator()
 import EqManips.Tests.ContinuousGenerator()
 

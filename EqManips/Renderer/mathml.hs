@@ -5,6 +5,7 @@ import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
 import EqManips.Renderer.Latex
+import EqManips.Renderer.EqCode
 
 mathmlRender :: Formula TreeForm -> String
 mathmlRender (Formula f) =
