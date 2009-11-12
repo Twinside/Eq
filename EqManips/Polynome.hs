@@ -4,6 +4,8 @@
 module EqManips.Polynome( convertToPolynome
                         , convertToFormula
                         , polyMap
+                        , polyCoeffMap 
+                        , scalarToCoeff
                         ) where
 
 import Control.Applicative( (<$>), (<*>) )
@@ -243,14 +245,26 @@ extractFirstTerm a = Right a
 ----            Polynome instances
 --------------------------------------------------
 
+-- | Only to map on the polynome coefficients (not the degree
+-- of it).
+polyCoeffMap :: (PolyCoeff -> PolyCoeff) -> Polynome -> Polynome
+polyCoeffMap f = polyMap (\(c,p) -> (f c, p))
+
 -- | polynome mapping
 polyMap :: ((PolyCoeff, Polynome) -> (PolyCoeff, Polynome)) -> Polynome -> Polynome
 polyMap f (Polynome s lst) = Polynome s $ map (\(c,p) -> (c, polyMap f p)) lst
 polyMap f rest@(PolyRest _) = snd $ f (CoeffInt 0, rest)
 
+scalarToCoeff :: FormulaPrim -> PolyCoeff
+scalarToCoeff (CFloat f) = CoeffFloat f
+scalarToCoeff (CInteger i) = CoeffInt i
+scalarToCoeff (BinOp OpDiv [CInteger a, CInteger b]) = CoeffRatio $ a % b
+scalarToCoeff _ = error Err.polynom_coeff_notascalar
+
 -- | Little helpa fellow
 
-coeffOp :: (forall a. (Num a) => a -> a -> a) -> PolyCoeff -> PolyCoeff -> PolyCoeff
+coeffOp :: (forall a. (Num a) => a -> a -> a)
+        -> PolyCoeff -> PolyCoeff -> PolyCoeff
 coeffOp op c1 c2 = eval $ samerizer c1 c2
     where eval (CoeffInt i1, CoeffInt i2) = CoeffInt $ i1 `op` i2
           eval (CoeffFloat f1, CoeffFloat f2) = CoeffFloat $ f1 `op` f2
@@ -319,6 +333,38 @@ polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
                       executor a' = a'
           Polynome _ _ -> Polynome v1 $ (CoeffInt 0, polySimpleOp op d1 left) : rest
     | otherwise = Polynome v1 $ (CoeffInt 0, left) : as
+
+instance Num PolyCoeff  where
+    fromInteger = CoeffInt
+    (+)  = coeffOp (+)
+    (-)  = coeffOp (-)
+    (*)  = coeffOp (*)
+
+    abs (CoeffInt i) = CoeffInt $ abs i
+    abs (CoeffFloat f) = CoeffFloat $ abs f
+    abs (CoeffRatio r) = CoeffRatio $ abs r
+
+    signum (CoeffInt i) = CoeffInt $ signum i
+    signum (CoeffFloat f) = CoeffFloat $ signum f
+    signum (CoeffRatio r) = CoeffRatio $ signum r
+
+instance Fractional PolyCoeff where
+    a / b = case samerizer a b of
+        (CoeffInt i1, CoeffInt i2) -> if i1 `mod` i2 == 0
+                        then CoeffInt $ i1 `div` i2
+                        else CoeffRatio $ i1 % i2
+        (CoeffFloat f1, CoeffFloat f2) -> CoeffFloat $ f1 / f2
+        (CoeffRatio r1, CoeffRatio r2) -> CoeffRatio $ r1 / r2
+        _ -> error Err.polynom_bad_casting 
+
+    recip (CoeffFloat f) = CoeffFloat $ recip f 
+    recip (CoeffInt i) = CoeffRatio $ 1 % i
+    recip (CoeffRatio r) = if denominator r' == 1
+                then CoeffInt $ numerator r'
+                else CoeffRatio r'
+        where r' = recip r
+
+    fromRational = CoeffRatio
 
 instance Num Polynome where
     (+) = polySimpleOp (+)
