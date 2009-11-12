@@ -5,7 +5,7 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , treeIfyFormula,  treeIfyBinOp 
                                 , listifyFormula, listifyBinOp 
                                 , isFormulaConstant, isFormulaConstant' 
-                                , isFormulaInteger 
+                                , isFormulaInteger, isFormulaScalar 
                                 , parseFormula
                                 , parseProgramm 
                                 , sortFormula, invSortFormula, sortBinOp  
@@ -243,6 +243,10 @@ isFormulaInteger = getAll . foldf isConstant mempty
           isValidUnop OpFloor _ = All True
           isValidUnop _ _ = All False
 
+isFormulaScalar :: FormulaPrim -> Bool
+isFormulaScalar (CFloat _) = True
+isFormulaScalar (CInteger _) = True
+isFormulaScalar _ = False
 
 -- | Tell if a formula can be reduced to a scalar somehow
 isFormulaConstant :: FormulaPrim -> Bool

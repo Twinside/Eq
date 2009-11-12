@@ -11,6 +11,7 @@ import EqManips.Types
 import EqManips.Renderer.Placer
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
+import EqManips.Polynome
 
 import CharArray
 type Pos = (Int, Int)
@@ -282,7 +283,9 @@ renderF (Meta _ f) node pos = renderF f node pos
 
 renderF (Poly p) node pos =
     renderF translated node pos
-        where translated = unTagFormula . treeIfyBinOp $ convertToFormula p
+        where translated = unTagFormula 
+                         . treeIfyFormula
+                         $ convertToFormula p
 
 -- In the following matches, we render parenthesis and
 -- then recurse to the normal flow for the regular render.

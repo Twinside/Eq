@@ -110,6 +110,10 @@ evalGlobalStatement evaluator (Formula e) = do
 -----------------------------------------------
 add :: EvalFun -> EvalOp
 add _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 + i2
+add _ (Poly p1) (Poly p2) = left . Poly $ p1 + p2
+{-add _ (Poly p) v2 | isScalar v2 =-}
+{-add _ v1 (Poly p) | isScalar v1 =-}
+
 add evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
     matrixMatrixSimple evaluator (+) f1 f2
 add _ f1@(Matrix _ _ _) f2 = do
@@ -118,7 +122,6 @@ add _ f1@(Matrix _ _ _) f2 = do
 add _ f1 f2@(Matrix _ _ _) = do
     eqPrimFail (f1+f2) Err.add_matrix
     right (f1, f2)
-
 add _ e e' = right (e, e')
 
 -----------------------------------------------
@@ -126,6 +129,7 @@ add _ e e' = right (e, e')
 -----------------------------------------------
 sub :: EvalFun -> EvalOp
 sub _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 - i2
+sub _ (Poly p1) (Poly p2) = left . Poly $ p1 - p2
 sub evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
     matrixMatrixSimple evaluator (-) f1 f2
 sub _ f1@(Matrix _ _ _) f2 = do
@@ -141,6 +145,7 @@ sub _ e e' = right (e,e')
 -----------------------------------------------
 mul :: EvalFun -> EvalOp
 mul _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 * i2
+mul _ (Poly p1) (Poly p2) = left . Poly $ p1 * p2
 mul evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) = matrixMatrixMul evaluator f1 f2
 mul evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (*) m s >>= left
 mul evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (*) m s >>= left
@@ -164,8 +169,14 @@ division _ f1 f2@(CFloat 0) = do
     eqPrimFail (f1 / f2) Err.div_by_0
     left $ Block 1 1 1
 
-division _ (CInteger i1) (CInteger i2)
+division _ f1@(CInteger i1) f2@(CInteger i2)
     | i1 `mod` i2 == 0 = left . CInteger $ i1 `div` i2
+    | otherwise = if greatestCommonDenominator > 1
+                        then left $ (CInteger $ i1 `quot` greatestCommonDenominator)
+                                  / (CInteger $ i2 `quot` greatestCommonDenominator)
+                        else right (f1,f2)
+        where greatestCommonDenominator = gcd i1 i2
+
 division evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (/) m s >>= left
 division evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (/) m s >>= left
 division _ f1 f2 = right (f1, f2)
@@ -299,14 +310,16 @@ binEval op f inv formulaList
     | otherwise = do
         biAssocM f inv formulaList >>= return . binOp op
 
+metaEvaluation :: EvalFun -> MetaOperation -> EvalFun
+metaEvaluation evaluator m f = unTagFormula
+              <$> metaEval (taggedEvaluator evaluator) m (Formula f)
+
 -----------------------------------------------
 ----        General evaluation
 -----------------------------------------------
 -- | General evaluation/reduction function
 eval :: EvalFun -> EvalFun
-eval evaluator (Meta m f) = unTagFormula
-                        <$> metaEval (taggedEvaluator evaluator) m (Formula f)
-
+eval evaluator (Meta m f) = metaEvaluation evaluator m f
 eval _ (NumEntity Pi) = return $ CFloat pi
 eval evaluator (Matrix n m mlines) = do
     cells <- sequence [mapM evaluator line | line <- mlines]
@@ -389,6 +402,9 @@ eval evaluator (UnOp OpNegate f) = fNegate =<< evaluator f
 eval evaluator (UnOp OpAbs f) = fAbs =<< evaluator f
 
 eval evaluator (UnOp op f) = return . UnOp op =<< evaluator f
+
+eval evaluator (Derivate what (Meta op var)) =
+    metaEvaluation evaluator op var >>= (\a -> eval evaluator (Derivate what a))
 
 eval evaluator (Derivate what (Variable s)) = do
 #ifdef _DEBUG
