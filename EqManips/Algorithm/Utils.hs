@@ -6,8 +6,6 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , listifyFormula, listifyBinOp 
                                 , isFormulaConstant, isFormulaConstant' 
                                 , isFormulaInteger, isFormulaScalar 
-                                , parseFormula
-                                , parseProgramm 
                                 , sortFormula, invSortFormula, sortBinOp  
 
                                 , nodeCount     -- ^ Count nodes in basic formula
@@ -22,27 +20,15 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
 
 import qualified Data.Monoid as Monoid
 import Data.Monoid( All( .. ), mempty )
-import Text.Parsec.Error( ParseError )
-import Text.ParserCombinators.Parsec.Prim( runParser )
 import EqManips.Algorithm.EmptyMonad
 import EqManips.Propreties
 import EqManips.Types
 import EqManips.FormulaIterator
-import EqManips.Linker
 import Data.List( foldl', sortBy )
 
 -----------------------------------------------------------
 --          Parsing formula
 -----------------------------------------------------------
--- | Helper function to parse a formula and apply all
--- needed algorithm to be able to apply them
-parseFormula :: String -> Either ParseError (Formula ListForm)
-parseFormula text = case runParser expr () "FromFile" text of
-             Left e -> Left e
-             Right f -> Right . listifyFormula
-                              . linkFormula
-                              $ Formula f
-
 -- | Count the number of nodes in a formula.
 nodeCount :: FormulaPrim -> Int
 nodeCount f = Monoid.getSum $ foldf 
@@ -72,16 +58,6 @@ invSortFormula (Formula f) =
               invOrd GT = LT
               invOrd LT = GT
               invOrd EQ = EQ
-
--- | Helper function to use to parse a programm.
--- Perform some transformations to get a usable
--- formula.
-parseProgramm :: String -> Either ParseError [Formula ListForm]
-parseProgramm text = rez
-    where parsed = runParser program () "FromFile" text
-          rez = case parsed of
-                 Left a -> Left a
-                 Right f -> Right $ map (listifyFormula . linkFormula . Formula) f
 
 -- | listify a whole formula
 listifyFormula :: Formula TreeForm -> Formula ListForm

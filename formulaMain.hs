@@ -21,6 +21,7 @@ import EqManips.Preprocessor
 
 import EqManips.BaseLibrary
 import EqManips.InputParser.MathML
+import EqManips.InputParser.EqCode
 
 -- Debugging
 import EqManips.Renderer.CharRender

@@ -7,6 +7,7 @@ import Text.Parsec.Error( ParseError )
 
 import EqManips.Algorithm.Eval
 import EqManips.Algorithm.Utils
+import EqManips.InputParser.EqCode
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.Cpp
 import EqManips.EvaluationContext
