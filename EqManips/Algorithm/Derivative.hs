@@ -7,6 +7,7 @@ import Data.Monoid( Monoid( .. ), Any( .. ) )
 import qualified EqManips.ErrorMessages as Err
 
 import EqManips.Types
+import EqManips.Polynome
 import EqManips.EvaluationContext
 import EqManips.Algorithm.MetaEval
 import EqManips.Algorithm.Inject
@@ -42,8 +43,29 @@ derivationRules evaluator variable (Formula func) = d func variable
            let (Formula evaluated) = treeIfyFormula formula
            d evaluated var
 
-       -- TODO : I'm sure we can make an efficient derivation here.
-       d (Poly _) _ = error "Algorithm/Derivative - Polynome derivation is unimplemented"
+       -- Poloynome with only ^ 0, degenerated case, but
+       -- must handle it
+       d f@(Poly (PolyRest _)) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_bad_form_scalar
+       d f@(Poly (Polynome _ [])) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_empty
+       d (Poly (Polynome v coefs@((c,sub):xs))) var
+            | v /= var && isCoeffNull c = case sub of
+                    Polynome _ _ -> d (Poly sub) var
+                    coeff -> return $ Poly coeff
+            | v /= var = return $ int 0
+            | otherwise = do
+                let coefHead = if isCoeffNull c then xs else coefs
+                poly' <- mapM (\(coef, subPoly) -> do
+                                    sub' <- d (Poly subPoly) var
+                                    case sub' of
+                                     Poly r@(PolyRest _) -> return (coef - CoeffInt 1, PolyRest coef * r)
+                                     a -> let (Just a') = convertToPolynome $ Formula a
+                                          in return (coef - CoeffInt 1, a' * PolyRest coef)) coefHead
+                case poly' of
+                     [(lastCoeff,constant)] -> if isCoeffNull lastCoeff
+                                           then return . unTagFormula $ convertToFormula constant
+                                           else return . Poly $ Polynome v poly'
+                     p -> return . Poly $ Polynome v p
+
        d (Variable v) var
            | v == var = return $ int 1
            | otherwise = return $ int 0

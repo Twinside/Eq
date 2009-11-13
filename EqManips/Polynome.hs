@@ -6,6 +6,7 @@ module EqManips.Polynome( convertToPolynome
                         , polyMap
                         , polyCoeffMap 
                         , scalarToCoeff
+                        , isCoeffNull 
                         ) where
 
 import Control.Applicative( (<$>), (<*>) )
