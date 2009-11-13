@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE Rank2Types #-}
 module EqManips.Types
          ( FormulaPrim( .. )
          , Formula( .. )
@@ -24,6 +25,7 @@ module EqManips.Types
 
          , MetaOperation( .. )
          , Polynome( .. ), PolyCoeff( .. )
+         , coeffPredicate, polyCoeffCast 
          , foldf
          , canDistributeOver 
          , distributeOver 
@@ -31,6 +33,7 @@ module EqManips.Types
 
 import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
+import qualified EqManips.ErrorMessages as Err
 
 import Data.Ratio
 import Data.List( foldl', foldl1' )
@@ -172,7 +175,7 @@ data PolyCoeff =
       CoeffFloat FloatingValue
     | CoeffInt Integer
     | CoeffRatio (Ratio Integer)
-    deriving (Eq, Show, Read)
+    deriving (Show, Read)
 
 -- | This type store polynome in a recursive way, as presented
 -- in chapter 3 of "Algorithm for Computer Algebra". It's a
@@ -181,6 +184,28 @@ data Polynome =
       Polynome String [(PolyCoeff, Polynome)]
     | PolyRest PolyCoeff
     deriving (Eq, Show, Read)
+
+instance Eq PolyCoeff where
+    (==) = coeffPredicate (==)
+
+coeffPredicate :: (forall a. Ord a => a -> a -> Bool) -> PolyCoeff -> PolyCoeff -> Bool
+coeffPredicate op c1 c2 = eval $ polyCoeffCast c1 c2
+    where eval (CoeffInt i1, CoeffInt i2) = i1 `op` i2
+          eval (CoeffFloat f1, CoeffFloat f2) = f1 `op` f2
+          eval (CoeffRatio r1, CoeffRatio r2) = r1 `op` r2
+          eval _ = error Err.polynom_bad_casting 
+
+-- | polyCoeffCast autocast to the same level
+polyCoeffCast :: PolyCoeff -> PolyCoeff -> (PolyCoeff, PolyCoeff)
+polyCoeffCast (CoeffInt i1) (CoeffInt i2) = (CoeffInt i1, CoeffInt i2)
+polyCoeffCast (CoeffFloat f1) (CoeffFloat f2) = (CoeffFloat f1,CoeffFloat f2)
+polyCoeffCast (CoeffRatio r1) (CoeffRatio r2) = (CoeffRatio r1, CoeffRatio r2)
+polyCoeffCast (CoeffInt i1) (CoeffRatio r2) = (CoeffRatio $ i1 % 1, CoeffRatio r2)
+polyCoeffCast (CoeffRatio r1) (CoeffInt i2) = (CoeffRatio r1, CoeffRatio $ i2 % 1)
+polyCoeffCast (CoeffInt i1) (CoeffFloat f2) = (CoeffFloat $ fromInteger i1, CoeffFloat f2)
+polyCoeffCast (CoeffFloat f1) (CoeffInt i2) = (CoeffFloat f1, CoeffFloat $ fromInteger i2)
+polyCoeffCast (CoeffFloat f1) (CoeffRatio r2) = (CoeffFloat f1, CoeffFloat $ fromRational r2)
+polyCoeffCast (CoeffRatio r1) (CoeffFloat f2) = (CoeffFloat $ fromRational r1, CoeffFloat f2)
 
 infixl 4 <<>>
 

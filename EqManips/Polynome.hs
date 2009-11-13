@@ -11,7 +11,7 @@ module EqManips.Polynome( convertToPolynome
 import Control.Applicative( (<$>), (<*>) )
 import Control.Monad( join )
 import Data.Either( partitionEithers )
-import Data.List( groupBy, foldl' )
+import Data.List( sortBy, groupBy, foldl' )
 import Data.Ratio
 
 import EqManips.Types
@@ -263,32 +263,16 @@ scalarToCoeff _ = error Err.polynom_coeff_notascalar
 
 -- | Little helpa fellow
 
+-- | Operation on polynome coefficients. Put there
+-- to provide automatic Equality derivation for polynome
+-- and in the end... Formula
 coeffOp :: (forall a. (Num a) => a -> a -> a)
         -> PolyCoeff -> PolyCoeff -> PolyCoeff
-coeffOp op c1 c2 = eval $ samerizer c1 c2
+coeffOp op c1 c2 = eval $ polyCoeffCast c1 c2
     where eval (CoeffInt i1, CoeffInt i2) = CoeffInt $ i1 `op` i2
           eval (CoeffFloat f1, CoeffFloat f2) = CoeffFloat $ f1 `op` f2
           eval (CoeffRatio r1, CoeffRatio r2) = CoeffRatio $ r1 `op` r2
           eval _ = error Err.polynom_bad_casting 
-
-coeffPredicate :: (forall a. Ord a => a -> a -> Bool) -> PolyCoeff -> PolyCoeff -> Bool
-coeffPredicate op c1 c2 = eval $ samerizer c1 c2
-    where eval (CoeffInt i1, CoeffInt i2) = i1 `op` i2
-          eval (CoeffFloat f1, CoeffFloat f2) = f1 `op` f2
-          eval (CoeffRatio r1, CoeffRatio r2) = r1 `op` r2
-          eval _ = error Err.polynom_bad_casting 
-
--- | Samerizer autocast to the same level
-samerizer :: PolyCoeff -> PolyCoeff -> (PolyCoeff, PolyCoeff)
-samerizer (CoeffInt i1) (CoeffInt i2) = (CoeffInt i1, CoeffInt i2)
-samerizer (CoeffFloat f1) (CoeffFloat f2) = (CoeffFloat f1,CoeffFloat f2)
-samerizer (CoeffRatio r1) (CoeffRatio r2) = (CoeffRatio r1, CoeffRatio r2)
-samerizer (CoeffInt i1) (CoeffRatio r2) = (CoeffRatio $ i1 % 1, CoeffRatio r2)
-samerizer (CoeffRatio r1) (CoeffInt i2) = (CoeffRatio r1, CoeffRatio $ i2 % 1)
-samerizer (CoeffInt i1) (CoeffFloat f2) = (CoeffFloat $ fromInteger i1, CoeffFloat f2)
-samerizer (CoeffFloat f1) (CoeffInt i2) = (CoeffFloat f1, CoeffFloat $ fromInteger i2)
-samerizer (CoeffFloat f1) (CoeffRatio r2) = (CoeffFloat f1, CoeffFloat $ fromRational r2)
-samerizer (CoeffRatio r1) (CoeffFloat f2) = (CoeffFloat $ fromRational r1, CoeffFloat f2)
 
 inf :: PolyCoeff -> PolyCoeff -> Bool
 inf = coeffPredicate ((<) :: forall a. (Ord a) => a -> a -> Bool)
@@ -334,6 +318,26 @@ polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
           Polynome _ _ -> Polynome v1 $ (CoeffInt 0, polySimpleOp op d1 left) : rest
     | otherwise = Polynome v1 $ (CoeffInt 0, left) : as
 
+-- | Multiply two polynomials between them using the brute force
+-- way, algorithm in O(n²)
+polyMul :: Polynome -> Polynome -> Polynome
+polyMul p@(Polynome _ _) (PolyRest c) = polyCoeffMap (\a -> a * c) p
+polyMul (PolyRest c) p@(Polynome _ _) = polyCoeffMap (\a -> c * a) p
+polyMul (PolyRest c) (PolyRest c2) = PolyRest $ coeffOp (*) c c2
+polyMul p1@(Polynome v1 _) p2@(Polynome v2 _) | v1 > v2 = polyMul p2 p1
+polyMul (Polynome v1 coefs1) p2@(Polynome v2 coefs2)
+    | v1 /= v2 {- v1 < v2 by previous line -} =
+        Polynome v1 $ map (\(order, c) -> (order, polyMul c p2)) coefs1
+    | otherwise {- v1 == v2 -} =
+        Polynome v1
+      . map (\lst@((o,_):_) -> (o, sum $ map snd lst))
+      . groupBy (\(o1,_) (o2,_) -> o1 == o2) -- Regroup same order together
+      $ sortBy (\(c1,_) (c2,_) -> compare c1 c2)
+      [ (order1 + order2, c1 * c2) | (order1, c1) <- coefs1, (order2, c2) <- coefs2]
+
+instance Ord PolyCoeff where
+    (<) = coeffPredicate (<) 
+
 instance Num PolyCoeff  where
     fromInteger = CoeffInt
     (+)  = coeffOp (+)
@@ -349,7 +353,7 @@ instance Num PolyCoeff  where
     signum (CoeffRatio r) = CoeffRatio $ signum r
 
 instance Fractional PolyCoeff where
-    a / b = case samerizer a b of
+    a / b = case polyCoeffCast a b of
         (CoeffInt i1, CoeffInt i2) -> if i1 `mod` i2 == 0
                         then CoeffInt $ i1 `div` i2
                         else CoeffRatio $ i1 % i2
@@ -369,7 +373,7 @@ instance Fractional PolyCoeff where
 instance Num Polynome where
     (+) = polySimpleOp (+)
     (-) = polySimpleOp (-)
-    (*) = error "Unimplemented"
+    (*) = polyMul
     abs = error "Unimplemented"
     signum = error "Unimplemented"
     fromInteger = error "Unimplemented"
