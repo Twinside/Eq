@@ -3,6 +3,7 @@
 {-# LANGUAGE Rank2Types #-}
 module EqManips.Polynome( convertToPolynome
                         , convertToFormula
+                        , polynomizeFormula
                         , polyMap
                         , polyCoeffMap 
                         , scalarToCoeff
@@ -26,9 +27,17 @@ import qualified EqManips.ErrorMessages as Err
 convertToPolynome :: Formula ListForm -> Maybe Polynome
 convertToPolynome (Formula f) = polynomize $ prepareFormula f
 
-
 convertToFormula :: Polynome -> Formula ListForm
 convertToFormula = Formula . convertToFormulaPrim
+
+-- | Run across the whole formula and replace what
+-- can polynomized by a polynome
+polynomizeFormula :: Formula ListForm -> Formula ListForm
+polynomizeFormula (Formula f) = Formula $
+    depthFormulaPrimTraversal `asAMonad` converter $ f
+        where converter f' = case convertToPolynome (Formula f') of
+                    Nothing -> f'
+                    Just p -> Poly p
 
 -- | Convert a polynome into a simpler formula using only
 -- basic operators.
