@@ -2,6 +2,7 @@ module EqManips.InputParser.EqCode
     ( program  -- if you want to define some definition before
     , expr     -- if you want to evaluate just an expression
     , parseFormula
+    , perfectParse 
     , parseProgramm
     ) where
 
@@ -10,6 +11,7 @@ import Control.Applicative( (<$>), (<*) )
 import Control.Monad.Identity
 
 import EqManips.Types
+import EqManips.Polynome
 import EqManips.Linker
 import EqManips.Algorithm.Utils
 
@@ -21,7 +23,12 @@ import qualified Text.Parsec.Token as P
 -- | Helper function to parse a formula and apply all
 -- needed algorithm to be able to apply them
 parseFormula :: String -> Either ParseError (Formula ListForm)
-parseFormula text = case runParser expr () "FromFile" text of
+parseFormula = either Left (Right . polynomizeFormula) . perfectParse
+
+-- | Parse a formula and doesn't alter it's global form
+-- (no polynomization)
+perfectParse :: String -> Either ParseError (Formula ListForm)
+perfectParse text = case runParser expr () "FromFile" text of
              Left e -> Left e
              Right f -> Right . listifyFormula
                               . linkFormula
@@ -35,7 +42,10 @@ parseProgramm text = rez
     where parsed = runParser program () "FromFile" text
           rez = case parsed of
                  Left a -> Left a
-                 Right f -> Right $ map (listifyFormula . linkFormula . Formula) f
+                 Right f -> Right $ map ( polynomizeFormula
+                                        . listifyFormula
+                                        . linkFormula
+                                        . Formula ) f
 
 -----------------------------------------------------------
 --          Lexing defs

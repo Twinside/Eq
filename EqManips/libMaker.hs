@@ -1,5 +1,6 @@
 
 import EqManips.Types
+import EqManips.InputParser.EqCode
 import EqManips.Algorithm.Eval
 import EqManips.Algorithm.Utils
 import EqManips.EvaluationContext

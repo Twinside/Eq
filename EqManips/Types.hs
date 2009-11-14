@@ -217,6 +217,25 @@ a <<>> b = ordIt a
 -----------------------------------------------------------
 --  Ord def, used to sort-out '+' list for exemples
 -----------------------------------------------------------
+instance Ord PolyCoeff where
+    compare left right = case polyCoeffCast left right of
+        (CoeffInt a, CoeffInt b) -> compare a b
+        (CoeffFloat a, CoeffFloat b) -> compare a b
+        (CoeffRatio a, CoeffRatio b) -> compare a b
+        _ -> error "Bad cast"
+
+instance Ord Polynome where
+    compare (PolyRest a) (PolyRest b) = compare a b
+    compare (Polynome v1 c1) (Polynome v2 c2)
+        | v1 /= v2 = compare v1 v2
+        | otherwise = case compare coeff1 coeff2 of
+                        EQ -> compare sub1 sub2
+                        a -> a
+            where (coeff1, sub1) = last c1
+                  (coeff2, sub2) = last c2
+    compare (Polynome _ _) _ = LT
+    compare _ (Polynome _ _) = GT
+
 instance Ord FormulaPrim where
     -- Ignoring meta in comparisons
     compare (Meta _ f) f2 = compare f f2
@@ -231,6 +250,10 @@ instance Ord FormulaPrim where
     compare (CFloat f) (CInteger i) = compare f $ fromIntegral i
     compare (CFloat _) _ = LT
     compare (CInteger _) _ = LT
+
+    compare (Poly p1) (Poly p2) = compare p1 p2
+    compare (Poly _) _ = GT
+    compare _ (Poly _) = LT
 
     -- x < y
     compare (Variable v) (Variable v1) = compare v v1

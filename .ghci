@@ -1,4 +1,4 @@
 :set -fbreak-on-exception
 :set -fprint-evld-with-show
-:set args ["eval", "-f", "taylor.txt"]
+:set args ["eval", "-f", "(2*x + x^2 + y^2) / x"]
 :load formulaMain.hs

@@ -43,13 +43,18 @@ polynomizeFormula (Formula f) = Formula $
 -- basic operators.
 convertToFormulaPrim :: Polynome -> FormulaPrim
 convertToFormulaPrim (PolyRest coeff) = coefToFormula coeff
-convertToFormulaPrim (Polynome var lst) = BinOp OpAdd $ map elemConverter lst
-    where fvar = Variable var
-          elemConverter (degree,def) = degreeOf (convertToFormulaPrim def) degree
-          degreeOf fdef degree = case coefToFormula degree of
-                   CInteger 0 -> fdef
-                   CInteger 1 -> fdef * fvar
-                   deg -> fdef * (fvar ** deg)
+convertToFormulaPrim (Polynome var lst) = adder $ map elemConverter lst
+    where adder [x] = x
+          adder rest = BinOp OpAdd rest
+          fvar = Variable var
+          elemConverter (degree,def) = degreeOf (convertToFormulaPrim def)
+                                                (coefToFormula degree)
+
+          degreeOf fdef (CInteger 0) = fdef
+          degreeOf (CInteger 1) (CInteger 1) = fvar
+          degreeOf fdef (CInteger 1) = fdef * fvar
+          degreeOf (CInteger 1) deg = fvar ** deg
+          degreeOf fdef deg = fdef * (fvar ** deg)
 
 -- | Conversion from coef to basic formula. ratio
 -- are converted to (a/b), like a division.
@@ -74,6 +79,10 @@ prepareFormula = polySort . formulaFlatter
 
           -- Special sort which bring x in front, followed by others. Lexical
           -- order first.
+
+          sorter (Poly p1) (Poly p2) = compare p1 p2
+          sorter (Poly _) _ = LT
+          sorter _ (Poly _) = GT
 
           -- Rules to fine-sort '*' elements
           -- (x before y), no regard for formula degree
@@ -213,6 +222,9 @@ translator pow0 [] = return $ PolyRest <$> evalCoeff pow0
 -- | Try to transform a formula in polynome.
 polynomize :: FormulaPrim -> Maybe Polynome
 polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula])
+polynomize wholeFormula@(BinOp OpPow [Variable _,_]) = polynomize (BinOp OpAdd [wholeFormula])
+-- HMmm?
+{-polynomize (BinOp OpAdd [Poly p1, Poly p2]) = p1 + p2-}
 polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don't distingate
                              . translator pow0  -- cases at the upper level.
                              . packCoefs
@@ -249,6 +261,8 @@ extractFirstTerm fullFormula@(BinOp OpMul lst) = varCoef lst
           multify [x] = x
           multify alist = BinOp OpMul alist
 
+extractFirstTerm (BinOp OpPow [Variable v, order])
+    | isFormulaConstant order = Left (v, order, CInteger 1)
 extractFirstTerm a = Right a
 
 --------------------------------------------------
@@ -319,7 +333,7 @@ polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
     | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1):as
 
 polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
-    | v2 > v1 = polySimpleOp op (Polynome v2 bs) (Polynome v1 as)
+    | v1 > v2 = polySimpleOp op (Polynome v2 bs) (Polynome v1 as)
     | v1 == v2 = Polynome v1 $ lockStep op as bs
     | isCoeffNull c = case d1 of 
           PolyRest a   -> polyMap executor left
@@ -344,9 +358,6 @@ polyMul (Polynome v1 coefs1) p2@(Polynome v2 coefs2)
       . groupBy (\(o1,_) (o2,_) -> o1 == o2) -- Regroup same order together
       $ sortBy (\(c1,_) (c2,_) -> compare c1 c2)
       [ (order1 + order2, c1 * c2) | (order1, c1) <- coefs1, (order2, c2) <- coefs2]
-
-instance Ord PolyCoeff where
-    (<) = coeffPredicate (<) 
 
 instance Num PolyCoeff  where
     fromInteger = CoeffInt

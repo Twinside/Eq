@@ -1,6 +1,7 @@
 module EqManips.Renderer.Sexpr( sexprRender, sexprRenderS ) where
 
 import EqManips.Types
+import EqManips.Polynome
 import EqManips.Algorithm.Utils
 
 sexprRender :: Formula anyForm -> String
@@ -16,8 +17,16 @@ char :: Char -> ShowS
 char = (:)
 
 sexprS :: FormulaPrim -> ShowS
-sexprS (Poly _) = str "POLY, UNDEFINED"
-sexprS (Block _ _ _) = str "block"
+sexprS (Poly v@(PolyRest _)) = sexprS . unTagFormula $ convertToFormula v
+sexprS (Poly (Polynome v lst)) =
+    str "(poly " . str v . char ' ' . concatMapS coeffPrinter lst . char ')'
+        where coeffSexpr c = sexprS . unTagFormula $ convertToFormula (PolyRest c)
+              coeffPrinter (coeff, poly) =
+                    char '(' . coeffSexpr coeff . str ", "
+                  . sexprS (Poly poly)
+                  . str ") "
+
+sexprS (Block _ _ _) = str "(block)"
 sexprS (Variable v) = str v
 sexprS (NumEntity e) = shows e
 sexprS (Truth t) = shows t

@@ -100,7 +100,7 @@ treeIfyFormula (Formula a) = Formula f
 -- forms, transform it back to binary tree.
 treeIfyBinOp :: FormulaPrim -> FormulaPrim
 treeIfyBinOp (BinOp _ []) = error "treeIfyBinOp - empty binop"
-treeIfyBinOp (BinOp _ [_]) = error "treeIfyBinOp - Singleton binop"
+treeIfyBinOp f@(BinOp _ [_]) = error ("treeIfyBinOp - Singleton binop " ++ show f)
 treeIfyBinOp f@(BinOp _ [_,_]) = f
 treeIfyBinOp (BinOp op lst) = innerNode (op `obtainProp` AssocSide) lst
         where innerNode OpAssocLeft (fx:fy:fs) = 

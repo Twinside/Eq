@@ -72,7 +72,7 @@ filterCommand transformator args = do
 formatCommand :: (Formula TreeForm -> String) -> [String] -> IO Bool
 formatCommand formater args = do
     formulaText <- input
-    let formula = parseFormula formulaText
+    let formula = perfectParse formulaText
     output <- outputFile
     either (parseErrorPrint output)
            (\formula' -> do 
@@ -118,7 +118,7 @@ transformParseFormula operation args = do
            (\formulal -> do
                let rez = performLastTransformationWithContext defaultSymbolTable
                        $ mapM operation formulal
-               mapM (\a-> do hPutStr finalFile $ show a
+               mapM (\a-> do hPutStr finalFile $ sexprRender a
                              hPutStr finalFile "\n\n") formulal
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
