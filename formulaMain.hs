@@ -5,6 +5,7 @@ import EqManips.Algorithm.Cleanup
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.Latex
 import EqManips.Renderer.Mathml
+import EqManips.Renderer.Sexpr
 import System.Exit
 import System.IO
 import System.Console.GetOpt
@@ -18,7 +19,12 @@ import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 import EqManips.Preprocessor
 
+import EqManips.BaseLibrary
 import EqManips.InputParser.MathML
+import EqManips.InputParser.EqCode
+
+-- Debugging
+import EqManips.Renderer.CharRender
 
 data Flag =
       Output
@@ -63,21 +69,21 @@ filterCommand transformator args = do
 
 -- | Command which just format an equation
 -- without affecting it's form.
-formatCommand :: (Formula -> String) -> [String] -> IO Bool
+formatCommand :: (Formula TreeForm -> String) -> [String] -> IO Bool
 formatCommand formater args = do
     formulaText <- input
     let formula = parseFormula formulaText
     output <- outputFile
     either (parseErrorPrint output)
            (\formula' -> do 
-                hPutStrLn output $ formater formula'
+                hPutStrLn output . formater $ treeIfyFormula formula'
                 hClose output
                 return True)
            formula
      where (opt, left, _) = getOpt Permute formatOption args
            (input, outputFile) = getInputOutput opt left
 
-printErrors :: [(Formula, String)] -> IO ()
+printErrors :: [(Formula TreeForm, String)] -> IO ()
 printErrors =
     mapM_ (\(f,s) -> do putStrLn s
                         putStrLn $ formatFormula f) 
@@ -102,7 +108,7 @@ preprocessCommand args =
            inName = maybe "" id (lookup Input opts)
            outName = maybe inName id (lookup Output opts)
 
-transformParseFormula :: (Formula -> EqContext Formula) -> [String]
+transformParseFormula :: (Formula ListForm -> EqContext (Formula ListForm)) -> [String]
                       -> IO Bool
 transformParseFormula operation args = do
     formulaText <- input
@@ -110,17 +116,18 @@ transformParseFormula operation args = do
     let formulaList = parseProgramm formulaText
     either (parseErrorPrint finalFile)
            (\formulal -> do
-               let rez = performLastTransformation $
-                                mapM operation formulal
+               let rez = performLastTransformationWithContext defaultSymbolTable
+                       $ mapM operation formulal
                mapM (\a-> do hPutStr finalFile $ show a
                              hPutStr finalFile "\n\n") formulal
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"
+               hPutStrLn finalFile . sexprRender $ result rez
 #endif
                printErrors $ errorList rez
-               hPutStr finalFile . formatFormula $ result rez
+               hPutStr finalFile . formatFormula . treeIfyFormula $ result rez
                hClose finalFile
 
                return . null $ errorList rez)

@@ -5,6 +5,8 @@
 *.obj
 *.hi
 .svn
+*_stub.*
+*.dll.a
 *.exe
 *.ncb
 *.suo
@@ -19,4 +21,4 @@ out.txt
 size.txt
 test.txt
 dist
-
+EqManips/BaseLibrary.hs

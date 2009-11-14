@@ -1,12 +1,14 @@
 module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , EqContext
                                  , performTransformation 
+                                 , performTransformationWithContext
                                  , performLastTransformation 
+                                 , performLastTransformationWithContext 
                                  , obtainEqResult 
                                  , cleanErrorList 
                                  , addSymbols 
                                  , addSymbol, delSymbol, updateSymbol 
-                                 , eqFail
+                                 , eqFail, eqPrimFail 
                                  , symbolLookup
                                  , pushContext, popContext, setContext 
 #ifdef _DEBUG
@@ -16,12 +18,13 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
 #endif /* _DEBUG */
                                  ) where
 
-import EqManips.Types
 import Data.List
-import Control.Applicative
-
 import Data.Map (Map)
+import Control.Applicative
 import qualified Data.Map as Map
+
+import EqManips.Types
+import EqManips.Algorithm.Utils
 
 #ifdef _DEBUG
 import System.IO
@@ -32,28 +35,28 @@ import EqManips.Renderer.Ascii( formatFormula )
 data EqTransformInfo = EqTransformInfo {
         -- | Well, here context mean more "symbol table"
         -- associate some variable with a definition.
-          context    :: Map String Formula
+          context    :: Map String (Formula ListForm)
         -- | A context "stack" used to handle some scoping
         -- which can be used to evaluate some sums.
-        , contextStack :: [Map String Formula]
+        , contextStack :: [Map String (Formula ListForm)]
 
         -- | Depth of the context stack. Used to limit
         -- recursion in the monad.
         , contextDepth :: !Int
 
         -- | Some constraints put on variables
-        , assertions :: Map String Formula
+        , assertions :: Map String FormulaPrim
 
         -- | List of errors encountered when
         -- transforming formula
-        , errorList  :: [(Formula,String)]
+        , errorList  :: [(Formula TreeForm,String)]
 
         -- | The result of the formula computation
-        , result :: Formula
+        , result :: Formula ListForm
 
 #ifdef _DEBUG
         -- | Used for debugging, can print everything
-        , trace :: [(String, Formula)]
+        , trace :: [(String, Formula TreeForm)]
 #endif /* _DEBUG */
     }
 
@@ -94,7 +97,7 @@ emptyContext = EqTransformInfo {
       , contextDepth = 0
       , assertions = Map.empty
       , errorList = []
-      , result = Block 0 0 0
+      , result = Formula $ Block 0 0 0
 #ifdef _DEBUG
       , trace = []
 #endif /* _DEBUG */
@@ -103,7 +106,7 @@ emptyContext = EqTransformInfo {
 #ifdef _DEBUG
 -- | Function used to add a trace in debug.
 -- don't forget to surround it's use by #ifdef _DEBUG/#endif
-addTrace :: (String,Formula) -> EqContext ()
+addTrace :: (String, Formula TreeForm) -> EqContext ()
 addTrace newTrace = EqContext $ \c ->
     (c { trace = newTrace : trace c }, ())
 
@@ -121,9 +124,15 @@ traceContext = EqContext $ \c ->
                   . map (\a -> printContext a ++ "\n/////////////////////////////////////////////////\n") 
                   . map Map.toList
                   $ contextStack c
-        printContext var = concat $ map (\(a,f) -> a ++ " =\n" ++ formatFormula f ++ "\n") var
+        printContext var = concat $ map (\(a,f) -> a ++ " =\n" 
+                                                ++ formatFormula (treeIfyFormula f)
+                                                ++ "\n")
+                                        var
     in
-    (c { trace = ("ContextStack | " ++ contextes, Variable ""): ("Context | " ++ (show $ context c), Variable "") : trace c }, ())
+    ( c { trace = ("ContextStack | " ++ contextes, Formula $ Variable "")
+                : ("Context | " ++ (show $ context c), Formula $ Variable "") : trace c }
+    , ()
+    )
 #endif /* _DEBUG */
 
 -- | Keep a track of current context, keep previous context clean
@@ -149,7 +158,7 @@ popContext = EqContext $ \c ->
        }
     , ())
 
-setContext :: [(String, Formula)] -> EqContext ()
+setContext :: [(String, Formula ListForm)] -> EqContext ()
 setContext newContext = EqContext $ \c ->
     (c { context = Map.fromList newContext }, ())
 
@@ -158,15 +167,32 @@ setContext newContext = EqContext $ \c ->
 cleanErrorList :: EqContext ()
 cleanErrorList = EqContext $ \c -> (c { errorList = [] }, ())
 
+type FormulaForm = ListForm
+
 -- | Public function of the API to retrieve the result of
 -- a formula transformation. The type is opaque otherwise.
-performTransformation :: EqContext Formula -> EqTransformInfo
-performTransformation m = ctxt { result = formula }
-    where (ctxt, formula) = runEqTransform m emptyContext
+performTransformation :: EqContext (Formula FormulaForm) -> EqTransformInfo
+performTransformation = performTransformationWithContext Map.empty
 
-performLastTransformation :: EqContext [Formula] -> EqTransformInfo
-performLastTransformation m = ctxt { result = last formula }
-    where (ctxt, formula) = runEqTransform m emptyContext
+-- | Evaluate a formula, you can provide variable bindings
+performTransformationWithContext :: Map String (Formula ListForm)
+                                 -> EqContext (Formula ListForm)
+								 -> EqTransformInfo
+performTransformationWithContext base m = ctxt { result = formula }
+    where (ctxt, formula) = runEqTransform m $ emptyContext { context = base }
+
+-- | Evaluate a programm, with no pre-definitions
+performLastTransformation :: EqContext [Formula FormulaForm] -> EqTransformInfo
+performLastTransformation =
+	performLastTransformationWithContext Map.empty
+
+-- | Run a programm and get the last statement.
+-- You can run programm with your pre-defined symbols
+performLastTransformationWithContext :: Map String (Formula ListForm)
+                                     -> EqContext [Formula FormulaForm]
+									 -> EqTransformInfo
+performLastTransformationWithContext c m = ctxt { result = last formula }
+    where (ctxt, formula) = runEqTransform m $ emptyContext { context = c }
 
 obtainEqResult :: EqContext a -> a
 obtainEqResult m = snd $ runEqTransform m emptyContext
@@ -176,12 +202,12 @@ delSymbol :: String -> EqContext ()
 delSymbol s = EqContext $ \ctxt ->
     (ctxt { context = Map.delete s $ context ctxt}, ())
 
-updateSymbol :: String -> Formula -> EqContext ()
+updateSymbol :: String -> Formula ListForm -> EqContext ()
 updateSymbol varName def = do
     delSymbol varName
     addSymbol varName def
 
-addSymbols :: [(String, Formula)] -> EqContext ()
+addSymbols :: [(String, Formula ListForm)] -> EqContext ()
 addSymbols adds = EqContext $ \eqCtxt ->
     let syms = context eqCtxt
     in -- union is left biased, we use it here, new symbols
@@ -189,22 +215,28 @@ addSymbols adds = EqContext $ \eqCtxt ->
     ( eqCtxt { context = Map.fromList adds `Map.union` syms}, ())
 
 -- | Add a variable into the context
-addSymbol :: String -> Formula -> EqContext ()
+addSymbol :: String -> Formula ListForm -> EqContext ()
 addSymbol varName def = EqContext $ \eqCtxt ->
     let prevSymbol = context eqCtxt
     in ( eqCtxt{ context = Map.insert varName def prevSymbol }, ())
 
 -- | Check if a symbol is present, and if so, return it's
 -- definition
-symbolLookup :: String -> EqContext (Maybe Formula)
+symbolLookup :: String -> EqContext (Maybe (Formula ListForm))
 symbolLookup varName = EqContext $ \eqCtxt ->
     (eqCtxt, Map.lookup varName $ context eqCtxt)
 
 -- | Used to provide error messages at the end of the computation
 -- (when jumping back to IO), and also assure a nice partial evaluation,
 -- by replacing the faulty formula by a block.
-eqFail :: Formula -> String -> EqContext Formula
+eqFail :: Formula TreeForm -> String -> EqContext (Formula a)
 eqFail formula errorText = EqContext $ \eqCtxt ->
     let prevErr = errorList eqCtxt
-    in ( eqCtxt {errorList = (formula, errorText):prevErr}, Block 1 1 1)
+    in ( eqCtxt {errorList = (formula, errorText):prevErr}, Formula $ Block 1 1 1)
+
+-- | Little helper to be able to use eqFail easily when
+-- manipulating FormulaPrim formula. Assume that FormulaPrim
+-- is in List Form. Use eqFail otherwise.
+eqPrimFail :: FormulaPrim -> String -> EqContext FormulaPrim
+eqPrimFail f s = unTagFormula `fmap` eqFail (treeIfyFormula $ Formula f) s
 

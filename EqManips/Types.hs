@@ -1,45 +1,46 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
-module EqManips.Types( Formula( .. )
-                     , BinOperator( .. )
-                     , UnOperator( .. )
-                     , Entity( .. )
+{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE Rank2Types #-}
+module EqManips.Types
+         ( FormulaPrim( .. )
+         , Formula( .. )
+         , ListForm -- ^ Tell that the formula is in form
+                    -- binop op [a,b ...]
+         , TreeForm -- ^ Tell that the formula is in form
+                    -- binop op [a,b]
 
-                     , program  -- if you want to define some definition before
-                     , expr     -- if you want to evaluate just an expression
-                     , unparse  -- regurgitation in parsed language.
-                     , unparseS -- regurgitation with type ShowS
+         , BinOperator( .. )
+         , UnOperator( .. )
+         , Entity( .. )
 
-                     , binopString
-                     , unopString
-                     , AssocSide(..) -- To query associativity side
-                     , OpAssoc( .. ) -- Return type for associativity side
-                     , Priority(.. ) -- Gain access to operator's priority
-                     , LeafNode( .. )
-                     , OpProp( .. ) 
-                     , OperatorText(..)
+         , binopString
+         , unopString
+         , AssocSide(..) -- To query associativity side
+         , OpAssoc( .. ) -- Return type for associativity side
+         , Priority(.. ) -- Gain access to operator's priority
+         , LeafNode( .. )
+         , OpProp( .. ) 
+         , OperatorText(..)
 
-                     , MetaOperation( .. )
-                     , foldf
-                     , canDistributeOver 
-                     , distributeOver 
-                     ) where
+         , MetaOperation( .. )
+         , Polynome( .. ), PolyCoeff( .. )
+         , coeffPredicate, polyCoeffCast 
+         , foldf
+         , canDistributeOver 
+         , distributeOver 
+         ) where
 
-import Control.Applicative( (<$>), (<*) )
-import Control.Monad.Identity
 import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
+import qualified EqManips.ErrorMessages as Err
 
 import Data.Ratio
 import Data.List( foldl', foldl1' )
 import Data.Maybe( fromJust )
 
 import EqManips.Propreties
-
-import Text.Parsec.Expr
-import Text.Parsec
-import Text.Parsec.Language( haskellStyle )
-import qualified Text.Parsec.Token as P
+import {-# SOURCE #-} EqManips.Polynome()
 
 -- | All Binary operators
 data BinOperator  =
@@ -89,6 +90,7 @@ data Entity =
     | Infinite
     deriving (Eq, Show, Read, Ord)
 
+
 data MetaOperation =
     -- | Avoid an evaluation, replace itself by the
     -- without touching it.
@@ -96,51 +98,55 @@ data MetaOperation =
     -- | Inverse of hold, whenever encountered in
     -- evaluation, should force an evaluation.
     | Force
-    | Listify   -- ^ Pack operation a list-like form.
-    | Treefy    -- ^ Pack operation in a tree-like form
     | Expand    -- ^ trigger an expend operation
     | Cleanup   -- ^ trigger a basic formula cleanup
     | LambdaBuild -- ^ To generate a full blown Lambda
+    | Sort      -- ^ To sort the formula
     deriving (Eq, Show, Read)
+
+type FloatingValue = Double
 
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types
 -- are provided for ease of use
-data Formula =
+data FormulaPrim =
       Variable String
     | NumEntity Entity
     | Truth Bool
-    | CInteger Int
-    | CFloat Double
+    | CInteger Integer
+    | CFloat FloatingValue
     -- | FunName arguments
-    | App Formula [Formula]
+    | App FormulaPrim [FormulaPrim]
     -- | LowBound highbound expression
-    | Sum Formula Formula Formula
+    | Sum FormulaPrim FormulaPrim FormulaPrim
     -- | LowBound highbound expression
-    | Product Formula Formula Formula
+    | Product FormulaPrim FormulaPrim FormulaPrim
 
     -- | Derivate expression withVar
-    | Derivate Formula Formula
+    | Derivate FormulaPrim FormulaPrim
 
     -- | lowBound highBound expression dx
-    | Integrate Formula Formula Formula Formula
+    | Integrate FormulaPrim FormulaPrim FormulaPrim FormulaPrim
 
     -- | -1 for example
-    | UnOp UnOperator Formula
+    | UnOp UnOperator FormulaPrim
 
     -- | Represent a function. a function
     -- can have many definitions. The applied
     -- one must be the first in the list which
     -- unify with the applied parameters.
-    | Lambda [( [Formula] {- clause args -}
-              , Formula {- clause body -})
+    | Lambda [( [FormulaPrim] {- clause args -}
+              , FormulaPrim {- clause body -})
              ] {- clauses -}
 
     -- | f1 op f2
-    | BinOp BinOperator [Formula]
+    | BinOp BinOperator [FormulaPrim]
 
     -- | Width, Height, all formulas
-    | Matrix Int Int [[Formula]]
+    | Matrix Int Int [[FormulaPrim]]
+
+    -- | Form that can be used to make nice simplification.
+    | Poly Polynome
 
     -- | Used for debug
     | Block Int Int Int
@@ -148,8 +154,58 @@ data Formula =
     -- | A meta operation is an operation used
     -- by the sysem, but that doesn't appear in the
     -- normal output.
-    | Meta MetaOperation Formula
+    | Meta MetaOperation FormulaPrim
     deriving (Eq, Show, Read)
+
+-- | Type used to carry some meta information
+-- with the type system.
+-- - formula Form : how is handled the binop form
+newtype Formula formulaForm = Formula { unTagFormula :: FormulaPrim }
+    deriving (Eq, Show, Ord)
+
+-- | Type token for format of the form [a,b,c,d,e...]
+data ListForm
+-- | Type token for format of the form [a,b]
+data TreeForm
+-- | Ok the data doesn't have any specific form
+{-data NoForm-}
+
+-- | Coefficient for polynoms
+data PolyCoeff =
+      CoeffFloat FloatingValue
+    | CoeffInt Integer
+    | CoeffRatio (Ratio Integer)
+    deriving (Show, Read)
+
+-- | This type store polynome in a recursive way, as presented
+-- in chapter 3 of "Algorithm for Computer Algebra". It's a
+-- recursive linked list
+data Polynome =
+      Polynome String [(PolyCoeff, Polynome)]
+    | PolyRest PolyCoeff
+    deriving (Eq, Show, Read)
+
+instance Eq PolyCoeff where
+    (==) = coeffPredicate (==)
+
+coeffPredicate :: (forall a. Ord a => a -> a -> Bool) -> PolyCoeff -> PolyCoeff -> Bool
+coeffPredicate op c1 c2 = eval $ polyCoeffCast c1 c2
+    where eval (CoeffInt i1, CoeffInt i2) = i1 `op` i2
+          eval (CoeffFloat f1, CoeffFloat f2) = f1 `op` f2
+          eval (CoeffRatio r1, CoeffRatio r2) = r1 `op` r2
+          eval _ = error Err.polynom_bad_casting 
+
+-- | polyCoeffCast autocast to the same level
+polyCoeffCast :: PolyCoeff -> PolyCoeff -> (PolyCoeff, PolyCoeff)
+polyCoeffCast (CoeffInt i1) (CoeffInt i2) = (CoeffInt i1, CoeffInt i2)
+polyCoeffCast (CoeffFloat f1) (CoeffFloat f2) = (CoeffFloat f1,CoeffFloat f2)
+polyCoeffCast (CoeffRatio r1) (CoeffRatio r2) = (CoeffRatio r1, CoeffRatio r2)
+polyCoeffCast (CoeffInt i1) (CoeffRatio r2) = (CoeffRatio $ i1 % 1, CoeffRatio r2)
+polyCoeffCast (CoeffRatio r1) (CoeffInt i2) = (CoeffRatio r1, CoeffRatio $ i2 % 1)
+polyCoeffCast (CoeffInt i1) (CoeffFloat f2) = (CoeffFloat $ fromInteger i1, CoeffFloat f2)
+polyCoeffCast (CoeffFloat f1) (CoeffInt i2) = (CoeffFloat f1, CoeffFloat $ fromInteger i2)
+polyCoeffCast (CoeffFloat f1) (CoeffRatio r2) = (CoeffFloat f1, CoeffFloat $ fromRational r2)
+polyCoeffCast (CoeffRatio r1) (CoeffFloat f2) = (CoeffFloat $ fromRational r1, CoeffFloat f2)
 
 infixl 4 <<>>
 
@@ -161,29 +217,47 @@ a <<>> b = ordIt a
 -----------------------------------------------------------
 --  Ord def, used to sort-out '+' list for exemples
 -----------------------------------------------------------
-instance Ord Formula where
+instance Ord FormulaPrim where
     -- Ignoring meta in comparisons
     compare (Meta _ f) f2 = compare f f2
     compare f (Meta _ f2) = compare f f2
 
-    -- To avoid some hypothetical problems :-S
-    compare (Matrix _ _ _) (Matrix _ _ _) = EQ
-    compare _ (Matrix _ _ _) = LT
-    compare (Matrix _ _ _) _ = LT
-    
-    compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
     compare (NumEntity e1) (NumEntity e2) = compare e1 e2
+    compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
+
     compare (CInteger i) (CInteger i2) = compare i i2
     compare (CFloat f) (CFloat f2) = compare f f2
     compare (CInteger i) (CFloat f) = compare (fromIntegral i) f
     compare (CFloat f) (CInteger i) = compare f $ fromIntegral i
+    compare (CFloat _) _ = LT
+    compare (CInteger _) _ = LT
+
+    -- x < y
     compare (Variable v) (Variable v1) = compare v v1
+    -- Variable last
+    compare (Variable _) _ = LT
+
+    compare _ (CInteger _) = GT
+    compare _ (CFloat _) = GT
+    compare _ (Block _ _ _) = LT
+    compare _ (NumEntity _) = GT
+
+    -- we don't sort matrixes, because the mul
+    compare (Matrix _ _ _) (Matrix _ _ _) = EQ
+    compare _ (Matrix _ _ _) = LT
+    compare (Matrix _ _ _) _ = LT
 
     compare (BinOp OpPow [Variable v1, p1])
             (BinOp OpPow [Variable v2, p2])
             | p1 == p2 = compare v1 v2
             | otherwise = compare p1 p2
     
+    compare (BinOp OpPow a) (BinOp OpPow b) =
+        case compare (length a) (length b) of
+             LT -> LT
+             EQ -> foldl' (\acc (a', b') -> acc <<>> compare a' b') EQ $ zip a b
+             GT -> GT
+
     compare (BinOp OpPow _) _ = GT
     compare _ (BinOp OpPow _) = LT
 
@@ -196,11 +270,6 @@ instance Ord Formula where
         | op == op' && v1 == v2 && op `elem` [OpMul, OpDiv] = compare p1 p2
 
     compare (BinOp _ f1) (BinOp _ f2) = compare f1 f2
-
-    compare _ (Block _ _ _) = LT
-    compare _ (CInteger _) = GT
-    compare _ (CFloat _) = GT
-    compare _ (NumEntity _) = GT
 
     compare (Derivate w _) (Derivate w' _) = compare w w'
     compare (Derivate _ _) (Integrate _ _ _ _) = LT
@@ -219,8 +288,6 @@ instance Ord Formula where
     compare (App _ _) _ = LT
 
     compare (Block _ _ _) _ = GT
-    compare (CInteger _) _ = LT
-    compare (CFloat _) _ = LT
     compare (NumEntity _) _ = LT
     compare f1 f2 = compare (nodeCount f1) $ nodeCount f2
         where nodeCount = getSum . foldf 
@@ -312,7 +379,7 @@ instance Property UnOperator Priority Int where
 -----------------------------------------------------------
 data LeafNode = LeafNode deriving Eq
 
-instance Property Formula LeafNode Bool where
+instance Property FormulaPrim LeafNode Bool where
     getProps (Variable _) = [(LeafNode, True)]
     getProps (CInteger _) = [(LeafNode, True)]
     getProps (CFloat _) = [(LeafNode, True)]
@@ -394,7 +461,8 @@ unOpNames =
 -------------------------------------------
 ---- Formula Folding
 -------------------------------------------
-foldf :: (Monoid b) => (Formula -> b -> b) -> b -> Formula -> b
+foldf :: (Monoid b)
+      => (FormulaPrim -> b -> b) -> b -> FormulaPrim -> b
 foldf f acc m@(Meta _ fo) = f m $ foldf f acc fo
 foldf f acc fo@(UnOp _ sub) = f fo $ foldf f acc sub
 foldf f acc fo@(App def args) =
@@ -435,124 +503,10 @@ foldf f acc fo@(Matrix _ _ cells) = f fo finalAcc
 
 foldf f acc fo = f fo acc
 
--------------------------------------------
----- "Language" helpers
--------------------------------------------
-    
--- | used to render functions' arguments
-argListToString :: [Formula] -> ShowS
-argListToString [] = id
-argListToString [f] = deparse maxPrio False f
-argListToString lst = foldl' accum (unprint lastElem) reved
-    where unprint = deparse maxPrio False
-          accum acc f = unprint f . (',':) . acc
-          (lastElem:reved) = reverse lst
-
--- | only to avoid a weird constant somewhere
-maxPrio :: Int
-maxPrio = 15
-
------------------------------------------------------------
---          Unprint
------------------------------------------------------------
-
--- | Public function to translate a formula back to it's
--- original notation. NOTE : it's not used as a Show instance...
-unparse :: Formula -> String
-unparse f = unparseS f ""
-
-unparseS :: Formula -> ShowS
-unparseS  = deparse maxPrio False
-
--- | Real conversion function, pass down priority
--- and tree direction
-deparse :: Int -> Bool -> Formula -> ShowS
--- INVISIBLE META NINJA !!
-deparse i r (Meta op f) = (++) (show op) . ('(' :) . deparse i r f . (')':)
-deparse _ _ (Truth True) = ("true" ++)
-deparse _ _ (Truth False) = ("false" ++)
-deparse _ _ (BinOp _ []) =
-    error "The formula is denormalized : a binary operator without any operands"
-deparse _ _ (Variable s) = (s ++)
-deparse _ _ (Lambda _) = id -- NINJA HIDDEN!
-deparse _ _ (NumEntity e) = (en e ++)
-    where en Pi = "pi"
-          en Nabla = "nabla"
-          en Infinite = "infinite"
-deparse _ _ (CInteger i) = shows i
-deparse _ _ (CFloat d) = shows d
-deparse _ _ (Block i i1 i2) =
-    ("block(" ++) . shows i . (',':) . shows i1 . (',' :) . shows i2 . (')' :)
-
-deparse _ _ (App (Variable v) fl) =
-    (v ++) . ('(' :) . argListToString fl . (')' :)
-
-deparse _ _ (App f1 fl) =
-    ('(' :) . deparse maxPrio False f1 . (")(" ++) . argListToString fl . (')' :)
-
-deparse _ _ (Sum i i1 i2) =
-    ("sum(" ++) . argListToString [i, i1, i2] . (')':)
-
-deparse _ _ (Product i i1 i2) =
-    ("product(" ++) . argListToString [i, i1, i2] . (')':)
-
-deparse _ _ (Derivate i i1) =
-    ("derivate(" ++) . argListToString [i, i1] . (')':)
-
-deparse _ _ (Integrate i i1 i2 i3) =
-    ("integrate(" ++) . argListToString [i, i1, i2, i3] . (')':)
-
-deparse _ _ (UnOp OpFactorial f) = ('(':) . deparse maxPrio False f . (")!" ++)
-deparse _ _ (UnOp op f) =
-    ((++) . fromJust $ lookup op unOpNames) . 
-        ('(':) . deparse maxPrio False f . (')':)
-
--- Special case... as OpEq is right associative...
--- we must reverse shit for serialisation
-deparse oldPrio right (BinOp OpEq [f1,f2]) =
-    let (prio, txt) = fromJust $ lookup OpEq binopDefs
-    in
-    if prio > oldPrio || (not right && prio == oldPrio)
-       then ('(':) 
-                . deparse prio False f1 
-                . (' ' :) . (txt ++) . (' ':) 
-                . deparse prio True f2 . (')':)
-       else deparse prio False f1 
-            . (' ' :) . (txt ++) . (' ':)
-            . deparse prio True f2
-
-deparse oldPrio right (BinOp op [f1,f2]) =
-    let (prio, txt) = fromJust $ lookup op binopDefs
-    in
-    if prio > oldPrio || (right && prio == oldPrio)
-       then ('(':) . deparse prio False f1 
-                . (' ' :) . (txt ++) . (' ':) 
-                . deparse prio True f2 . (')':)
-       else deparse prio False f1 
-            . (' ' :) . (txt ++) . (' ':)
-            . deparse prio True f2
-
-deparse oldPrio right (BinOp op (f1:xs)) =
-    let (prio, txt) = fromJust $ lookup op binopDefs
-    in
-    if prio > oldPrio || (right && prio == oldPrio)
-       then ('(':) . deparse prio False f1 
-                . (' ':) . (txt ++) . (' ':) 
-                . deparse prio False (BinOp op xs) . (')':)
-       else deparse prio False f1 
-            . (' ' :) . (txt ++) . (' ':)
-            . deparse prio False (BinOp op xs)
-
-deparse _ _ (Matrix n m fl) =
-    ("matrix("++) . shows n 
-                  . (',':) 
-                  . shows m 
-                  . (',':) .  (argListToString $ concat fl) . (')':)
-
 ----------------------------------------
 ----  Strong and valid instances    ----
 ----------------------------------------
-instance Num Formula where
+instance Num FormulaPrim where
     a + b = BinOp OpAdd [a,b]
     a - b = BinOp OpSub [a,b]
     a * b = BinOp OpMul [a,b]
@@ -563,14 +517,14 @@ instance Num Formula where
     signum _ = CInteger 0
     fromInteger = CInteger . fromInteger
 
-instance Fractional Formula where
+instance Fractional FormulaPrim where
     a / b = BinOp OpDiv [a,b]
     recip b = BinOp OpDiv [CInteger 1, b]
     fromRational a = BinOp OpDiv [ int $ numerator a
                                  , int $ denominator a]
             where int = CInteger . fromInteger
     
-instance Floating Formula where
+instance Floating FormulaPrim where
     pi = CFloat pi 
     exp = UnOp OpExp
     sqrt = UnOp OpSqrt
@@ -588,100 +542,4 @@ instance Floating Formula where
     asinh = UnOp OpASinh
     acosh = UnOp OpACosh
     atanh = UnOp OpATanh
-
------------------------------------------------------------
---          Lexing defs
------------------------------------------------------------
-float :: Parsed st Double
-float = P.float lexer
-
-identifier :: Parsed st String
-identifier = P.identifier lexer
-
-reservedOp :: String -> Parsed st ()
-reservedOp= P.reservedOp lexer
-
-integer :: Parsed st Integer
-integer = P.integer lexer
-
-parens :: ParsecT String u Identity a -> ParsecT String u Identity a
-parens = P.parens lexer
-
-whiteSpace :: Parsed st ()
-whiteSpace = P.whiteSpace lexer
-
-lexer :: P.GenTokenParser String st Identity
-lexer  = P.makeTokenParser 
-         (haskellStyle { P.reservedOpNames = [ "&", "|", "<", ">"
-                                             , "*", "/", "+", "-"
-                                             , "^", "=", "!", ":"] } )
-
------------------------------------------------------------
---          Real "grammar"
------------------------------------------------------------
-type Parsed st b = ParsecT String st Identity b
-
-program :: Parsed st [Formula]
-program = sepBy expr (whiteSpace >> char ';' >> whiteSpace) <* whiteSpace
-       <?> "program"
-
--- | Parser for the mini language is defined here
-expr :: Parsed st Formula
-expr = whiteSpace >> buildExpressionParser operatorDefs funCall
-    <?> "expression"
-
-operatorDefs :: OperatorTable String st Identity Formula
-operatorDefs = 
-    [ [postfix "!" (UnOp OpFactorial)]
-    , [prefix "-" (UnOp OpNegate) ]
-    , [binary "^" (binop OpPow) AssocLeft]
-    , [binary "/" (binop OpDiv) AssocLeft, binary "*" (binop OpMul) AssocLeft]
-    , [binary "+" (binop OpAdd) AssocLeft, binary "-" (binop OpSub) AssocLeft]
-    , [binary "=" (binop OpEq)  AssocRight, binary "/=" (binop OpNe) AssocLeft
-      ,binary "<" (binop OpLt)  AssocLeft,  binary ">"  (binop OpGt) AssocLeft
-      ,binary "<=" (binop OpLe) AssocLeft,  binary ">=" (binop OpGe) AssocLeft]
-    , [binary "&" (binop OpAnd) AssocLeft, binary "|" (binop OpOr) AssocLeft]
-    , [binary ":=" (binop OpAttrib) AssocRight]
-    ]
-
-funCall :: Parsed st Formula
-funCall =  do
-    caller <- term
-    (App caller <$> argList) <|> return caller
-        where argSeparator = whiteSpace >> char ',' >> whiteSpace
-              exprList = sepBy expr argSeparator
-              argList = parens (whiteSpace >> (exprList <* whiteSpace))
-
-variable :: Parsed st Formula
-variable = Variable <$> identifier
-        <?> "variable"
-
-term :: Parsed st Formula
-term = try trueConst
-    <|> try falseConst
-    <|> variable
-    <|> try (CFloat <$> float)
-    <|> CInteger . fromInteger <$> integer
-    <|> parens expr
-    <?> "Term error"
-
-trueConst :: Parsed st Formula
-trueConst = (return $ Truth True) <* (string "true" >> whiteSpace)
-
-falseConst :: Parsed st Formula
-falseConst = (return $ Truth False) <* (string "false" >> whiteSpace)
------------------------------------------------
-----        Little helpers
------------------------------------------------
-binary :: String -> (a -> a -> a) -> Assoc -> Operator String st Identity a
-binary  name fun assoc = Infix (do{ reservedOp name; return fun }) assoc
-
-prefix :: String -> (a -> a) -> Operator String st Identity a
-prefix  name fun       = Prefix (do{ reservedOp name; return fun })
-
-postfix :: String -> (a -> a) -> Operator String st Identity a
-postfix name fun = Postfix (do{ reservedOp name; return fun })
-
-binop :: BinOperator -> Formula -> Formula -> Formula
-binop op left right = BinOp op [left, right]
 

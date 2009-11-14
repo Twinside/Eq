@@ -7,13 +7,13 @@ import EqManips.Propreties
 
 -- | Algorithm to call to perform a global formula
 -- expension
-expand :: Formula -> Formula
-expand f = listifyFormula
-         $ depthFirstFormula `asAMonad` expander 
-         $ treeIfyFormula f
+expand :: Formula TreeForm -> Formula TreeForm
+expand (Formula f) = Formula
+                   $ depthFormulaPrimTraversal `asAMonad` expander 
+                   $ f
 
 -- | Filter used to perform formula expansion.
-expander :: Formula -> Formula
+expander :: FormulaPrim -> FormulaPrim
 expander (BinOp op [a,b])
     | op `hasProp` Distributiv = 
         distributeLeft op (BinOp op) a b
@@ -23,8 +23,10 @@ expander f = f
 -- nodes in the right formula and then launch another matching
 -- which will really create new nodes.
 distributeLeft :: BinOperator            -- ^ Priority of distributiv operator
-               -> ([Formula] -> Formula) -- ^ Combine two sub-formulas
-               -> Formula -> Formula -> Formula
+               -> ([FormulaPrim] -> FormulaPrim) -- ^ Combine two sub-formulas
+               -> FormulaPrim
+               -> FormulaPrim
+               -> FormulaPrim
 distributeLeft op combine formula (BinOp op' [a,b]) 
     | not $ op `canDistributeOver` op'
     = BinOp op' [digg a, digg b]
@@ -34,8 +36,8 @@ distributeLeft _iniPrio combine formula with =
     distributeRight combine formula with
 
 -- | Really apply the distributivity.
-distributeRight :: ([Formula] -> Formula)
-                -> Formula -> Formula -> Formula
+distributeRight :: ([FormulaPrim] -> FormulaPrim)
+                -> FormulaPrim -> FormulaPrim -> FormulaPrim
 distributeRight combine (BinOp op [a,b]) sub
     | not $ op `hasProp` Distributiv = BinOp op [digg a, digg b]
         where digg tree = distributeRight combine tree sub

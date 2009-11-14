@@ -5,27 +5,30 @@ module EqManips.Linker( linkFormula ) where
 import EqManips.Types
 import Data.List
 
-linkFormula :: Formula -> Formula
-linkFormula = link
+-- | Linking formula doesn't change it's form,
+-- so we can keep it
+linkFormula :: Formula anyForm -> Formula anyForm
+linkFormula (Formula a) = Formula $ link a
 
 -- | Function associating variables to symbol.
 -- It's a crude way to do it... 
 -- may need to change it to a real symbol table later
-link :: Formula -> Formula
+link :: FormulaPrim -> FormulaPrim
+-- Nothing to see here.
+link p@(Poly _) = p
 link (Variable "infinite") = NumEntity Infinite
 link (Variable "pi") = NumEntity Pi
 -- Meta cases
 link (App (Variable "Hold") [f]) = Meta Hold $ link f
 link (App (Variable "Force") [f]) = Meta Force $ link f
-link (App (Variable "Listify") [f]) = Meta Listify $ link f
-link (App (Variable "Treefy") [f]) = Meta Treefy $ link f
 link (App (Variable "Expand") [f]) = Meta Expand $ link f
 link (App (Variable "Cleanup") [f]) = Meta Cleanup $ link f
+link (App (Variable "Sort") [f]) = Meta Sort $ link f
 link (App (Variable "Lambda") [arg, body]) = Meta LambdaBuild $ Lambda [([arg], body)]
 
 -- Special cases
 link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
-    Block i1 i2 i3
+    Block (fromEnum i1) (fromEnum i2) (fromEnum i3)
 link (App (Variable "abs") [x]) = UnOp OpAbs $ link x
 link (App (Variable "sqrt") [x]) = UnOp OpSqrt $ link x
 link (App (Variable "exp") [x]) = UnOp OpExp $ link x
@@ -76,9 +79,9 @@ link (App (Variable "integrate") [what, dvar]) =
     Integrate (Variable "") (Variable "") (link what) (link dvar)
 
 link (App (Variable "matrix") (CInteger n: CInteger m: exps))
-    | n * m > length exps = error "The matrix has not enough expressions"
-    | n * m < length exps = error "The matrix has too much expressions"
-    | otherwise = Matrix n m $ splitMatrix exps
+    | fromEnum n * fromEnum m > length exps = error "The matrix has not enough expressions"
+    | fromEnum n * fromEnum m < length exps = error "The matrix has too much expressions"
+    | otherwise = Matrix (fromEnum n) (fromEnum m) $ splitMatrix exps
         where splitMatrix  [] = []
               splitMatrix lst =
                 let (matrixLine, matrixRest) = genericSplitAt n lst

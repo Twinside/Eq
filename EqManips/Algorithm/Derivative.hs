@@ -7,6 +7,7 @@ import Data.Monoid( Monoid( .. ), Any( .. ) )
 import qualified EqManips.ErrorMessages as Err
 
 import EqManips.Types
+import EqManips.Polynome
 import EqManips.EvaluationContext
 import EqManips.Algorithm.MetaEval
 import EqManips.Algorithm.Inject
@@ -15,23 +16,56 @@ import EqManips.Algorithm.Utils
 type Var = String
 
 -- | just an helper function
-int :: Int -> Formula
+int :: Integer -> FormulaPrim
 int = CInteger
 
 -- | Public function to perform a derivation on a
 -- variable.
-derivate :: (Formula -> EqContext Formula) -> Var -> Formula 
-         -> EqContext Formula
-derivate evaluator v f =
-    derivationRules evaluator v f >>=
-    return . sortFormula . listifyFormula
+derivate :: (Formula ListForm -> EqContext (Formula ListForm))
+         -> Var
+         -> Formula TreeForm
+         -> EqContext (Formula ListForm)
+derivate evaluator v f = do
+    derived <- derivationRules evaluator v f
+    let finalForm = listifyFormula $ Formula derived
+    return $ sortFormula finalForm
 
 -- | real function for derivation, d was choosen
 -- because I'm too lasy to type something else :]
-derivationRules :: (Formula -> EqContext Formula) -> String -> Formula
-                -> EqContext Formula
-derivationRules evaluator variable func = d func variable
- where d (Meta m f) var = metaEval evaluator m f >>= flip d var
+derivationRules :: (Formula ListForm -> EqContext (Formula ListForm))
+                -> String
+                -> Formula TreeForm
+                -> EqContext FormulaPrim
+derivationRules evaluator variable (Formula func) = d func variable
+ where d (Meta m f) var = do
+           let listified = listifyFormula $ Formula f
+           formula <- metaEval evaluator m listified
+           let (Formula evaluated) = treeIfyFormula formula
+           d evaluated var
+
+       -- Poloynome with only ^ 0, degenerated case, but
+       -- must handle it
+       d f@(Poly (PolyRest _)) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_bad_form_scalar
+       d f@(Poly (Polynome _ [])) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_empty
+       d (Poly (Polynome v coefs@((c,sub):xs))) var
+            | v /= var && isCoeffNull c = case sub of
+                    Polynome _ _ -> d (Poly sub) var
+                    coeff -> return $ Poly coeff
+            | v /= var = return $ int 0
+            | otherwise = do
+                let coefHead = if isCoeffNull c then xs else coefs
+                poly' <- mapM (\(coef, subPoly) -> do
+                                    sub' <- d (Poly subPoly) var
+                                    case sub' of
+                                     Poly r@(PolyRest _) -> return (coef - CoeffInt 1, PolyRest coef * r)
+                                     a -> let (Just a') = convertToPolynome $ Formula a
+                                          in return (coef - CoeffInt 1, a' * PolyRest coef)) coefHead
+                case poly' of
+                     [(lastCoeff,constant)] -> if isCoeffNull lastCoeff
+                                           then return . unTagFormula $ convertToFormula constant
+                                           else return . Poly $ Polynome v poly'
+                     p -> return . Poly $ Polynome v p
+
        d (Variable v) var
            | v == var = return $ int 1
            | otherwise = return $ int 0
@@ -41,12 +75,11 @@ derivationRules evaluator variable func = d func variable
        d (App f [g]) var =
            (\f' g' -> (App f' [g]) * g') <$> d f var <*> d g var
      
-     
-       d f@(App _ _) _ = eqFail f Err.deriv_no_multi_app
-       d f@(BinOp _ []) _ = eqFail f $ Err.empty_binop "derivate - "
-       d f@(BinOp _ [_]) _ = eqFail f $ Err.single_binop "derivate - "
-       d f@(BinOp OpEq _) _ = eqFail f Err.deriv_no_eq_expr
-       d f@(BinOp OpAttrib _) _ = eqFail f Err.deriv_no_attrib_expr
+       d f@(App _ _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_multi_app
+       d f@(BinOp _ []) _ = unTagFormula <$> eqFail (Formula f) (Err.empty_binop "derivate - ")
+       d f@(BinOp _ [_]) _ = unTagFormula <$> eqFail (Formula f) (Err.single_binop "derivate - ")
+       d f@(BinOp OpEq _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_eq_expr
+       d f@(BinOp OpAttrib _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_attrib_expr
      
        -- Eq:format derivate(f + g, x) = derivate( f, x ) + 
        --                          derivate( g, x )
@@ -137,28 +170,29 @@ derivationRules evaluator variable func = d func variable
        -- | We allow deriving of lambda with only one argument...
        d (Lambda [([Variable v], body)]) var = do
            pushContext
-           addSymbol v $ Variable var
-           body' <- inject body
+           addSymbol v . Formula $ Variable var
+           body' <- inject . listifyFormula $ Formula body
            popContext
-           body'' <- d body' var
+           let treeIfied = unTagFormula $ treeIfyFormula body'
+           body'' <- d treeIfied var
            return $ Lambda [([Variable var], body'')]
      
-       d f@(Lambda _) _ = eqFail f Err.deriv_lambda
+       d f@(Lambda _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_lambda
      
-       d f@(UnOp OpLog _f) _var =
-           eqFail f "No position for Log for now"
-       d f@(UnOp OpAbs _f) _var =
-           eqFail f "abs is derivable? I don't think so"
+       d f@(UnOp OpLog _f) _var = unTagFormula <$>
+           eqFail (Formula f) "No position for Log for now"
+       d f@(UnOp OpAbs _f) _var = unTagFormula <$>
+           eqFail (Formula f) "abs is derivable? I don't think so"
      
-       d f@(UnOp OpFactorial _) _ = eqFail f Err.deriv_no_factorial
-       d f@(UnOp OpFloor _) _ = eqFail f Err.deriv_floor_not_continuous 
-       d f@(UnOp OpCeil _) _ = eqFail f Err.deriv_ceil_not_continuous 
-       d f@(UnOp OpFrac _) _ = eqFail f Err.deriv_frac_not_continuous 
-       d f@(Sum _i _e _w) _var = eqFail f Err.deriv_no_sum
-       d f@(Product _i _e _w) _var = eqFail f Err.deriv_no_product
-       d f@(Derivate _w _v) _var = eqFail f Err.deriv_in_deriv
-       d f@(Integrate _i _e _w _v) _var = eqFail f Err.deriv_no_integration
-       d f@(Matrix _ _ _formulas) _var = eqFail f Err.deriv_no_matrix
-       d f@(Truth _) _ = eqFail f Err.deriv_no_bool
-       d (Block _ _ _) _var = eqFail (Block 0 1 1) Err.deriv_block
+       d f@(UnOp OpFactorial _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_factorial
+       d f@(UnOp OpFloor _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_floor_not_continuous 
+       d f@(UnOp OpCeil _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_ceil_not_continuous 
+       d f@(UnOp OpFrac _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_frac_not_continuous 
+       d f@(Sum _i _e _w) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_sum
+       d f@(Product _i _e _w) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_product
+       d f@(Derivate _w _v) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_in_deriv
+       d f@(Integrate _i _e _w _v) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_integration
+       d f@(Matrix _ _ _formulas) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_matrix
+       d f@(Truth _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_bool
+       d (Block _ _ _) _var = unTagFormula <$> eqFail (Formula $ Block 0 1 1) Err.deriv_block
 

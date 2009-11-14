@@ -1,4 +1,3 @@
-
 SHELL = cmd
 MAKESHELL = cmd
 DEBUG := -debug
@@ -26,3 +25,4 @@ dll:
 										-package HaXml \
 										-lOle32 \
 										formulaDll.def
+

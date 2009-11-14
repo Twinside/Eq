@@ -4,7 +4,9 @@ module EqManips.Renderer.Cpp( convertToCpp, convertToCppS ) where
 import Control.Monad.State.Lazy
 import Control.Applicative
 import Data.Maybe
+
 import EqManips.Types
+import EqManips.Polynome
 import EqManips.Algorithm.Utils
 import qualified EqManips.ErrorMessages as Err
 
@@ -15,11 +17,11 @@ data CppConf = CppConf
 
 type OutContext a = State CppConf a
 
-convertToCpp :: Formula -> String
+convertToCpp :: Formula TreeForm -> String
 convertToCpp f = convertToCppS f ""
 
-convertToCppS :: Formula -> ShowS
-convertToCppS f = fst $ runState (cNo $ treeIfyFormula f) defaultConf
+convertToCppS :: Formula TreeForm -> ShowS
+convertToCppS (Formula f) = fst $ runState (cNo f) defaultConf
 
 instance Applicative (State s) where
     pure = return
@@ -52,7 +54,7 @@ str = (++)
 char :: Char -> ShowS
 char = (:)
 
-cNo :: Formula -> OutContext ShowS
+cNo :: FormulaPrim -> OutContext ShowS
 cNo = cOut Nothing
 
 cppBinOps :: BinOperator -> ShowS
@@ -88,7 +90,8 @@ unOpEr OpASinh = ""
 unOpEr OpACosh = ""
 unOpEr OpATanh = ""
 
-cOut :: Maybe (BinOperator, Bool) -> Formula -> OutContext ShowS
+cOut :: Maybe (BinOperator, Bool) -> FormulaPrim -> OutContext ShowS
+cOut ctxt (Poly p) = cOut ctxt (unTagFormula . treeIfyFormula $ convertToFormula p)
 cOut _ (CInteger i) = return $ shows i
 cOut _ (CFloat i) = return $ shows i
 cOut _ (Variable v) = return $ str v
@@ -134,7 +137,7 @@ cOut _ (Integrate _ _ _ _) = outFail Err.c_out_integrate
 cOut _ (Lambda _) = outFail Err.c_out_lambda 
 cOut _ (Block _ _ _) = outFail Err.c_out_block
 
-iteration :: String -> Formula -> Formula -> Formula -> OutContext ShowS
+iteration :: String -> FormulaPrim -> FormulaPrim -> FormulaPrim -> OutContext ShowS
 iteration op (BinOp OpEq [Variable v, iniExpr]) exprEnd what = do
     tokenVar <- genName
     let tmpVar = "temp_" ++ show tokenVar

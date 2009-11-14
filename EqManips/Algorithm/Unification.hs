@@ -13,13 +13,20 @@ instance Applicative (State s) where
     a <*> b = 
         do { a' <- a; b' <- b; return $ a' b' }
     
-type UnificationContext a = State [(String, Formula)] a
+type UnificationContext a = State [(String, FormulaPrim)] a
 
-(=~=) :: Formula -> Formula -> UnificationContext Bool
+-- | Just a little shortcut to be able to write more
+-- consise code.
+(=~=) :: FormulaPrim -> FormulaPrim
+      -> UnificationContext Bool
 a =~= b = unifyFormula a b
 
-getFirstUnifying :: [([Formula], Formula)] -> [Formula]
-                 -> Maybe (Formula,[(String,Formula)])
+-- | Return the first pattern matching the given formula
+-- and a list of substitution to be made on the function
+-- body.
+getFirstUnifying :: [([FormulaPrim], FormulaPrim)]
+                 -> [FormulaPrim]
+                 -> Maybe (FormulaPrim, [(String,FormulaPrim)])
 getFirstUnifying matches toMatch = foldl' unif Nothing matches
     where unif Nothing (args, body) =
               let (rez, list) = runState (unifyList args toMatch) []
@@ -27,20 +34,30 @@ getFirstUnifying matches toMatch = foldl' unif Nothing matches
                         else Nothing
           unif j@(Just _) _ = j
           
-
-unify :: Formula -> Formula -> Maybe [(String, Formula)]
-unify a b = if rez then Nothing else Just list
+-- | Try to Unify two formula, return a list of substitution
+-- to transform a into b in case of success.
+unify :: Formula anyKind -> Formula anyKind
+      -> Maybe [(String, Formula TreeForm)]
+unify (Formula a) (Formula b) =
+     if rez
+        then Nothing
+        else Just $ [(s, Formula f) | (s,f) <- list]
     where (rez, list) = runState (a =~= b) []
 
-unifyList :: [Formula] -> [Formula] -> UnificationContext Bool
+-- | Helper function to unify list of formula side by side.
+-- Used for "tuples"/arguments
+unifyList :: [FormulaPrim] -> [FormulaPrim] -> UnificationContext Bool
 unifyList l1 l2 
 	| length l1 == length l2 =
 		let valid acc (a,b) = (acc &&) <$> (a =~= b)
 		in foldM valid True $ zip l1 l2
 	| otherwise = return False
 
--- | origin pattern (function args...), to unify
-unifyFormula :: Formula -> Formula -> UnificationContext Bool
+-- | Real function that implement unification.
+-- origin pattern (function args...), to unify
+unifyFormula :: FormulaPrim -- ^ Pattern
+             -> FormulaPrim -- ^ to apply
+             -> UnificationContext Bool
 unifyFormula (App f1 l1) (App f2 l2) =
     (&&) . valid <$> (f1 =~= f2) <*> unifyList l1 l2
         where valid = (&&) $ length l1 == length l2 

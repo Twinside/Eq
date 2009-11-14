@@ -4,77 +4,70 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , fromEmptyMonad 
                                 , treeIfyFormula,  treeIfyBinOp 
                                 , listifyFormula, listifyBinOp 
-                                , parseFormula
-                                , parseProgramm 
-                                , sortFormula 
-                                , nodeCount
+                                , isFormulaConstant, isFormulaConstant' 
+                                , isFormulaInteger, isFormulaScalar 
+                                , sortFormula, invSortFormula, sortBinOp  
+
+                                , nodeCount     -- ^ Count nodes in basic formula
+                                , nodeCount'    -- ^ Same version with form info.
                                 , needParenthesis 
                                 , needParenthesisPrio 
-
                                 , interspereseS 
                                 , concatS 
                                 , concatMapS 
-                                , collectSymbols 
+                                , collectSymbols, collectSymbols'
                                 ) where
 
 import qualified Data.Monoid as Monoid
-import Text.Parsec.Error( ParseError )
-import Text.ParserCombinators.Parsec.Prim( runParser )
+import Data.Monoid( All( .. ), mempty )
 import EqManips.Algorithm.EmptyMonad
 import EqManips.Propreties
 import EqManips.Types
 import EqManips.FormulaIterator
-import EqManips.Linker
-import Data.List( foldl', sort )
+import Data.List( foldl', sortBy )
 
 -----------------------------------------------------------
 --          Parsing formula
 -----------------------------------------------------------
--- | Helper function to parse a formula and apply all
--- needed algorithm to be able to apply them
-parseFormula :: String -> Either ParseError Formula
-parseFormula text = rez
-    where parsed = runParser expr () "FromFile" text
-          rez = case parsed of
-             Left _ -> parsed
-             Right f -> Right . listifyFormula $ linkFormula f
-
 -- | Count the number of nodes in a formula.
-nodeCount :: Formula -> Int
+nodeCount :: FormulaPrim -> Int
 nodeCount f = Monoid.getSum $ foldf 
    (\_ a -> Monoid.Sum $ Monoid.getSum a + 1)
    (Monoid.Sum 0) f
 
+nodeCount' :: Formula anyForm -> Int
+nodeCount' (Formula a) = nodeCount a
+
 -- | Perform a semantic sorting on formula, trying to put numbers
 -- front and rassembling terms
-sortFormula :: Formula -> Formula
-sortFormula = depthFirstFormula `asAMonad` sortBinOp
+sortFormula :: Formula ListForm -> Formula ListForm
+sortFormula (Formula a) = Formula 
+                        $ (depthFormulaPrimTraversal `asAMonad` (sortBinOp compare)) a
 
 -- | Sort a binary operator, used by sortFormula to sort globally
 -- a formula
-sortBinOp :: Formula -> Formula
-sortBinOp (BinOp op lst)
-    | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sort lst
-sortBinOp a = a
+sortBinOp :: (FormulaPrim -> FormulaPrim -> Ordering) -> FormulaPrim -> FormulaPrim
+sortBinOp f (BinOp op lst)
+    | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sortBy f lst
+sortBinOp _f a = a
 
--- | Helper function to use to parse a programm.
--- Perform some transformations to get a usable
--- formula.
-parseProgramm :: String -> Either ParseError [Formula]
-parseProgramm text = rez
-    where parsed = runParser program () "FromFile" text
-          rez = case parsed of
-                 Left _ -> parsed
-                 Right f -> Right $ map (listifyFormula . linkFormula) f
+invSortFormula :: Formula ListForm -> Formula ListForm
+invSortFormula (Formula f) =
+    Formula $ (depthFormulaPrimTraversal `asAMonad` (sortBinOp cmp)) f
+        where cmp a b = invOrd $ compare a b
+              invOrd GT = LT
+              invOrd LT = GT
+              invOrd EQ = EQ
 
 -- | listify a whole formula
-listifyFormula :: Formula -> Formula
-listifyFormula = depthFirstFormula `asAMonad` listifyBinOp 
+listifyFormula :: Formula TreeForm -> Formula ListForm
+listifyFormula (Formula a) = Formula $
+    (depthFormulaPrimTraversal `asAMonad` listifyBinOp) a
 
 
 -- | Given a binary operator in binary tree form,
 -- transform it in list form.
-listifyBinOp :: Formula -> Formula
+listifyBinOp :: FormulaPrim -> FormulaPrim
 listifyBinOp (BinOp op lst) = BinOp op $ translate lst
     where translate = flatten (op `obtainProp` AssocSide)
           flatten OpAssocRight = rightLister
@@ -98,12 +91,14 @@ listifyBinOp (BinOp op lst) = BinOp op $ translate lst
 listifyBinOp a = a
 
 -- | treeify a whole formula
-treeIfyFormula :: Formula -> Formula
-treeIfyFormula = depthFirstFormula `asAMonad` treeIfyBinOp
+treeIfyFormula :: Formula ListForm -> Formula TreeForm
+treeIfyFormula (Formula a) = Formula f
+    where f :: FormulaPrim
+          f = depthFormulaPrimTraversal `asAMonad` treeIfyBinOp $ a
 
 -- | Given a formula where all binops are in list
 -- forms, transform it back to binary tree.
-treeIfyBinOp :: Formula -> Formula
+treeIfyBinOp :: FormulaPrim -> FormulaPrim
 treeIfyBinOp (BinOp _ []) = error "treeIfyBinOp - empty binop"
 treeIfyBinOp (BinOp _ [_]) = error "treeIfyBinOp - Singleton binop"
 treeIfyBinOp f@(BinOp _ [_,_]) = f
@@ -166,23 +161,95 @@ biAssocM f finv lst = assocInner f lst
               Left v -> assocInner f' (v:xs)
               Right (v1, v2) -> assocInner finv (v2:xs) >>= return . (v1:) 
 
-concatS :: [ShowS] -> ShowS
+-- | Work like concat on list, but instead
+-- just combine functions of kind of ShowS.
+-- The function is generalized
+concatS :: [a -> a] -> (a -> a)
 concatS = foldr1 (.)
 
-concatMapS :: (a -> ShowS) -> [a] -> ShowS
+-- | Work like concatMap, but instead use 
+-- function combination.
+concatMapS :: (a -> b -> b) -> [a] -> (b -> b)
 concatMapS f = concatS . map f
 
 -- | Same functionality as intersperse but combine function
 -- instead of concatenation
-interspereseS :: ShowS -> [ShowS] -> ShowS
+interspereseS :: (a -> a) -> [a -> a] -> a -> a
 interspereseS what within =
    foldl' (\acc e -> e . what . acc) lastOne reversed
     where (lastOne : reversed) = reverse within
 
 -- | Collect all the symbols present in the formula.
 -- Symbols can be present multiple times
-collectSymbols :: Formula -> [String]
+collectSymbols :: FormulaPrim -> [String]
 collectSymbols = foldf symbolCollector []
     where symbolCollector (Variable v) acc = v:acc
           symbolCollector _ acc = acc
+
+collectSymbols' :: Formula anyKind -> [String]
+collectSymbols' (Formula a) = collectSymbols a
+
+isFormulaInteger :: FormulaPrim -> Bool
+isFormulaInteger = getAll . foldf isConstant mempty
+    where isConstant (Variable _) _ = All False
+          isConstant (Sum _ _ _) _ = All False
+          isConstant (Poly _) _ = All False
+          isConstant (Product _ _ _) _ = All False
+          isConstant (Derivate _ _) _ = All False
+          isConstant (Integrate _ _ _ _) _ = All False
+          isConstant (Lambda _) _ = All False
+          isConstant (App _ _) _ = All False
+          isConstant (Block _ _ _) _ = All False
+          --
+          isConstant (CFloat _) _ = All False
+          isConstant (CInteger _) _ = All True
+          isConstant (Truth _) _ = All False
+          isConstant (NumEntity _) _ = All False
+          --
+          isConstant (UnOp op _) a = isValidUnop op a
+          isConstant (BinOp _ _) a = a
+          isConstant (Meta _ _) a = a
+          isConstant (Matrix 1 1 _) a = a
+          isConstant (Matrix _ _ _) _ = All False
+
+          isValidUnop OpNegate a = a
+          isValidUnop OpAbs a = a
+          isValidUnop OpFactorial _ = All True
+          isValidUnop OpCeil _ = All True
+          isValidUnop OpFloor _ = All True
+          isValidUnop _ _ = All False
+
+isFormulaScalar :: FormulaPrim -> Bool
+isFormulaScalar (CFloat _) = True
+isFormulaScalar (CInteger _) = True
+isFormulaScalar _ = False
+
+-- | Tell if a formula can be reduced to a scalar somehow
+isFormulaConstant :: FormulaPrim -> Bool
+isFormulaConstant = getAll . foldf isConstant mempty
+    where isConstant (Variable _) _ = All False
+          isConstant (Poly _) _ = All False
+          isConstant (Sum _ _ _) _ = All False
+          isConstant (Product _ _ _) _ = All False
+          isConstant (Derivate _ _) _ = All False
+          isConstant (Integrate _ _ _ _) _ = All False
+          isConstant (Lambda _) _ = All False
+          isConstant (App _ _) _ = All False
+          isConstant (Block _ _ _) _ = All False
+          --
+          isConstant (CFloat _) _ = All True
+          isConstant (CInteger _) _ = All True
+          isConstant (Truth _) _ = All True
+          isConstant (NumEntity _) _ = All True
+          --
+          isConstant (UnOp _ _) a = a
+          isConstant (BinOp _ _) a = a
+          isConstant (Meta _ _) a = a
+          isConstant (Matrix 1 1 _) a = a
+          isConstant (Matrix _ _ _) _ = All False
+
+-- | Tell if a formula in any form can be reduced
+-- to a scalar somehow
+isFormulaConstant' :: Formula anyKind -> Bool
+isFormulaConstant' (Formula a) = isFormulaConstant a
 

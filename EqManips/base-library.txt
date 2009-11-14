@@ -8,6 +8,13 @@ if( true, a, b ) := a;
 if( false, a, b ) := b;
 if( otherwise, a, b ) := undefined;
 
+-- well, a max function
+max( a, b ) := if( a > b, a, b );
+
+-- well, a min function
+min( a, b ) := if( a < b, a, b );
+
+-- provide equality when everything else is undefined :-P
 eq( a, a ) := true;
 eq( a, b ) := false;
 
@@ -17,6 +24,6 @@ taylorin( f, var, a, n ) := taylorin( f, var, a, n - 1 )
                           + (derivaten(f, var, Force(n)))( a ) / n! * (x - a) ^ n;
 
 -- taylor( formula, derivation var, onVar, order )
-taylor( f, var, a, n ) := Cleanup( Listify( taylorin( Lambda( var, f ), var, a, n )));
+taylor( f, var, a, n ) :=
+    Sort( Cleanup( taylorin( Lambda( var, f ), var, a, n )))
 
-taylor( exp(x), x, 0, 7)

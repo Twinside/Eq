@@ -4,18 +4,18 @@ import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.Algorithm.Utils
 
-type BiRuler = Formula -> Formula -> Either Formula (Formula, Formula)
+type BiRuler = FormulaPrim -> FormulaPrim -> Either FormulaPrim (FormulaPrim, FormulaPrim)
 
-cleanup :: Formula -> Formula
-cleanup = depthFirstFormula `asAMonad` rules
+cleanup :: Formula anyForm -> Formula anyForm
+cleanup = depthFirstFormula `asAMonad` (Formula . rules . unTagFormula)
 
-cleanupRules :: Formula -> Formula
-cleanupRules = rules
+cleanupRules :: Formula anyForm -> Formula anyForm
+cleanupRules (Formula a) = Formula $ rules a
 
-int :: Int -> Formula
+int :: Integer -> FormulaPrim
 int = CInteger
 
-zero :: Formula -> Bool
+zero :: FormulaPrim -> Bool
 zero f = f == int 0 || f == CFloat 0.0
 
 ----------------------------------------------
@@ -83,44 +83,82 @@ power x y = Right (x,y)
 ----------------------------------------------
 ----                '/'
 ----------------------------------------------
-divide :: Formula -> Formula -> Either Formula (Formula,Formula)
+divide :: BiRuler
 divide (CInteger 0) _ = Left $ int 0
 divide x (CInteger 1) = Left x
+divide f1@(CInteger i1) f2@(CInteger i2)
+    | i1 `mod` i2 == 0 = Left . int $ i1 `div` i2
+    | otherwise = if greatestCommonDenominator > 1
+                        then Left $ (int $ i1 `quot` greatestCommonDenominator)
+                                  / (int $ i2 `quot` greatestCommonDenominator)
+                        else Right (f1,f2)
+        where greatestCommonDenominator = gcd i1 i2
 divide x y = Right (x,y)
 
 ----------------------------------------------
 ----                'sinus'
 ----------------------------------------------
-sinus :: Formula -> Formula
+sinus :: FormulaPrim -> FormulaPrim
 sinus (CInteger 0) = int 0
 sinus (NumEntity Pi) = int 0
--- Here we handle the more general case, for 2k * pi + 1
--- and 2k * pi
-sinus (BinOp OpMul [NumEntity Pi, CInteger i])
-    | i `mod` 2 == 0 = int 0
-    | otherwise = int 1
-sinus (BinOp OpMul [CInteger i, NumEntity Pi])
-    | i `mod` 2 == 0 = int 0
-    | otherwise = int 1
+sinus (BinOp OpDiv [NumEntity Pi, CInteger 6]) = int 1 / int 2
+sinus (BinOp OpMul [NumEntity Pi, CInteger _]) = int 0
+sinus (BinOp OpMul [CInteger _, NumEntity Pi]) = int 0
+-- TODO : add more complex simplifications one day :]
+{-sinus (BinOp OpMul [Pi, BinOp OpDiv [Pi, CInteger i]])-}
 sinus i = sin i
 
 ----------------------------------------------
 ----                'cosinus'
 ----------------------------------------------
-cosinus :: Formula -> Formula
+cosinus :: FormulaPrim -> FormulaPrim
 cosinus (CInteger 0) = int 1
 cosinus (NumEntity Pi) = int (-1)
+cosinus (BinOp OpDiv [NumEntity Pi, CInteger 6]) = sqrt 3 / int 3
+cosinus (BinOp OpMul [NumEntity Pi, CInteger i])
+    | i `mod` 2 == 0 = int 1
+    | otherwise = int (-1)
+cosinus (BinOp OpMul [CInteger i, NumEntity Pi])
+    | i `mod` 2 == 0 = int 1
+    | otherwise = int (-1)
 cosinus i = cos i
+
+--------------------------------------------------
+----            'tan'
+--------------------------------------------------
+tangeant :: FormulaPrim -> FormulaPrim
+tangeant (BinOp OpDiv [NumEntity Pi, CInteger 4]) = int 1
+tangeant i = tan i
+
+--------------------------------------------------
+----            'asinh'
+--------------------------------------------------
+sinush :: FormulaPrim -> FormulaPrim
+sinush (CInteger 0) = int 0
+sinush (UnOp OpNegate x) = negate $ sinh x
+sinush (CFloat f)   | f < 0 = negate . sinh $ CFloat (-f)
+sinush (CInteger i) | i < 0 = negate . sinh $ CInteger (-i)
+sinush i = sinh i
+
+--------------------------------------------------
+----            'cosinush'
+--------------------------------------------------
+cosinush :: FormulaPrim -> FormulaPrim
+cosinush (CInteger 0) = int 0
+cosinush (UnOp OpNegate x) = cosh x
+cosinush (CFloat f)   | f < 0 = cosh $ CFloat (-f)
+cosinush (CInteger i) | i < 0 = cosh $ CInteger (-i)
+cosinush i = cosh i
 
 --------------------------------------------------
 ----            'exp'
 --------------------------------------------------
-exponential :: Formula -> Formula
+exponential :: FormulaPrim -> FormulaPrim
 exponential (CInteger 0) = int 1
 exponential (CFloat 0.0) = int 1
 exponential f = exp f
 
-reOp :: BinOperator -> [Formula] -> Formula
+reOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
 reOp _ [] = error "reOp Empty formula? WTF"
 reOp _ [x] = x
 reOp op lst = BinOp op lst
@@ -128,9 +166,12 @@ reOp op lst = BinOp op lst
 ---------------------------------------------
 ---- Linking all the rules together
 ---------------------------------------------
-rules :: Formula -> Formula
+rules :: FormulaPrim -> FormulaPrim
 rules (UnOp OpSin f) = sinus f
 rules (UnOp OpCos f) = cosinus f
+rules (UnOp OpTan f) = tangeant f
+rules (UnOp OpSinh f) = sinush f
+rules (UnOp OpCosh f) = cosinush f
 rules (UnOp OpExp f) = exponential f
 rules (BinOp OpAdd fs) = reOp OpAdd $ biAssoc add add fs
 rules (BinOp OpSub fs) = reOp OpSub $ biAssoc sub add fs
