@@ -23,6 +23,7 @@ function performTestSuite( [string]$where, [bool]$isValid, [string]$command, [bo
         if (isInvalid $isValid)
         {
             if ( -not $showAll ) {
+                echo $_.fullname
                 echo "`n==========================================================="
                 cat $_
             }

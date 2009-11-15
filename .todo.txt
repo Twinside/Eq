@@ -1,3 +1,4 @@
+4:Fix expand algorithm :]
 4:Decide derivation for log
 4:Write a documentation
 3:Matrix multiplication order problem!
