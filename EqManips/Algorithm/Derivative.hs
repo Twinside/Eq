@@ -47,6 +47,8 @@ derivationRules evaluator variable (Formula func) = d func variable
        -- must handle it
        d f@(Poly (PolyRest _)) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_bad_form_scalar
        d f@(Poly (Polynome _ [])) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_empty
+
+       -- Eq:format derivate( sum( a_i * x^i ), x ) = sum( a_i * i * x ^ (i-1))
        d (Poly (Polynome v coefs@((c,sub):xs))) var
             | v /= var && isCoeffNull c = case sub of
                     Polynome _ _ -> d (Poly sub) var
@@ -54,16 +56,25 @@ derivationRules evaluator variable (Formula func) = d func variable
             | v /= var = return $ int 0
             | otherwise = do
                 let coefHead = if isCoeffNull c then xs else coefs
-                poly' <- mapM (\(coef, subPoly) -> do
-                                    sub' <- d (Poly subPoly) var
-                                    case sub' of
-                                     Poly r@(PolyRest _) -> return (coef - CoeffInt 1, PolyRest coef * r)
-                                     a -> let (Just a') = convertToPolynome $ Formula a
-                                          in return (coef - CoeffInt 1, a' * PolyRest coef)) coefHead
+                    derivator (coef, PolyRest subCoeff) =
+                        return (coef - CoeffInt 1, PolyRest $ coef * subCoeff)
+
+                    derivator (coef, subPoly@(Polynome _ _)) = do
+                        sub' <- d (Poly subPoly) var
+                        addTrace ("meh", treeIfyFormula $ Formula sub')
+                        case sub' of
+                             Poly r@(PolyRest _) -> return (coef - CoeffInt 1, PolyRest coef * r)
+                             Poly (Polynome _ _) -> error "What to do - polynome derivation case"
+                             _ -> error "GNU?"
+
+                poly' <- mapM derivator coefHead
                 case poly' of
-                     [(lastCoeff,constant)] -> if isCoeffNull lastCoeff
-                                           then return . unTagFormula $ convertToFormula constant
+                     [(lastCoeff, PolyRest constant)] -> if isCoeffNull lastCoeff
+                                           then return . unTagFormula $ convertToFormula (PolyRest constant)
                                            else return . Poly $ Polynome v poly'
+                     [(lastCoeff, subPoly)] -> if isCoeffNull lastCoeff
+                                    then return $ Poly subPoly
+                                    else return . Poly $ Polynome v poly'
                      p -> return . Poly $ Polynome v p
 
        d (Variable v) var
