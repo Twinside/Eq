@@ -8,7 +8,7 @@ sexprRender :: Formula anyForm -> String
 sexprRender f = sexprRenderS f ""
 
 sexprRenderS :: Formula anyForm -> ShowS
-sexprRenderS (Formula f) = char '(' . sexprS f . char ')'
+sexprRenderS (Formula f) = sexprS f
 
 str :: String -> ShowS
 str = (++)

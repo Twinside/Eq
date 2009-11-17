@@ -41,6 +41,7 @@ import Data.Maybe( fromJust )
 
 import EqManips.Propreties
 import {-# SOURCE #-} EqManips.Polynome()
+import {-# SOURCE #-} EqManips.Renderer.Sexpr
 
 -- | All Binary operators
 data BinOperator  =
@@ -161,7 +162,7 @@ data FormulaPrim =
 -- with the type system.
 -- - formula Form : how is handled the binop form
 newtype Formula formulaForm = Formula { unTagFormula :: FormulaPrim }
-    deriving (Eq, Show, Ord)
+    deriving (Eq, {-Show,-} Ord)
 
 -- | Type token for format of the form [a,b,c,d,e...]
 data ListForm
@@ -217,6 +218,13 @@ a <<>> b = ordIt a
 -----------------------------------------------------------
 --  Ord def, used to sort-out '+' list for exemples
 -----------------------------------------------------------
+instance Show (Formula anyForm) where
+    showsPrec _ (Formula a) =
+          ('{':)
+        . sexprRenderS (Formula a)
+        . (++) "}\n"
+        . showsPrec 0 a
+
 instance Ord PolyCoeff where
     compare left right = case polyCoeffCast left right of
         (CoeffInt a, CoeffInt b) -> compare a b

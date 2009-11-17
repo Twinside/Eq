@@ -61,7 +61,6 @@ derivationRules evaluator variable (Formula func) = d func variable
 
                     derivator (coef, subPoly@(Polynome _ _)) = do
                         sub' <- d (Poly subPoly) var
-                        addTrace ("meh", treeIfyFormula $ Formula sub')
                         case sub' of
                              Poly r@(PolyRest _) -> return (coef - CoeffInt 1, PolyRest coef * r)
                              Poly (Polynome _ _) -> error "What to do - polynome derivation case"

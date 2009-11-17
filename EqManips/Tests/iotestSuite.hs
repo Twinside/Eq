@@ -55,7 +55,8 @@ prop_showBack :: FormulaPrim -> Bool
 prop_showBack formula = case eitherformula of
              Left _ -> False
              Right f -> 
-                (unTagFormula . Cleanup.cleanup . linkFormula $ Formula f) == cleanup formula
+                (Cleanup.cleanup . linkFormula $ Formula f) ==
+                    (Cleanup.cleanup . listifyFormula $ Formula formula)
     where text = unparse formula
           eitherformula = runParser expr () "FromFile" text
 
@@ -91,9 +92,16 @@ globalTests =
                                                                    . expand
                                                                    . treeIfyFormula
                                                                    . Formula)
+    -- Well the next case is... well.. a bit stupid. We don't evaluate formula
+    -- in tree form, wich allow us to do a better evaluation (quicker, based
+    -- on less actual bound variables), and everything is listified which, is
+    -- already tested =)
+    -- Keep code here in case of mind changing (screw git)
+    {-
     , ("Treeify don't change meaning", testRunner . preserveMeaning $ unTagFormula 
                                                                     . treeIfyFormula
                                                                     . Formula)
+     -}
     , ("Listify don't change meaning", testRunner . preserveMeaning $ unTagFormula 
                                                                     . listifyFormula
                                                                     . Formula)

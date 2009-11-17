@@ -30,12 +30,19 @@ convertToPolynome (Formula f) = polynomize $ prepareFormula f
 convertToFormula :: Polynome -> Formula ListForm
 convertToFormula = Formula . convertToFormulaPrim
 
+packPolynome :: FormulaPrim -> FormulaPrim
+packPolynome (BinOp OpMul (Poly a : Poly b:xs)) = packPolynome . BinOp OpMul $ Poly (a*b) : xs
+packPolynome (BinOp OpAdd (Poly a : Poly b:xs)) = packPolynome . BinOp OpAdd $ Poly (a+b) : xs
+packPolynome (BinOp OpSub (Poly a : Poly b:xs)) = packPolynome . BinOp OpSub $ Poly (a-b) : xs
+packPolynome (BinOp _op [a]) = a
+packPolynome a = a
+
 -- | Run across the whole formula and replace what
 -- can polynomized by a polynome
 polynomizeFormula :: Formula ListForm -> Formula ListForm
-polynomizeFormula (Formula f) = Formula $
+polynomizeFormula (Formula f) = Formula . packPolynome $
     depthFormulaPrimTraversal `asAMonad` converter $ f
-        where converter f' = case convertToPolynome (Formula f') of
+        where converter f' = case convertToPolynome . Formula $ packPolynome f' of
                     Nothing -> f'
                     Just p -> Poly p
 
@@ -221,6 +228,10 @@ translator pow0 [] = return $ PolyRest <$> evalCoeff pow0
 
 -- | Try to transform a formula in polynome.
 polynomize :: FormulaPrim -> Maybe Polynome
+polynomize (BinOp OpAdd (Poly a:next)) = maybe Nothing (\b -> Just $ a + b) $ polynomize (BinOp OpAdd next)
+polynomize (BinOp OpSub (Poly a:next)) = maybe Nothing (\b -> Just $ a - b) $ polynomize (BinOp OpSub next)
+polynomize (BinOp OpMul (Poly a:next)) = maybe Nothing (\b -> Just $ a * b) $ polynomize (BinOp OpMul next)
+
 polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula])
 polynomize wholeFormula@(BinOp OpPow [Variable _,_]) = polynomize (BinOp OpAdd [wholeFormula])
 -- HMmm?
