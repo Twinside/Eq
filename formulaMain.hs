@@ -24,7 +24,7 @@ import EqManips.InputParser.MathML
 import EqManips.InputParser.EqCode
 
 -- Debugging
-import EqManips.Renderer.CharRender
+{-import EqManips.Renderer.CharRender-}
 
 data Flag =
       Output

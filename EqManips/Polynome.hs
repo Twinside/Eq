@@ -232,6 +232,10 @@ polynomize (BinOp OpAdd (Poly a:next)) = maybe Nothing (\b -> Just $ a + b) $ po
 polynomize (BinOp OpSub (Poly a:next)) = maybe Nothing (\b -> Just $ a - b) $ polynomize (BinOp OpSub next)
 polynomize (BinOp OpMul (Poly a:next)) = maybe Nothing (\b -> Just $ a * b) $ polynomize (BinOp OpMul next)
 
+polynomize (Variable a) = Just $ Polynome a [(CoeffInt 1, PolyRest $ CoeffInt 1)]
+polynomize (BinOp OpPow [Poly (Polynome v [(coeff, PolyRest subPoly)]), CInteger i]) =
+    Just $ Polynome v [(coeff * CoeffInt i, PolyRest subPoly)]
+
 polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula])
 polynomize wholeFormula@(BinOp OpPow [Variable _,_]) = polynomize (BinOp OpAdd [wholeFormula])
 -- HMmm?
@@ -283,7 +287,9 @@ extractFirstTerm a = Right a
 -- | Only to map on the polynome coefficients (not the degree
 -- of it).
 polyCoeffMap :: (PolyCoeff -> PolyCoeff) -> Polynome -> Polynome
-polyCoeffMap f = polyMap (\(c,p) -> (f c, p))
+polyCoeffMap f = polyMap mapper
+    where mapper (deg, PolyRest c) = (deg, PolyRest $ f c)
+          mapper otherCoeff = otherCoeff
 
 -- | polynome mapping
 polyMap :: ((PolyCoeff, Polynome) -> (PolyCoeff, Polynome)) -> Polynome -> Polynome
