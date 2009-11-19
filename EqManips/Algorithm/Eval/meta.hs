@@ -1,4 +1,4 @@
-module EqManips.Algorithm.MetaEval ( metaEval ) where
+module EqManips.Algorithm.Eval.Meta ( metaEval ) where
 
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Expand
@@ -24,3 +24,4 @@ metaEval evaluator LambdaBuild (Formula (Lambda [([arg], body)])) = do
     body' <- evaluator . Formula $ body
     return . Formula $ Lambda [([unTagFormula arg'], unTagFormula body')]
 metaEval _ LambdaBuild _ = eqFail (Formula $ Block 1 1 1) Err.wrong_lambda_format 
+

@@ -1,10 +1,10 @@
-module EqManips.Algorithm.EvalTypes( EvalOp
-                                   , EvalFun
-                                   , FormulOperator
-                                   , EvalPredicate
-                                   , FormulaEvaluator
-                                   , taggedEvaluator, deTagEvaluator 
-                                   ) where
+module EqManips.Algorithm.Eval.Types( EvalOp
+                                    , EvalFun
+                                    , FormulOperator
+                                    , EvalPredicate
+                                    , FormulaEvaluator
+                                    , taggedEvaluator, deTagEvaluator 
+                                    ) where
 
 import EqManips.Types
 import EqManips.EvaluationContext

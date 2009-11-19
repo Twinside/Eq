@@ -3,49 +3,20 @@
 -- points operations which are by nature lossy. So this set
 -- of rules may or may not be used in the context of global
 -- evaluation to preserve the "true" meaning of the formula.
-module EqManips.Algorithm.EvalFloating ( evalFloat, floatEvalRules ) where
+module EqManips.Algorithm.Eval.Floating ( evalFloat, floatEvalRules ) where
 
 import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
-import EqManips.Propreties
 import EqManips.EvaluationContext
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.EvalTypes
+import EqManips.Algorithm.Eval.Types
+import EqManips.Algorithm.Eval.Utils
 
 import Data.Maybe( fromMaybe )
-import Data.List( sort )
-
--- | Used to transform a binop to a scalar if size
--- is small
-binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
-binOp _ [x] = x
-binOp op lst = BinOp op lst
-
--- | Evaluate a binary operator
-binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext FormulaPrim
-binEval op f inv formulaList 
-    | op `hasProp` Associativ && op `hasProp` Commutativ = do
-#ifdef _DEBUG
-        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList)
-#endif
-        biAssocM f inv (sort formulaList) >>= return . binOp op
-
-    | otherwise = do
-#ifdef _DEBUG
-        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ BinOp op formulaList)
-#endif
-        biAssocM f inv formulaList >>= return . binOp op
 
 -- | General function favored to use the reduction rules
 -- as it preserve meta information about the formula form.
 evalFloat :: Formula anyForm -> EqContext (Formula anyForm)
 evalFloat (Formula f) = floatEvalRules f >>= (return . Formula)
-
-left :: (Monad m) => a -> m (Either a b)
-left = return . Left
-
-right :: (Monad m) => b -> m (Either a b)
-right = return . Right
 
 floatCastingOperator :: (Double -> Double -> Double) -> EvalOp
 floatCastingOperator f (CInteger i1) (CFloat f2) =

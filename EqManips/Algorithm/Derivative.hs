@@ -9,7 +9,7 @@ import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.Polynome
 import EqManips.EvaluationContext
-import EqManips.Algorithm.MetaEval
+import EqManips.Algorithm.Eval.Meta
 import EqManips.Algorithm.Inject
 import EqManips.Algorithm.Utils
 
