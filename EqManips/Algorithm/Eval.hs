@@ -19,12 +19,37 @@ import EqManips.Algorithm.Derivative
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.MetaEval
 import EqManips.Algorithm.EvalFloating
+import EqManips.Algorithm.EvalPolynomial
 
 import EqManips.Algorithm.Unification
 import EqManips.Algorithm.EvalTypes
 
 import Data.List( foldl' , transpose, sort )
 
+
+--------------------------------------------------
+----            Eval helpers
+--------------------------------------------------
+-- | Used to transform a binop to a scalar if size
+-- is small
+binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
+binOp _ [x] = x
+binOp op lst = BinOp op lst
+
+-- | Evaluate a binary operator
+binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext FormulaPrim
+binEval op f inv formulaList 
+    | op `hasProp` Associativ && op `hasProp` Commutativ = do
+#ifdef _DEBUG
+        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList)
+#endif
+        biAssocM f inv (sort formulaList) >>= return . binOp op
+
+    | otherwise = do
+#ifdef _DEBUG
+        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ BinOp op formulaList)
+#endif
+        biAssocM f inv formulaList >>= return . binOp op
 
 evalGlobalLossyStatement, evalGlobalLosslessStatement :: FormulaEvaluator
 evalGlobalLossyStatement = evalGlobalStatement reduce'
@@ -36,7 +61,9 @@ reduce = taggedEvaluator reduce'
 
 -- | Main function to evaluate raw formula
 reduce' :: EvalFun
-reduce' f = (eval reduce' $ cleaner f) >>= floatEvalRules
+reduce' f = (eval reduce' $ cleaner f)
+        >>= polyEvalRules 
+        >>= floatEvalRules
     where cleaner = unTagFormula . cleanupRules . Formula
 
 -- | Only perform non-lossy transformations
@@ -45,7 +72,9 @@ exactReduce = taggedEvaluator exactReduce'
 
 -- | same as exactReduce, but perform on raw formula.
 exactReduce' :: EvalFun
-exactReduce' = eval exactReduce' . (unTagFormula . cleanupRules . Formula)
+exactReduce' f = (eval exactReduce' $ cleaner f)
+           >>= polyEvalRules 
+    where cleaner = unTagFormula . cleanupRules . Formula
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left
@@ -296,22 +325,6 @@ binor a b = return $ Right (a,b)
 -----------------------------------------------
 ----        lalalal operators
 -----------------------------------------------
-binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
-binOp _ [x] = x
-binOp op lst = BinOp op lst
-
--- | Evaluate a binary operator
-binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext FormulaPrim
-binEval op f inv formulaList 
-    | op `hasProp` Associativ && op `hasProp` Commutativ = do
-#ifdef _DEBUG
-        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList)
-#endif
-        biAssocM f inv (sort formulaList) >>= return . binOp op
-
-    | otherwise = do
-        biAssocM f inv formulaList >>= return . binOp op
-
 metaEvaluation :: EvalFun -> MetaOperation -> EvalFun
 metaEvaluation evaluator m f = unTagFormula
               <$> metaEval (taggedEvaluator evaluator) m (Formula f)

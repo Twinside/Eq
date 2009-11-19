@@ -5,7 +5,6 @@
 -- evaluation to preserve the "true" meaning of the formula.
 module EqManips.Algorithm.EvalFloating ( evalFloat, floatEvalRules ) where
 
-
 import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.Propreties
@@ -15,6 +14,27 @@ import EqManips.Algorithm.EvalTypes
 
 import Data.Maybe( fromMaybe )
 import Data.List( sort )
+
+-- | Used to transform a binop to a scalar if size
+-- is small
+binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
+binOp _ [x] = x
+binOp op lst = BinOp op lst
+
+-- | Evaluate a binary operator
+binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext FormulaPrim
+binEval op f inv formulaList 
+    | op `hasProp` Associativ && op `hasProp` Commutativ = do
+#ifdef _DEBUG
+        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList)
+#endif
+        biAssocM f inv (sort formulaList) >>= return . binOp op
+
+    | otherwise = do
+#ifdef _DEBUG
+        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ BinOp op formulaList)
+#endif
+        biAssocM f inv formulaList >>= return . binOp op
 
 -- | General function favored to use the reduction rules
 -- as it preserve meta information about the formula form.
@@ -78,28 +98,6 @@ fNegate f = return $ negate f
 fAbs :: EvalFun
 fAbs (CFloat f) = return . CFloat $ abs f
 fAbs f = return $ abs f
-
------------------------------------------------
-----        lalalal operators
------------------------------------------------
-binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
-binOp _ [x] = x
-binOp op lst = BinOp op lst
-
--- | Evaluate a binary operator
-binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext FormulaPrim
-binEval op f inv formulaList 
-    | op `hasProp` Associativ && op `hasProp` Commutativ = do
-#ifdef _DEBUG
-        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList)
-#endif
-        biAssocM f inv (sort formulaList) >>= return . binOp op
-
-    | otherwise = do
-#ifdef _DEBUG
-        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ BinOp op formulaList)
-#endif
-        biAssocM f inv formulaList >>= return . binOp op
 
 -----------------------------------------------
 ----        General evaluation

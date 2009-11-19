@@ -11,7 +11,6 @@ polynomes =
         [ "3 * x^2 * y^2 - (1/2) * x^2 * y * z^3 +5.0 * x^2 * z^2 +4*x -z^4 + 1"
         , "3 * x^2 * y^2 - (1/2) * x^2 * y * z^3 +5.0 * x^2 * z^2 +4*x -z^4"
         , "(3*y^2+(-2*z^3)*y+5*z^2)*x^2+4*x+(-z^4+1)"
-        , "(3*y^2+(-2*z^3)*y+5*z^2)*x^2+4*x+(-z^4+1)"
         , "(-2*y*z^3)"
         , "(2*z^3)"
         , "(-2*(-y)*z^3)"
@@ -43,3 +42,9 @@ main = do
     {-formulaPolynomiezer $ polynomes !! 3-}
     mapM_ formulaPolynomiezer polynomes
 
+( 3*y^2
+ +(-2*z^3)*y
+ +5*z^2
+ )*x^2
++ 4*x
++ (-z^4 + 1)
