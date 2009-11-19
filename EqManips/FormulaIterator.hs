@@ -3,9 +3,11 @@ module EqManips.FormulaIterator( depthFirstFormula
                                , depthFormulaTraversal 
                                , depthFormulaPrimTraversal 
                                , depthPrimTraversal 
+                               , topDownTraversal 
                                ) where
 
 import EqManips.Types
+import Data.Maybe( fromMaybe )
 import Control.Monad( mapM )
 
 -- | Depth first traversal of formula.
@@ -36,6 +38,69 @@ depthFormulaPrimTraversal :: (Monad m)
                           -> FormulaPrim
                           -> m FormulaPrim
 depthFormulaPrimTraversal = depthPrimTraversal (const $ return ())
+
+-- | This function must be used to transform
+topDownTraversal :: (FormulaPrim -> Maybe FormulaPrim)
+                 -> FormulaPrim
+                 -> FormulaPrim
+topDownTraversal f p@(Poly _) = fromMaybe p $ f p
+topDownTraversal f v@(Variable _) = fromMaybe v $ f v
+topDownTraversal f i@(CInteger _) = fromMaybe i $ f i
+topDownTraversal f d@(CFloat _) = fromMaybe d $ f d
+topDownTraversal f e@(NumEntity _) = fromMaybe e $ f e
+topDownTraversal f t@(Truth _) = fromMaybe t $ f t
+topDownTraversal f l@(Lambda eqs) = 
+    fromMaybe (Lambda lambda') $ f l
+        where lambda' =
+                  [ ( map (topDownTraversal f) args
+                    , topDownTraversal f body) | (args, body) <- eqs]
+
+topDownTraversal f meta@(Meta _ form) =
+    fromMaybe (topDownTraversal f form) $ f meta
+
+topDownTraversal f formula@(App func args) =
+    fromMaybe (App mayFunc mayArgs) $ f formula
+        where mayFunc = topDownTraversal f func
+              mayArgs = map (topDownTraversal f) args
+
+topDownTraversal f formula@(Sum ini end what) =
+    fromMaybe (Sum mayIni mayEnd mayWhat) $ f formula
+        where mayIni = topDownTraversal f ini
+              mayEnd = topDownTraversal f end
+              mayWhat = topDownTraversal f what
+
+topDownTraversal f formula@(Product ini end what) =
+    fromMaybe (Product mayIni mayEnd mayWhat) $ f formula
+        where mayIni = topDownTraversal f ini
+              mayEnd = topDownTraversal f end
+              mayWhat = topDownTraversal f what
+
+topDownTraversal f formula@(Derivate what var) =
+    fromMaybe (Derivate mayWhat mayVar ) $ f formula
+        where mayVar = topDownTraversal f var
+              mayWhat = topDownTraversal f what
+
+topDownTraversal f formula@(Integrate ini end what var) =
+    fromMaybe (Integrate mayIni mayEnd mayWhat mayVar) $ f formula
+        where mayIni = topDownTraversal f ini
+              mayEnd = topDownTraversal f end
+              mayWhat = topDownTraversal f what
+              mayVar = topDownTraversal f var
+
+topDownTraversal f formula@(Matrix n m cells) =
+    fromMaybe (Matrix n m [[topDownTraversal f cell | cell <- line] | line <- cells])
+            $ f formula
+
+topDownTraversal f formula@(UnOp op sub) =
+    fromMaybe (UnOp op $ topDownTraversal f sub) $ f formula
+
+topDownTraversal f formula@(BinOp op fs) =
+    fromMaybe (BinOp op $ map (topDownTraversal f) fs) $ f formula
+
+-- Hmm, it's a debug for renderer, we dont really care
+topDownTraversal _ b@(Block _ _ _) = b
+
+
 
 -- | Depth first traversal providing two events :
 -- - One pre event which is called when a node is
