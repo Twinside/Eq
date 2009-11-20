@@ -38,13 +38,5 @@ formulaPolynomiezer formulaText =
 
 main :: IO ()
 main = do
-    {-formulaPolynomiezer $ polynomes !! 2-}
-    {-formulaPolynomiezer $ polynomes !! 3-}
     mapM_ formulaPolynomiezer polynomes
 
-( 3*y^2
- +(-2*z^3)*y
- +5*z^2
- )*x^2
-+ 4*x
-+ (-z^4 + 1)

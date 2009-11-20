@@ -260,8 +260,8 @@ instance Ord FormulaPrim where
     compare (CInteger _) _ = LT
 
     compare (Poly p1) (Poly p2) = compare p1 p2
-    compare (Poly _) _ = GT
-    compare _ (Poly _) = LT
+    compare (Poly _) _ = LT
+    compare _ (Poly _) = GT
 
     -- x < y
     compare (Variable v) (Variable v1) = compare v v1

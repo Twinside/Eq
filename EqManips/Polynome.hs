@@ -7,6 +7,7 @@ module EqManips.Polynome( convertToPolynome
                         , polyMap
                         , polyCoeffMap 
                         , scalarToCoeff
+                        , coefToFormula 
                         , isCoeffNull 
                         , prepareFormula 
                         ) where
@@ -22,6 +23,8 @@ import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
+import System.IO.Unsafe
+
 -- | Given a formula, it'll try to convert it to a polynome.
 -- Formula should be expanded and in list form to get this
 -- function to work (nested shit shouldn't work)
@@ -30,13 +33,6 @@ convertToPolynome (Formula f) = polynomize $ prepareFormula f
 
 convertToFormula :: Polynome -> Formula ListForm
 convertToFormula = Formula . convertToFormulaPrim
-
-{-packPolynome :: FormulaPrim -> FormulaPrim-}
-{-packPolynome (BinOp OpMul (Poly a : Poly b:xs)) = packPolynome . BinOp OpMul $ Poly (a*b) : xs-}
-{-packPolynome (BinOp OpAdd (Poly a : Poly b:xs)) = packPolynome . BinOp OpAdd $ Poly (a+b) : xs-}
-{-packPolynome (BinOp OpSub (Poly a : Poly b:xs)) = packPolynome . BinOp OpSub $ Poly (a-b) : xs-}
-{-packPolynome (BinOp _op [a]) = a-}
-{-packPolynome a = a-}
 
 -- | Run across the whole formula and replace what
 -- can polynomized by a polynome
@@ -253,7 +249,7 @@ translator pow0 [(var, coefs)] = do
         return . Just . Polynome var $ (CoeffInt 0, PolyRest rest):result
 
 translator pow0 ((var,coefs):rest) = do
-    result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
+    result <- mapM (\ (rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
     subPolynome <- translator pow0 rest
     let finalList = case subPolynome of
                          Nothing -> result
@@ -264,20 +260,11 @@ translator pow0 [] = return $ PolyRest <$> evalCoeff pow0
 
 -- | Try to transform a formula in polynome.
 polynomize :: FormulaPrim -> Maybe Polynome
-{-polynomize (BinOp OpAdd (Poly a:next)) = maybe Nothing (\b -> Just $ a + b) $ polynomize (BinOp OpAdd next)-}
-{-polynomize (BinOp OpSub (Poly a:next)) = maybe Nothing (\b -> Just $ a - b) $ polynomize (BinOp OpSub next)-}
-{-polynomize (BinOp OpMul (Poly a:next)) = maybe Nothing (\b -> Just $ a * b) $ polynomize (BinOp OpMul next)-}
-
-{-polynomize (Variable a) = Just $ Polynome a [(CoeffInt 1, PolyRest $ CoeffInt 1)]-}
-{-polynomize (BinOp OpPow [Poly (Polynome v [(coeff, PolyRest subPoly)]), CInteger i]) =-}
-    {-Just $ Polynome v [(coeff * CoeffInt i, PolyRest subPoly)]-}
-
 polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula])
-{-polynomize wholeFormula@(BinOp OpPow [Variable _,_]) = polynomize (BinOp OpAdd [wholeFormula])-}
 -- HMmm?
-{-polynomize (BinOp OpAdd [Poly p1, Poly p2]) = p1 + p2-}
 polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don't distingate
                              . translator pow0  -- cases at the upper level.
+                             . (\a -> unsafePerformIO (putStrLn $ "DEBUG  : " ++ show a) `seq` a)
                              . packCoefs
                              $ varGroup polys
   where (polys, pow0) = partitionEithers $ map extractFirstTerm lst
@@ -366,9 +353,15 @@ lockStep :: (Polynome -> Polynome -> Polynome)
 lockStep  _ xs [] = xs
 lockStep  _ [] ys = ys
 lockStep op whole1@((c1, def1):xs) whole2@((c2, def2):ys)
-    | c1 `inf` c2 = (c1, def1) : lockStep op xs whole2
-    | c1  ==   c2 = (c1, def1 `op` def2) : lockStep op xs ys
-    | otherwise   = (c2, def2) : lockStep op whole1 ys
+    | c1 `inf` c2 = 
+        unsafePerformIO (putStrLn $ "LTVAR " ++ show whole1 ++ show whole2) `seq`
+        (c1, def1) : lockStep op xs whole2
+    | c1  ==   c2 = 
+        unsafePerformIO (putStrLn $ "EQVAR " ++ show whole1 ++ show whole2) `seq`
+        (c1, def1 `op` def2) : lockStep op xs ys
+    | otherwise   =
+        unsafePerformIO (putStrLn $ "SUPVAR " ++ show whole1 ++ show whole2) `seq`
+        (c2, def2) : lockStep op whole1 ys
 
 -- | Tell if a coefficient can be treated as Null
 isCoeffNull :: PolyCoeff -> Bool
@@ -380,7 +373,7 @@ isCoeffNull _ = False
 polySimpleOp :: (forall a. (Num a) => a -> a -> a) -> Polynome -> Polynome -> Polynome
 polySimpleOp _ (Polynome _ []) _ = error Err.ill_formed_polynomial
 polySimpleOp _ _ (Polynome _ []) = error Err.ill_formed_polynomial
-polySimpleOp op (PolyRest c1) (PolyRest c2) = PolyRest $ coeffOp (flip op) c1 c2
+polySimpleOp op (PolyRest c1) (PolyRest c2) = PolyRest $ coeffOp op c1 c2
 polySimpleOp op left@(PolyRest _) right@(Polynome _ _) = polySimpleOp (flip op) right left
 polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
     | isCoeffNull coeff = case def of

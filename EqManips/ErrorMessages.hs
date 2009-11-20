@@ -90,4 +90,4 @@ ill_formed_polynomial = "Error the polynome is ill formed, no element in it"
 polynom_coeff_notascalar = "Error, you're trying to create a polynome coefficient from a non-scalar element"
 polynome_bad_form_scalar = "Error, the polynome has a scalar form, which is not allowed"
 polynome_empty = "Error, the polynomial is empty, which is not allowed"
-
+polynome_no_coeff_substitution = "Error, the polynomial coefficient shouldn't be substitued by formula"

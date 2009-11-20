@@ -119,7 +119,8 @@ transformParseFormula operation args = do
                let rez = performLastTransformationWithContext defaultSymbolTable
                        $ mapM operation formulal
                mapM (\a-> do hPutStr finalFile $ sexprRender a
-                             hPutStr finalFile "\n\n") formulal
+                             hPutStr finalFile "\n") formulal
+               
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
