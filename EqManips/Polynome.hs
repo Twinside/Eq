@@ -322,13 +322,14 @@ polyMap :: ((PolyCoeff, Polynome) -> (PolyCoeff, Polynome)) -> Polynome -> Polyn
 polyMap f (Polynome s lst) = Polynome s $ map (\(c,p) -> (c, polyMap f p)) lst
 polyMap f rest@(PolyRest _) = snd $ f (CoeffInt 0, rest)
 
+-- | Transform a scalar formula component to
+-- a polynome coefficient. If formula is not
+-- a scalar, error is called.
 scalarToCoeff :: FormulaPrim -> PolyCoeff
 scalarToCoeff (CFloat f) = CoeffFloat f
 scalarToCoeff (CInteger i) = CoeffInt i
 scalarToCoeff (BinOp OpDiv [CInteger a, CInteger b]) = CoeffRatio $ a % b
 scalarToCoeff _ = error Err.polynom_coeff_notascalar
-
--- | Little helpa fellow
 
 -- | Operation on polynome coefficients. Put there
 -- to provide automatic Equality derivation for polynome
@@ -355,13 +356,13 @@ lockStep  _ [] ys = ys
 lockStep op whole1@((c1, def1):xs) whole2@((c2, def2):ys)
     | c1 `inf` c2 = 
         unsafePerformIO (putStrLn $ "LTVAR " ++ show whole1 ++ show whole2) `seq`
-        (c1, def1) : lockStep op xs whole2
+        (c1, def1 `op` PolyRest (CoeffInt 0)) : lockStep op xs whole2
     | c1  ==   c2 = 
         unsafePerformIO (putStrLn $ "EQVAR " ++ show whole1 ++ show whole2) `seq`
         (c1, def1 `op` def2) : lockStep op xs ys
     | otherwise   =
         unsafePerformIO (putStrLn $ "SUPVAR " ++ show whole1 ++ show whole2) `seq`
-        (c2, def2) : lockStep op whole1 ys
+        (c2, PolyRest (CoeffInt 0) `op` def2) : lockStep op whole1 ys
 
 -- | Tell if a coefficient can be treated as Null
 isCoeffNull :: PolyCoeff -> Bool
@@ -370,26 +371,35 @@ isCoeffNull (CoeffFloat 0.0) = True
 isCoeffNull (CoeffRatio r) = numerator r == 0
 isCoeffNull _ = False
 
+coeffPropagator :: (forall a. (Num a) => a -> a -> a) -> (PolyCoeff, Polynome) -> (PolyCoeff, Polynome)
+coeffPropagator op (degree, PolyRest a) = (degree, PolyRest $ coeffOp op (CoeffInt 0) a)
+coeffPropagator op (degree, Polynome v lst) = (degree, Polynome v $ map (coeffPropagator op) lst)
+
 polySimpleOp :: (forall a. (Num a) => a -> a -> a) -> Polynome -> Polynome -> Polynome
 polySimpleOp _ (Polynome _ []) _ = error Err.ill_formed_polynomial
 polySimpleOp _ _ (Polynome _ []) = error Err.ill_formed_polynomial
 polySimpleOp op (PolyRest c1) (PolyRest c2) = PolyRest $ coeffOp op c1 c2
-polySimpleOp op left@(PolyRest _) right@(Polynome _ _) = polySimpleOp (flip op) right left
+-- FUCKING WRONG for '-'
+polySimpleOp op left@(PolyRest _) right@(Polynome _ _) =
+    unsafePerformIO (putStrLn "FLIP") `seq`
+    polySimpleOp (flip op) right left
 polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
-    | isCoeffNull coeff = case def of
-        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1):xs
-        _          -> Polynome v1 $ (coeff,polySimpleOp op def right):xs
-    | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1):as
+    | isCoeffNull coeff = unsafePerformIO (putStrLn "NULL coeff SCALAR/POLY") `seq` case def of
+        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1) : map (coeffPropagator op) xs
+        _          -> Polynome v1 $ (coeff,polySimpleOp op def right) : map (coeffPropagator op) xs
+    | otherwise = 
+        unsafePerformIO (putStrLn "NO NULL COEFF") `seq`
+        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1):as
 
 polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
-    | v1 > v2 = polySimpleOp op (Polynome v2 bs) (Polynome v1 as)
+    | v1 > v2 = polySimpleOp (flip op) (Polynome v2 bs) (Polynome v1 as)
     | v1 == v2 = Polynome v1 $ lockStep op as bs
     | isCoeffNull c = case d1 of 
           PolyRest a   -> polyMap executor left
                 where executor (c', PolyRest n) = (c', PolyRest $ coeffOp op a n)
                       executor a' = a'
-          Polynome _ _ -> Polynome v1 $ (CoeffInt 0, polySimpleOp op d1 left) : rest
-    | otherwise = Polynome v1 $ (CoeffInt 0, left) : as
+          Polynome _ _ -> Polynome v1 $ (CoeffInt 0, polySimpleOp op d1 left) : map (coeffPropagator op) rest
+    | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest (CoeffInt 0) `op` left) : map (coeffPropagator op) as
 
 -- | Multiply two polynomials between them using the brute force
 -- way, algorithm in O(n²)

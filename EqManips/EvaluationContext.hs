@@ -29,6 +29,7 @@ import EqManips.Algorithm.Utils
 #ifdef _DEBUG
 import System.IO
 import EqManips.Renderer.Ascii( formatFormula )
+import EqManips.Renderer.Sexpr
 #endif /* _DEBUG */
 
 -- | The real context info.
@@ -116,6 +117,7 @@ printTrace f inf = mapM_ showIt . reverse $ trace inf
     where showIt (str, formula) = do
               hPutStrLn f "=========================================="
               hPutStrLn f str
+              hPutStrLn f $ sexprRender formula
               hPutStrLn f $ formatFormula formula
 
 traceContext :: EqContext ()

@@ -6,7 +6,6 @@ import Data.Maybe
 import qualified EqManips.ErrorMessages as Err
 import Control.Applicative
 import EqManips.Types
-import EqManips.Polynome
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Inject
@@ -25,10 +24,6 @@ import Data.List( transpose, foldl' )
 -----------------------------------------------
 add :: EvalFun -> EvalOp
 add _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 + i2
-add _ (Poly p1) (Poly p2) = left . Poly $ p1 + p2
-add _ v1 (Poly p) | isFormulaScalar v1 = left . Poly $ polyCoeffMap (\a -> (scalarToCoeff v1) + a) p
-add _ (Poly p) v2 | isFormulaScalar v2 = left . Poly $ polyCoeffMap (+ (scalarToCoeff v2)) p
-
 add evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
     matrixMatrixSimple evaluator (+) f1 f2
 add _ f1@(Matrix _ _ _) f2 = do
@@ -44,9 +39,6 @@ add _ e e' = right (e, e')
 -----------------------------------------------
 sub :: EvalFun -> EvalOp
 sub _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 - i2
-sub _ (Poly p1) (Poly p2) = left . Poly $ p1 - p2
-sub _ v1 (Poly p) | isFormulaScalar v1 = left . Poly $ polyCoeffMap (\a -> (scalarToCoeff v1) - a) p
-sub _ (Poly p) v2 | isFormulaScalar v2 = left . Poly $ polyCoeffMap (\a -> a - (scalarToCoeff v2)) p
 sub evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
     matrixMatrixSimple evaluator (-) f1 f2
 sub _ f1@(Matrix _ _ _) f2 = do
@@ -62,9 +54,6 @@ sub _ e e' = right (e,e')
 -----------------------------------------------
 mul :: EvalFun -> EvalOp
 mul _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 * i2
-mul _ (Poly p1) (Poly p2) = left . Poly $ p1 * p2
-mul _ v1 (Poly p) | isFormulaScalar v1 = left . Poly $ polyCoeffMap (\a -> (scalarToCoeff v1) * a) p
-mul _ (Poly p) v2 | isFormulaScalar v2 = left . Poly $ polyCoeffMap (* (scalarToCoeff v2)) p
 mul evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) = matrixMatrixMul evaluator f1 f2
 mul evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (*) m s >>= left
 mul evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (*) m s >>= left
@@ -91,8 +80,6 @@ division _ f1 f2@(CFloat 0) = do
 division _ (CInteger i1) (CInteger i2)
     | i1 `mod` i2 == 0 = left . CInteger $ i1 `div` i2
 
-division _ v1 (Poly p) | isFormulaScalar v1 = left . Poly $ polyCoeffMap (\a -> (scalarToCoeff v1) / a) p
-division _ (Poly p) v2 | isFormulaScalar v2 = left . Poly $ polyCoeffMap (/ (scalarToCoeff v2)) p
 division evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (/) m s >>= left
 division evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (/) m s >>= left
 division _ f1 f2 = right (f1, f2)

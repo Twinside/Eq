@@ -8,12 +8,15 @@ import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Eval.Utils
 import EqManips.Algorithm.Eval.Types
 
+import System.IO.Unsafe
+
 -----------------------------------------------
 ----            '+'
 -----------------------------------------------
 add :: EvalOp
 add (Poly p1) (Poly p2) = left . Poly $ p1 + p2
-add v1 (Poly p) | isFormulaScalar v1 = left . Poly $ (PolyRest $ scalarToCoeff v1) + p
+add v1 (Poly p) | isFormulaScalar v1 = unsafePerformIO (putStrLn $ "MEH : " ++ show v1) `seq`
+                                       left . Poly $ (PolyRest $ scalarToCoeff v1) + p
 add (Poly p) v2 | isFormulaScalar v2 = left . Poly $ p + (PolyRest $ scalarToCoeff v2)
 add (Variable v) (Poly p) = left . Poly $ (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)]) + p
 add (Poly p) (Variable v) = left . Poly $ p + (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)])
