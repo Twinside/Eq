@@ -23,8 +23,6 @@ import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
-import System.IO.Unsafe
-
 -- | Given a formula, it'll try to convert it to a polynome.
 -- Formula should be expanded and in list form to get this
 -- function to work (nested shit shouldn't work)
@@ -264,7 +262,6 @@ polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula]
 -- HMmm?
 polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don't distingate
                              . translator pow0  -- cases at the upper level.
-                             . (\a -> unsafePerformIO (putStrLn $ "DEBUG  : " ++ show a) `seq` a)
                              . packCoefs
                              $ varGroup polys
   where (polys, pow0) = partitionEithers $ map extractFirstTerm lst
@@ -326,6 +323,7 @@ polyMap f rest@(PolyRest _) = snd $ f (CoeffInt 0, rest)
 -- a polynome coefficient. If formula is not
 -- a scalar, error is called.
 scalarToCoeff :: FormulaPrim -> PolyCoeff
+scalarToCoeff (UnOp OpNegate f) = negate $ scalarToCoeff f
 scalarToCoeff (CFloat f) = CoeffFloat f
 scalarToCoeff (CInteger i) = CoeffInt i
 scalarToCoeff (BinOp OpDiv [CInteger a, CInteger b]) = CoeffRatio $ a % b
@@ -355,13 +353,10 @@ lockStep  _ xs [] = xs
 lockStep  _ [] ys = ys
 lockStep op whole1@((c1, def1):xs) whole2@((c2, def2):ys)
     | c1 `inf` c2 = 
-        unsafePerformIO (putStrLn $ "LTVAR " ++ show whole1 ++ show whole2) `seq`
         (c1, def1 `op` PolyRest (CoeffInt 0)) : lockStep op xs whole2
     | c1  ==   c2 = 
-        unsafePerformIO (putStrLn $ "EQVAR " ++ show whole1 ++ show whole2) `seq`
         (c1, def1 `op` def2) : lockStep op xs ys
     | otherwise   =
-        unsafePerformIO (putStrLn $ "SUPVAR " ++ show whole1 ++ show whole2) `seq`
         (c2, PolyRest (CoeffInt 0) `op` def2) : lockStep op whole1 ys
 
 -- | Tell if a coefficient can be treated as Null
@@ -381,14 +376,12 @@ polySimpleOp _ _ (Polynome _ []) = error Err.ill_formed_polynomial
 polySimpleOp op (PolyRest c1) (PolyRest c2) = PolyRest $ coeffOp op c1 c2
 -- FUCKING WRONG for '-'
 polySimpleOp op left@(PolyRest _) right@(Polynome _ _) =
-    unsafePerformIO (putStrLn "FLIP") `seq`
     polySimpleOp (flip op) right left
 polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
-    | isCoeffNull coeff = unsafePerformIO (putStrLn "NULL coeff SCALAR/POLY") `seq` case def of
+    | isCoeffNull coeff = case def of
         PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1) : map (coeffPropagator op) xs
         _          -> Polynome v1 $ (coeff,polySimpleOp op def right) : map (coeffPropagator op) xs
     | otherwise = 
-        unsafePerformIO (putStrLn "NO NULL COEFF") `seq`
         Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1):as
 
 polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)

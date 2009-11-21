@@ -27,7 +27,7 @@ reduce = taggedEvaluator reduce'
 -- | Main function to evaluate raw formula
 reduce' :: EvalFun
 reduce' f = (eval reduce' $ cleaner f)
-        >>= polyEvalRules reduce'
+        >>= polyEvalRules reduce' . cleaner
         >>= floatEvalRules
     where cleaner = unTagFormula . cleanupRules . Formula
 

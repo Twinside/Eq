@@ -1,6 +1,7 @@
 module EqManips.Algorithm.Cleanup ( cleanup, cleanupRules ) where
 
 import EqManips.Types
+import EqManips.Polynome
 import EqManips.FormulaIterator
 import EqManips.Algorithm.Utils
 
@@ -163,10 +164,28 @@ reOp _ [] = error "reOp Empty formula? WTF"
 reOp _ [x] = x
 reOp op lst = BinOp op lst
 
+polyclean :: Polynome -> FormulaPrim
+polyclean p = resulter $ pclean p
+    where pclean (Polynome var lst) = packPoly . Polynome var $ foldr reducer [] lst
+          pclean rest@(PolyRest _) = rest
+
+          reducer (  _, PolyRest r) acc | isCoeffNull r = acc
+          reducer (deg, p'@(Polynome _ _)) acc = (deg, pclean p') : acc
+          reducer a acc = a : acc
+
+          packPoly (Polynome _ [(deg, rest@(PolyRest _))]) | isCoeffNull deg = rest
+          packPoly a = a
+
+          resulter (PolyRest c) = coefToFormula c
+          resulter (Polynome _ [(deg, PolyRest c)]) | isCoeffNull deg = coefToFormula c
+          resulter l = Poly l
+
 ---------------------------------------------
 ---- Linking all the rules together
 ---------------------------------------------
 rules :: FormulaPrim -> FormulaPrim
+rules (Poly (PolyRest r)) = coefToFormula r
+rules (Poly p) = polyclean p
 rules (UnOp OpSin f) = sinus f
 rules (UnOp OpCos f) = cosinus f
 rules (UnOp OpTan f) = tangeant f

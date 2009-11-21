@@ -4,40 +4,44 @@ import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.Polynome
 import EqManips.EvaluationContext
+import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Eval.Utils
 import EqManips.Algorithm.Eval.Types
 
-import System.IO.Unsafe
+leftclean :: FormulaPrim -> EqContext (Either FormulaPrim a)
+leftclean = left . unTagFormula . cleanup . Formula 
 
+-- The two following rules can generate 0 in the polynomial
+-- we have to clean them
 -----------------------------------------------
 ----            '+'
 -----------------------------------------------
 add :: EvalOp
-add (Poly p1) (Poly p2) = left . Poly $ p1 + p2
-add v1 (Poly p) | isFormulaScalar v1 = unsafePerformIO (putStrLn $ "MEH : " ++ show v1) `seq`
-                                       left . Poly $ (PolyRest $ scalarToCoeff v1) + p
-add (Poly p) v2 | isFormulaScalar v2 = left . Poly $ p + (PolyRest $ scalarToCoeff v2)
-add (Variable v) (Poly p) = left . Poly $ (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)]) + p
+add (Poly p1) (Poly p2) = leftclean . Poly $ p1 + p2
+add v1 (Poly p) | isFormulaScalar v1 = leftclean . Poly $ (PolyRest $ scalarToCoeff v1) + p
+add (Poly p) v2 | isFormulaScalar v2 = leftclean . Poly $ p + (PolyRest $ scalarToCoeff v2)
+add (Variable v) (Poly p) = leftclean . Poly $ (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)]) + p
 add (Poly p) (Variable v) = left . Poly $ p + (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)])
+
 add (BinOp OpPow [Variable v, degree]) (Poly p) 
-    | isFormulaScalar degree = left . Poly $ (Polynome v [(scalarToCoeff degree, PolyRest $ CoeffInt 1)]) + p
+    | isFormulaScalar degree = leftclean . Poly $ (Polynome v [(scalarToCoeff degree, PolyRest $ CoeffInt 1)]) + p
 add (Poly p) (BinOp OpPow [Variable v, degree]) 
-    | isFormulaScalar degree = left . Poly $ p + (Polynome v [(scalarToCoeff degree, PolyRest $ CoeffInt 1)])
+    | isFormulaScalar degree = leftclean . Poly $ p + (Polynome v [(scalarToCoeff degree, PolyRest $ CoeffInt 1)])
 add e e' = right (e, e')
 
 -----------------------------------------------
 ----            '-'
 -----------------------------------------------
 sub :: EvalOp
-sub v1 (Poly p) | isFormulaScalar v1 = left . Poly $ (PolyRest $ scalarToCoeff v1) - p
-sub (Poly p) v2 | isFormulaScalar v2 = left . Poly $ p - (PolyRest $ scalarToCoeff v2)
-sub (Variable v) (Poly p) = left . Poly $ (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)]) - p
-sub (Poly p) (Variable v) = left . Poly $ p - (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)])
+sub v1 (Poly p) | isFormulaScalar v1 = leftclean . Poly $ (PolyRest $ scalarToCoeff v1) - p
+sub (Poly p) v2 | isFormulaScalar v2 = leftclean . Poly $ p - (PolyRest $ scalarToCoeff v2)
+sub (Variable v) (Poly p) = leftclean . Poly $ (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)]) - p
+sub (Poly p) (Variable v) = leftclean . Poly $ p - (Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)])
 sub (BinOp OpPow [Variable v, degree]) (Poly p) 
-    | isFormulaScalar degree = left . Poly $ (Polynome v [(scalarToCoeff degree, PolyRest $ CoeffInt 1)]) - p
+    | isFormulaScalar degree = leftclean . Poly $ (Polynome v [(scalarToCoeff degree, PolyRest $ CoeffInt 1)]) - p
 sub (Poly p) (BinOp OpPow [Variable v, degree]) 
-    | isFormulaScalar degree = left . Poly $ p - (Polynome v [(scalarToCoeff degree, PolyRest $ CoeffInt 1)])
+    | isFormulaScalar degree = leftclean . Poly $ p - (Polynome v [(scalarToCoeff degree, PolyRest $ CoeffInt 1)])
 sub e e' = right (e,e')
 
 -----------------------------------------------

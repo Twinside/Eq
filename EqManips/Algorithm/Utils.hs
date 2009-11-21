@@ -222,6 +222,7 @@ isFormulaInteger = getAll . foldf isConstant mempty
 isFormulaScalar :: FormulaPrim -> Bool
 isFormulaScalar (CFloat _) = True
 isFormulaScalar (CInteger _) = True
+isFormulaScalar (UnOp OpNegate f) = isFormulaScalar f
 isFormulaScalar _ = False
 
 -- | Tell if a formula can be reduced to a scalar somehow
