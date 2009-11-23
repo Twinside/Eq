@@ -163,6 +163,34 @@ helpCommand (x:_) = case find (\(x',_,_,_) -> x' == x) commandList of
      Nothing -> do putStrLn $ "Unknown command " ++ x
                    return False
 
+#ifdef _GHCI_DEBUG
+transformParseDebug :: (Formula ListForm -> EqContext (Formula ListForm)) -> String
+                    -> IO Bool
+transformParseDebug operation formulaText = do
+    let formulaList = parseProgramm formulaText
+    either (parseErrorPrint stdout)
+           (\formulal -> do
+               let rez = performLastTransformationWithContext defaultSymbolTable
+                       $ mapM operation formulal
+               mapM (\a-> do hPutStr stdout $ sexprRender a
+                             hPutStr stdout "\n") formulal
+               
+#ifdef _DEBUG
+               hPutStrLn stdout "\n####### <TRACE> #########"
+               printTrace stdout rez
+               hPutStrLn stdout "####### </TRACE> #########\n"
+               hPutStrLn stdout . sexprRender $ result rez
+#endif
+               printErrors $ errorList rez
+               hPutStr stdout . formatFormula . treeIfyFormula $ result rez
+               return True
+               )
+           formulaList
+
+evalDebug :: String -> IO Bool
+evalDebug = transformParseDebug evalGlobalLossyStatement
+#endif
+
 commandList :: [(String, String, [String] -> IO Bool, [OptDescr (Flag, String)])]
 commandList = 
     [ ("cleanup", "Perform trivial simplification on formula"

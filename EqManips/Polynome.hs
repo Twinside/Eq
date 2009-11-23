@@ -406,10 +406,11 @@ polyMul (Polynome v1 coefs1) p2@(Polynome v2 coefs2)
         Polynome v1 $ map (\(order, c) -> (order, polyMul c p2)) coefs1
     | otherwise {- v1 == v2 -} =
         Polynome v1
+      {-. map (\lst@((o,_):_) -> (o, foldr1 (+) $ map snd lst))-}
       . map (\lst@((o,_):_) -> (o, sum $ map snd lst))
       . groupBy (\(o1,_) (o2,_) -> o1 == o2) -- Regroup same order together
       $ sortBy (\(c1,_) (c2,_) -> compare c1 c2)
-      [ (order1 + order2, c1 * c2) | (order1, c1) <- coefs1, (order2, c2) <- coefs2]
+      [ (degree1 + degree2, c1 * c2) | (degree1, c1) <- coefs1, (degree2, c2) <- coefs2]
 
 instance Num PolyCoeff  where
     fromInteger = CoeffInt
@@ -447,8 +448,7 @@ instance Num Polynome where
     (+) = polySimpleOp (+)
     (-) = polySimpleOp (-)
     (*) = polyMul
-    abs = error "Unimplemented"
-    signum = error "Unimplemented"
-    fromInteger = error "Unimplemented"
-
+    fromInteger = PolyRest . fromInteger
+    abs = error "Unimplemented-Abs"
+    signum = error "Unimplemented-signum"
 
