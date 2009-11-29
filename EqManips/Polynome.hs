@@ -15,7 +15,7 @@ module EqManips.Polynome( convertToPolynome
 import Control.Applicative( (<$>), (<*>) )
 import Control.Monad( join )
 import Data.Either( partitionEithers )
-import Data.List( sortBy, groupBy, foldl' )
+import Data.List( sortBy, groupBy, foldl', partition )
 import Data.Ratio
 
 import EqManips.Types
@@ -394,6 +394,22 @@ polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
           Polynome _ _ -> Polynome v1 $ (CoeffInt 0, polySimpleOp op d1 left) : map (coeffPropagator op) rest
     | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest (CoeffInt 0) `op` left) : map (coeffPropagator op) as
 
+
+-- | Meh!
+divisable :: Polynome -> Polynome -> Bool
+divisable (PolyRest _) (Polynome _ _) = False
+divisable (Polynome _ _) (PolyRest _) = True
+divisable (Polynome rootVar lst) right@(Polynome divVar [lst'@(coef, sub)])
+    | rootVar < divVar = False
+    | rootVar > divVar = 
+            let subDivide (_,(PolyRest _)) = False
+                subDivide (_,p@(Polynome _ _)) = divisable p right
+            in all subDivide lst
+    | otherwise = null smaller && all (flip divisable sub) (map snd bigger)
+        where greater (coeff1,_) = coeff1 >= coef
+              (bigger, smaller) = partition greater lst
+divisable _ _ = error "Polynome.divisable - meh"
+
 -- | Multiply two polynomials between them using the brute force
 -- way, algorithm in O(n²)
 polyMul :: Polynome -> Polynome -> Polynome
@@ -411,6 +427,32 @@ polyMul (Polynome v1 coefs1) p2@(Polynome v2 coefs2)
       . groupBy (\(o1,_) (o2,_) -> o1 == o2) -- Regroup same order together
       $ sortBy (\(c1,_) (c2,_) -> compare c1 c2)
       [ (degree1 + degree2, c1 * c2) | (degree1, c1) <- coefs1, (degree2, c2) <- coefs2]
+
+
+-- f / g = q + r / g
+{-polyQuotRem :: Polynome -> Polynome-}
+            {--> (Maybe Polynome, Maybe Polynome) -- ^ Quotient and rest-}
+{-polyQuotRem (Polynome v1 lst) (PolyRest coeff)-}
+{-polyQuotRem (PolyRest coeff) (Polynome v1 lst)-}
+{-polyQuotRem (Polynome v1 lst) (Polynome v2 lst')-}
+    {-| v1 == v2 = (Nothing, Nothing)-}
+        {-where diver :: [(PolyCoeff, Polynome)]-}
+                    {--> [(PolyCoeff, Polynome)]-}
+                    {--> [(PolyCoeff, Polynome)]-}
+                    {--> [(PolyCoeff, Polynome)]-}
+                    {--> ([(PolyCoeff, Polynome)], [(PolyCoeff, Polynome)])-}
+              {-diver f quotient rest [] = (quotient, rest)-}
+              {-diver f quotient rest (x:xs)-}
+                    {-| divisable x = ([], [])-}
+                    {-| otherwise = diver (tail f) quotient (head f : rest)-}
+
+              {-divisable :: [(PolyCoeff, Polynome)] -> (PolyCoeff, Polynome) -> Bool-}
+              {-divisable _ (coeff, PolyRest _) | isCoeffNull coeff = True-}
+                                              {-| otherwise = False-}
+              {-divisable (Polynome _ lst) lst'@(coef, sub) =-}
+                  {-null smaller && all recurseDivide (map snd bigger)-}
+                      {-where (bigger, smaller) = partition (\(coeff1,_) -> coeff1 >= coef) lst-}
+                            {-recurseDivide = divisable (Polynome "" p) (CoeffInt, sub)-}
 
 instance Num PolyCoeff  where
     fromInteger = CoeffInt
