@@ -46,6 +46,8 @@ topDownTraversal :: (FormulaPrim -> Maybe FormulaPrim)
 topDownTraversal f p@(Poly _) = fromMaybe p $ f p
 topDownTraversal f v@(Variable _) = fromMaybe v $ f v
 topDownTraversal f i@(CInteger _) = fromMaybe i $ f i
+topDownTraversal f i@(Fraction _) = fromMaybe i $ f i
+topDownTraversal f i@(Complex _) = fromMaybe i $ f i
 topDownTraversal f d@(CFloat _) = fromMaybe d $ f d
 topDownTraversal f e@(NumEntity _) = fromMaybe e $ f e
 topDownTraversal f t@(Truth _) = fromMaybe t $ f t
@@ -117,6 +119,8 @@ depthPrimTraversal :: (Monad m)
 depthPrimTraversal _ f p@(Poly _) = f p
 depthPrimTraversal _ f v@(Variable _) = f v
 depthPrimTraversal _ f i@(CInteger _) = f i
+depthPrimTraversal _ f i@(Fraction _) = f i
+depthPrimTraversal _ f i@(Complex _) = f i
 depthPrimTraversal _ f d@(CFloat _) = f d
 depthPrimTraversal _ f e@(NumEntity _) = f e
 depthPrimTraversal _ f t@(Truth _) = f t

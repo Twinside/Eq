@@ -203,6 +203,8 @@ isFormulaInteger = getAll . foldf isConstant mempty
           --
           isConstant (CFloat _) _ = All False
           isConstant (CInteger _) _ = All True
+          isConstant (Complex _) _ = All True
+          isConstant (Fraction _) _ = All True
           isConstant (Truth _) _ = All False
           isConstant (NumEntity _) _ = All False
           --
