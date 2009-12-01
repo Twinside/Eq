@@ -117,7 +117,8 @@ data FormulaPrim =
     | CInteger Integer
     | CFloat FloatingValue
     | Fraction (Ratio Integer)
-    | Complex (FloatingValue, FloatingValue)
+    | Complex (FormulaPrim , FormulaPrim)
+
     -- | FunName arguments
     | App FormulaPrim [FormulaPrim]
     -- | LowBound highbound expression

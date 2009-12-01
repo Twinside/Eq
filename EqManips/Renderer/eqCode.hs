@@ -1,6 +1,7 @@
 module EqManips.Renderer.EqCode( unparse, unparseS ) where
 
 import Data.List( foldl' )
+import Data.Ratio
 
 import EqManips.Types
 import EqManips.Propreties
@@ -70,6 +71,12 @@ deparse _ _ (UnOp OpFactorial f) = ('(':) . deparse maxPrio False f . (")!" ++)
 deparse _ _ (UnOp op f) =
     ((++) $ unopString op ) . 
         ('(':) . deparse maxPrio False f . (')':)
+
+deparse _ _ (Fraction f) =
+    ('(':) . shows (numerator f)
+           . ('/':)
+           . shows (denominator f)
+           . (')':)
 
  -- Special case... as OpEq is right associative...
  -- we must reverse shit for serialisation

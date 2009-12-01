@@ -4,6 +4,7 @@ module EqManips.Renderer.Cpp( convertToCpp, convertToCppS ) where
 import Control.Monad.State.Lazy
 import Control.Applicative
 import Data.Maybe
+import Data.Ratio
 
 import EqManips.Types
 import EqManips.Polynome
@@ -100,6 +101,9 @@ cOut _ (Truth False) = return $ str "false"
 cOut _ (NumEntity Pi) = return $ str "M_PI"
 cOut _ (NumEntity _) = return $ str ""
 
+cOut _ (Fraction f) = return $ char '(' . (shows $ numerator f) 
+                             . str " / " . (shows $ denominator f)
+                             . char ')'
 cOut _ (App func args) =
     (\fun args' -> fun . char '(' . interspereseS (str ", ") args' . char ')')
     <$> cNo func 

@@ -1,5 +1,6 @@
 module EqManips.Renderer.Sexpr( sexprRender, sexprRenderS ) where
 
+import Data.Ratio
 import EqManips.Types
 import EqManips.Polynome
 import EqManips.Algorithm.Utils
@@ -17,6 +18,8 @@ char :: Char -> ShowS
 char = (:)
 
 sexprS :: FormulaPrim -> ShowS
+sexprS (Complex (re, im)) = str "(complex " . sexprS re . char ' ' . sexprS im . char ')'
+sexprS (Fraction f) = sexprS $ (CInteger $ numerator f) / (CInteger $ denominator f)
 sexprS (Poly v@(PolyRest _)) = sexprS . unTagFormula $ convertToFormula v
 sexprS (Poly (Polynome v lst)) =
     str "(poly " . str v . char ' ' . concatMapS coeffPrinter lst . char ')'

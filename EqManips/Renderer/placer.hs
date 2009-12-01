@@ -9,6 +9,8 @@ module EqManips.Renderer.Placer( SizeTree( .. )
 							   ) where
 
 import Data.List( foldl', transpose )
+import Data.Ratio
+
 import EqManips.Types
 import EqManips.Polynome
 import EqManips.Algorithm.Utils
@@ -85,6 +87,10 @@ sizeOfFormula :: Dimensioner -> Bool -> OpPriority -> FormulaPrim -> SizeTree
 -- INVISIBLE META NINJA
 sizeOfFormula sizer a b (Meta _ f) = sizeOfFormula sizer a b f
 -- Automatic conversion POLY NINJA
+sizeOfFormula sizer a b (Fraction f) = 
+    sizeOfFormula sizer a b
+    $ (CInteger $ numerator f) / (CInteger $ denominator f)
+
 sizeOfFormula sizer a b (Poly p) =
     sizeOfFormula sizer a b . unTagFormula . treeIfyFormula $ convertToFormula p
 -- Simply the size of rendered text

@@ -244,7 +244,10 @@ isFormulaConstant = getAll . foldf isConstant mempty
           isConstant (CInteger _) _ = All True
           isConstant (Truth _) _ = All True
           isConstant (NumEntity _) _ = All True
+          isConstant (Fraction _) _ = All True
+
           --
+          isConstant (Complex _) a = a
           isConstant (UnOp _ _) a = a
           isConstant (BinOp _ _) a = a
           isConstant (Meta _ _) a = a
