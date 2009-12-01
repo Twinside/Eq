@@ -13,7 +13,8 @@ import EqManips.Algorithm.Eval.GenericEval
 import EqManips.Algorithm.Eval.GlobalStatement
 import EqManips.Algorithm.Eval.Floating
 import EqManips.Algorithm.Eval.Polynomial
-
+import EqManips.Algorithm.Eval.Ratio
+import EqManips.Algorithm.Eval.Complex
 import EqManips.Algorithm.Eval.Types
 
 evalGlobalLossyStatement, evalGlobalLosslessStatement :: FormulaEvaluator
