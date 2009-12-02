@@ -28,6 +28,8 @@ reduce = taggedEvaluator reduce'
 -- | Main function to evaluate raw formula
 reduce' :: EvalFun
 reduce' f = (eval reduce' $ cleaner f)
+        >>= ratioEvalRules
+        >>= complexEvalRules reduce'
         >>= polyEvalRules reduce' . cleaner
         >>= floatEvalRules
     where cleaner = unTagFormula . cleanupRules . Formula
@@ -39,6 +41,8 @@ exactReduce = taggedEvaluator exactReduce'
 -- | same as exactReduce, but perform on raw formula.
 exactReduce' :: EvalFun
 exactReduce' f = (eval exactReduce' $ cleaner f)
-           >>= polyEvalRules exactReduce'
+             >>= ratioEvalRules
+             >>= complexEvalRules exactReduce'
+             >>= polyEvalRules exactReduce'
     where cleaner = unTagFormula . cleanupRules . Formula
 

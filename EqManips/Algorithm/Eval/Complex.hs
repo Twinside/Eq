@@ -20,6 +20,10 @@ add eval (Complex (r1,i1)) (Complex (r2, i2)) =
     (\real imag -> Left $ Complex (real, imag))
         <$> eval (reshape $ r1 + r2)
         <*> eval (reshape $ i1 + i2)
+add eval (Complex (r1,i1)) rightp | isFormulaScalar rightp =
+    (\real -> Left $ Complex (real, i1)) <$> eval (reshape $ r1 + rightp)
+add eval leftp (Complex (r1,i1)) | isFormulaScalar leftp =
+    (\real -> Left $ Complex (real, i1)) <$> eval (reshape $ leftp + r1)
 add _ a b = right (a, b)
 
 -----------------------------------------------
@@ -30,6 +34,10 @@ sub eval (Complex (r1,i1)) (Complex (r2, i2)) =
     (\real imag -> Left $ Complex (real, imag))
         <$> eval (reshape $ r1 - r2)
         <*> eval (reshape $ i1 - i2)
+sub eval (Complex (r1,i1)) rightp | isFormulaScalar rightp =
+    (\real -> Left $ Complex (real, i1)) <$> eval (reshape $ r1 - rightp)
+sub eval leftp (Complex (r1,i1)) | isFormulaScalar leftp =
+    (\real -> Left $ Complex (real, i1)) <$> eval (reshape $ leftp - r1)
 sub _ a b = right (a, b)
 
 -----------------------------------------------
@@ -41,6 +49,14 @@ mul eval (Complex (r1,i1)) (Complex (r2, i2)) =
     (\real imag -> Left $ Complex (real, imag))
         <$> eval (reshape $ r1 * r2 - i1 * i2)
         <*> eval (reshape $ r2 * i1 + r1 * i2)
+mul eval (Complex (r1,i1)) rightp | isFormulaScalar rightp =
+    (\real imag -> Left $ Complex (real, imag))
+            <$> eval (reshape $ r1 * rightp)
+            <*> eval (reshape $ i1 * rightp)
+mul eval leftp (Complex (r1,i1)) | isFormulaScalar leftp =
+    (\real imag -> Left $ Complex (real, imag))
+            <$> eval (reshape $ leftp * r1)
+            <*> eval (reshape $ leftp * i1)
 mul _ a b = right (a,b)
 
 -----------------------------------------------
@@ -56,6 +72,14 @@ division eval (Complex (a,b)) (Complex (c, d)) =
     where realNumerator = a * c + b * d
           imagNumerator = b * c - a * d
           denom = c ** (CInteger 2) + d ** (CInteger 2)
+division eval (Complex (r1,i1)) rightp | isFormulaScalar rightp =
+    (\real imag -> Left $ Complex (real, imag))
+            <$> eval (reshape $ r1 / rightp)
+            <*> eval (reshape $ i1 / rightp)
+division eval leftp (Complex (r1,i1)) | isFormulaScalar leftp =
+    (\real imag -> Left $ Complex (real, imag))
+            <$> eval (reshape $ leftp / r1)
+            <*> eval (reshape $ leftp / i1)
 division _ a b = right (a,b)
 
 -----------------------------------------------

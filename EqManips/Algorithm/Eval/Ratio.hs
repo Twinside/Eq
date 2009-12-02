@@ -41,10 +41,10 @@ division a b = right (a,b)
 ----        General evaluation
 -----------------------------------------------
 -- | General evaluation/reduction function
-ratioEvalRules :: EvalFun -> EvalFun
-ratioEvalRules _ (BinOp OpAdd fs) = binEval OpAdd add add fs
-ratioEvalRules _ (BinOp OpSub fs) = binEval OpSub sub add fs
-ratioEvalRules _ (BinOp OpMul fs) = binEval OpMul mul mul fs
-ratioEvalRules _ (BinOp OpDiv fs) = binEval OpDiv division mul fs
-ratioEvalRules _ end = return end
+ratioEvalRules :: EvalFun
+ratioEvalRules (BinOp OpAdd fs) = binEval OpAdd add add fs
+ratioEvalRules (BinOp OpSub fs) = binEval OpSub sub add fs
+ratioEvalRules (BinOp OpMul fs) = binEval OpMul mul mul fs
+ratioEvalRules (BinOp OpDiv fs) = binEval OpDiv division mul fs
+ratioEvalRules end = return end
 
