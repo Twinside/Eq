@@ -25,6 +25,7 @@ import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
+import System.IO.Unsafe
 -- | Given a formula, it'll try to convert it to a polynome.
 -- Formula should be expanded and in list form to get this
 -- function to work (nested shit shouldn't work)
@@ -73,10 +74,15 @@ coefToFormula (CoeffRatio r) = if denominator r == 1
 -- the polynome construction is built uppon the ordering created here.
 prepareFormula :: FormulaPrim -> FormulaPrim
 prepareFormula = polySort . formulaFlatter
-    where polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
 
-          lexicalOrder EQ b = b
+polySort :: FormulaPrim -> FormulaPrim
+polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
+    where lexicalOrder EQ b = b
           lexicalOrder a _ = a
+
+          invert LT = GT
+          invert EQ = EQ
+          invert GT = LT
 
           -- Special sort which bring x in front, followed by others. Lexical
           -- order first.
@@ -90,8 +96,9 @@ prepareFormula = polySort . formulaFlatter
           sorter (Variable v1) (Variable v2) = compare v1 v2
 
           -- x ^ n * y ^ n (n can be one, not shown)
-          sorter (BinOp OpPow [Variable v1, _p1])
-                 (BinOp OpPow [Variable v2, _p2]) = compare v1 v2
+          sorter (BinOp OpPow [Variable v1, p1])
+                 (BinOp OpPow [Variable v2, p2]) =
+                     (compare v1 v2) `lexicalOrder` (compare p1 p2)
 
           -- x * y ^ n
           sorter (Variable v1)
@@ -110,12 +117,15 @@ prepareFormula = polySort . formulaFlatter
                  (BinOp OpMul (Variable v2:_))  = compare v1 v2
 
           -- (x ^ m * ...) + y ^ n
-          sorter (BinOp OpMul (BinOp OpPow (Variable v1:_):_))
-                 (BinOp OpPow [Variable v2, _]) = compare v1 v2
+          sorter (BinOp OpMul (BinOp OpPow [Variable v1,p1]:_))
+                 (BinOp OpPow [Variable v2, p2]) =
+                     (compare v1 v2) `lexicalOrder` (compare p1 p2)
 
           -- x ^ n + (y ^ m * ...)
-          sorter (BinOp OpPow [Variable v1, _])
-                 (BinOp OpMul (BinOp OpPow (Variable v2:_):_))  = compare v1 v2
+          sorter (BinOp OpPow [Variable v1, p1])
+                 (BinOp OpMul (BinOp OpPow [Variable v2,p2]:_)) =
+                     (compare v1 v2) `lexicalOrder` (compare p1 p2)
+
           -- Rules to fine sort the '+' elements, lowest variable
           -- first (x before y), smallest order first (x before x ^ 15)
 
@@ -162,10 +172,6 @@ prepareFormula = polySort . formulaFlatter
 
           -- Just reverse the general readable order.
           sorter a b = invert $ compare a b
-
-          invert LT = GT
-          invert EQ = EQ
-          invert GT = LT
 
 -- | Called when we found an OpSub operator within the
 -- formula.  -- We assume that the formula as been previously sorted
@@ -277,7 +283,8 @@ polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don
 
                   grouper :: [(String,FormulaPrim,FormulaPrim)] -> (String, [(FormulaPrim,FormulaPrim)])
                   grouper lst' = (nameOfGroup lst'
-                                 , [(coef group, BinOp OpAdd $ defs group) | group <- coeffGroup lst'])
+                                 , [(coef group, polySort $ BinOp OpAdd $ defs group) 
+                                                | group <- coeffGroup lst'])
                   defs = map (\(_,_,def) -> def)
                   coef ((_,c1,_):_) = c1
                   coef [] = error Err.polynom_emptyCoeffPack
@@ -463,7 +470,7 @@ syntheticDiv poly@(Polynome var lst1) divisor@(Polynome var' lst2)
       . splitAt (length divCoeff)
       $ firstCoeff : syntheticInnerDiv divCoeff firstCoeff coefList
     where Just (firstCoeff: coefList) = expandCoeff poly
-          Just (_:divCoeff) = expandCoeff divisor
+          Just (_:divCoeff) = map negate <$> expandCoeff divisor
 
           finalize [] = Nothing
           finalize lst = Just $ Polynome var lst
