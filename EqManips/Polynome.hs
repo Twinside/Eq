@@ -10,12 +10,14 @@ module EqManips.Polynome( convertToPolynome
                         , coefToFormula 
                         , isCoeffNull 
                         , prepareFormula 
+                        , syntheticDiv 
                         ) where
 
 import Control.Applicative( (<$>), (<*>) )
+import Control.Arrow( (***) )
 import Control.Monad( join )
 import Data.Either( partitionEithers )
-import Data.List( sortBy, groupBy, foldl', partition )
+import Data.List( sortBy, groupBy, foldl' )
 import Data.Ratio
 
 import EqManips.Types
@@ -395,21 +397,6 @@ polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
     | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest (CoeffInt 0) `op` left) : map (coeffPropagator op) as
 
 
--- | Meh!
-divisable :: Polynome -> Polynome -> Bool
-divisable (PolyRest _) (Polynome _ _) = False
-divisable (Polynome _ _) (PolyRest _) = True
-divisable (Polynome rootVar lst) right@(Polynome divVar [lst'@(coef, sub)])
-    | rootVar < divVar = False
-    | rootVar > divVar = 
-            let subDivide (_,(PolyRest _)) = False
-                subDivide (_,p@(Polynome _ _)) = divisable p right
-            in all subDivide lst
-    | otherwise = null smaller && all (flip divisable sub) (map snd bigger)
-        where greater (coeff1,_) = coeff1 >= coef
-              (bigger, smaller) = partition greater lst
-divisable _ _ = error "Polynome.divisable - meh"
-
 -- | Multiply two polynomials between them using the brute force
 -- way, algorithm in O(n²)
 polyMul :: Polynome -> Polynome -> Polynome
@@ -428,31 +415,68 @@ polyMul (Polynome v1 coefs1) p2@(Polynome v2 coefs2)
       $ sortBy (\(c1,_) (c2,_) -> compare c1 c2)
       [ (degree1 + degree2, c1 * c2) | (degree1, c1) <- coefs1, (degree2, c2) <- coefs2]
 
+--------------------------------------------------
+----            Division
+--------------------------------------------------
+-- | Expand coefficients of an _UNIVARIATE_ polynomial
+-- in an descending way, each integer power given a
+-- coefficient (0 if none).
+expandCoeff :: Polynome -> Maybe [PolyCoeff]
+expandCoeff (PolyRest _) = error ""
+expandCoeff (Polynome _ coefs) = snd <$> foldl' sparser (Just (0, [])) coefs
+    where sparser (Just (lastNum, lst)) (CoeffInt n, PolyRest r) =
+              Just (fromInteger n, replicate (fromInteger n - lastNum - 1) (CoeffInt 0)
+                                    ++ (r : lst))
+          sparser _ _ = Nothing
 
--- f / g = q + r / g
-{-polyQuotRem :: Polynome -> Polynome-}
-            {--> (Maybe Polynome, Maybe Polynome) -- ^ Quotient and rest-}
-{-polyQuotRem (Polynome v1 lst) (PolyRest coeff)-}
-{-polyQuotRem (PolyRest coeff) (Polynome v1 lst)-}
-{-polyQuotRem (Polynome v1 lst) (Polynome v2 lst')-}
-    {-| v1 == v2 = (Nothing, Nothing)-}
-        {-where diver :: [(PolyCoeff, Polynome)]-}
-                    {--> [(PolyCoeff, Polynome)]-}
-                    {--> [(PolyCoeff, Polynome)]-}
-                    {--> [(PolyCoeff, Polynome)]-}
-                    {--> ([(PolyCoeff, Polynome)], [(PolyCoeff, Polynome)])-}
-              {-diver f quotient rest [] = (quotient, rest)-}
-              {-diver f quotient rest (x:xs)-}
-                    {-| divisable x = ([], [])-}
-                    {-| otherwise = diver (tail f) quotient (head f : rest)-}
+-- | Tell if a polynomial has only one var
+isPolyMonovariate :: Polynome -> Bool
+isPolyMonovariate (PolyRest _) = False
+isPolyMonovariate (Polynome _ coefs) = all isCoeff coefs
+    where isCoeff (_,PolyRest _) = True
+          isCoeff              _ = False
 
-              {-divisable :: [(PolyCoeff, Polynome)] -> (PolyCoeff, Polynome) -> Bool-}
-              {-divisable _ (coeff, PolyRest _) | isCoeffNull coeff = True-}
-                                              {-| otherwise = False-}
-              {-divisable (Polynome _ lst) lst'@(coef, sub) =-}
-                  {-null smaller && all recurseDivide (map snd bigger)-}
-                      {-where (bigger, smaller) = partition (\(coeff1,_) -> coeff1 >= coef) lst-}
-                            {-recurseDivide = divisable (Polynome "" p) (CoeffInt, sub)-}
+-- | Given a power descending list of coefficient, rearrange
+-- them to make it normal polynomial
+packCoeffs :: [PolyCoeff] -> [(PolyCoeff, Polynome)]
+packCoeffs = reverse . snd . foldr packer (0, [])
+    where packer coeff (n, lst)
+            | isCoeffNull coeff = (n + 1, lst)
+            | otherwise = (n + 1, (CoeffInt n, PolyRest coeff) : lst)
+
+-- | Apply an operation on an head of a list given an other list.
+-- return Nothing if first list finish after "applied" list.
+headApply :: (a -> b -> a) -> [a] -> [b] -> Maybe [a]
+headApply _     []     [] = Just []
+headApply _   rest     [] = Just rest
+headApply _     []      _ = Nothing
+headApply f (x:xs) (y:ys) = (f x y :) <$> headApply f xs ys
+
+-- | Try to perform a polynomial synthetic division on
+-- monovariate polynomial.
+syntheticDiv :: Polynome -> Polynome -> (Maybe Polynome, Maybe Polynome)
+syntheticDiv poly@(Polynome var lst1) divisor@(Polynome var' lst2)
+    | var == var'
+    && isPolyMonovariate poly && isPolyMonovariate divisor
+    && (fst $ last lst1) > (fst $ last lst2)=
+        (finalize . packCoeffs *** finalize . packCoeffs)
+      . splitAt (length divCoeff)
+      $ firstCoeff : syntheticInnerDiv divCoeff firstCoeff coefList
+    where Just (firstCoeff: coefList) = expandCoeff poly
+          Just (_:divCoeff) = expandCoeff divisor
+
+          finalize [] = Nothing
+          finalize lst = Just $ Polynome var lst
+
+          syntheticInnerDiv :: (Num n) => [n] -> n -> [n] -> [n]
+          syntheticInnerDiv         _         _        [] = []
+          syntheticInnerDiv diviCoeff prevCoeff polyCoeff =
+            case endCoeffs of
+                   Just [] -> error "syntheticDiv - empty rest, impossible"
+                   Just (x:xs) -> x : syntheticInnerDiv diviCoeff x xs
+                   Nothing -> polyCoeff
+              where endCoeffs = headApply (+) polyCoeff [prevCoeff * c | c <- diviCoeff]
+syntheticDiv _ _ = (Nothing, Nothing)
 
 instance Num PolyCoeff  where
     fromInteger = CoeffInt

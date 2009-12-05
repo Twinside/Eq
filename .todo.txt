@@ -1,8 +1,9 @@
+4:comment décrire les complexes
 4:Fix expand algorithm :]
-4:Decide derivation for log
 4:Write a documentation
+3:Decide derivation for log
 3:Matrix multiplication order problem!
-2:Make a simplify algorithm
+1:Make a simplify algorithm
 1:Make some validation about definition domain
-1:Make an integrator algorithm (urgh)
+0:Make an integrator algorithm (urgh)
 0:Make some HLSL/GLSL output

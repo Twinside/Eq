@@ -67,6 +67,11 @@ mul e e' = right (e, e')
 division :: EvalOp
 division v1 (Poly p) | isFormulaScalar v1 = left . Poly $ polyCoeffMap (\a -> (scalarToCoeff v1) / a) p
 division (Poly p) v2 | isFormulaScalar v2 = left . Poly $ polyCoeffMap (/ (scalarToCoeff v2)) p
+division (Poly p) (Poly p2) = case syntheticDiv p p2 of
+        (Nothing, Nothing) -> right (Poly p, Poly p2)
+        (Nothing, Just _) -> right (Poly p, Poly p2)
+        (Just quotient, Nothing) -> left $ Poly quotient
+        (Just quotient, Just rest) -> left $ Poly quotient * Poly rest / (Poly p2)
 division f1 f2 = right (f1, f2)
 
 -- | If a polynome's variable is bound, replace it by the real
