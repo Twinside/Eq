@@ -26,11 +26,16 @@ import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
 import System.IO.Unsafe
+
 -- | Given a formula, it'll try to convert it to a polynome.
 -- Formula should be expanded and in list form to get this
 -- function to work (nested shit shouldn't work)
 convertToPolynome :: Formula ListForm -> Maybe Polynome
-convertToPolynome (Formula f) = polynomize $ prepareFormula f
+convertToPolynome (Formula f) = polynomize 
+                              . (\a -> unsafePerformIO (do
+                                    print "Prepared =>"
+                                    print a) `seq` a)
+                              $ prepareFormula f
 
 convertToFormula :: Polynome -> Formula ListForm
 convertToFormula = Formula . convertToFormulaPrim
@@ -102,19 +107,20 @@ polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
 
           -- x * y ^ n
           sorter (Variable v1)
-                 (BinOp OpPow (Variable v2:_)) = compare v1 v2
+                 (BinOp OpPow (Variable v2:_)) =
+                     compare v1 v2 `lexicalOrder` LT
 
           -- x ^ n * y
           sorter (BinOp OpPow (Variable v1:_))
-                 (Variable v2) = compare v1 v2
+                 (Variable v2) = compare v1 v2 `lexicalOrder` GT
 
           -- (x * ...) + y ^ n
           sorter (BinOp OpMul (Variable v1:_))
-                 (BinOp OpPow [Variable v2, _]) = compare v1 v2
+                 (BinOp OpPow [Variable v2, _]) = compare v1 v2 `lexicalOrder` LT
 
           -- x ^ n + (y * ...)
           sorter (BinOp OpPow [Variable v1, _])
-                 (BinOp OpMul (Variable v2:_))  = compare v1 v2
+                 (BinOp OpMul (Variable v2:_))  = compare v1 v2 `lexicalOrder` GT
 
           -- (x ^ m * ...) + y ^ n
           sorter (BinOp OpMul (BinOp OpPow [Variable v1,p1]:_))
@@ -270,6 +276,7 @@ polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula]
 -- HMmm?
 polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don't distingate
                              . translator pow0  -- cases at the upper level.
+                             . (\a -> unsafePerformIO (print a) `seq` a)
                              . packCoefs
                              $ varGroup polys
   where (polys, pow0) = partitionEithers $ map extractFirstTerm lst
@@ -430,10 +437,10 @@ polyMul (Polynome v1 coefs1) p2@(Polynome v2 coefs2)
 -- coefficient (0 if none).
 expandCoeff :: Polynome -> Maybe [PolyCoeff]
 expandCoeff (PolyRest _) = error ""
-expandCoeff (Polynome _ coefs) = snd <$> foldl' sparser (Just (0, [])) coefs
+expandCoeff (Polynome _ coefs) = snd <$> foldl' sparser (Just (-1, [])) coefs
     where sparser (Just (lastNum, lst)) (CoeffInt n, PolyRest r) =
-              Just (fromInteger n, replicate (fromInteger n - lastNum - 1) (CoeffInt 0)
-                                    ++ (r : lst))
+              Just (fromInteger n, r : replicate (fromInteger n - lastNum - 1) (CoeffInt 0)
+                                    ++ lst)
           sparser _ _ = Nothing
 
 -- | Tell if a polynomial has only one var
@@ -467,7 +474,15 @@ syntheticDiv poly@(Polynome var lst1) divisor@(Polynome var' lst2)
     && isPolyMonovariate poly && isPolyMonovariate divisor
     && (fst $ last lst1) > (fst $ last lst2)=
         (finalize . packCoeffs *** finalize . packCoeffs)
-      . splitAt (length divCoeff)
+      . splitAt (length coefList + 1 - length divCoeff)
+      . (\a -> unsafePerformIO (do
+                print "Expanded Poly =>"
+                print $ (firstCoeff:coefList)
+                print "Expanded Divisor =>"
+                print divCoeff
+                print "Divided =>"
+                print a
+                ) `seq` a)
       $ firstCoeff : syntheticInnerDiv divCoeff firstCoeff coefList
     where Just (firstCoeff: coefList) = expandCoeff poly
           Just (_:divCoeff) = map negate <$> expandCoeff divisor

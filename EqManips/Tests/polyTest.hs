@@ -18,6 +18,8 @@ polynomes =
         , "((-(-y))*z^3)"
         , "x^2*y^2 + 5 + y^5 + y^3 + x*y + x"
         , "x*y + x"
+        , "x^4 + x + x^5 - 3 + x"
+        , "x^2 + x - 3"
         ]
 
 isPolyFineRecursive :: Polynome -> Bool
