@@ -56,19 +56,7 @@ asciiSizer = Dimensioner
     , powSize = \_ (b,(w1,h1)) (_,(w2,h2)) ->
                     (b + h2, (w1 + w2, h1 + h2))
 
-      -- We must handle case like this :
-      --  +-------+
-      --  |       |+-------+
-      --  +-------|+-------+
-      --  |       ||       |
-      --  +-------+|       |
-      --           +-------+
-    , binop = \_ op (bl,(w1,h1)) (br,(w2,h2)) ->
-                    let base = max bl br
-                        oplength = length $ binopString op
-                        nodeSize = base + max (h1 - bl) (h2 - br)
-                    in (base, (w1 + w2 + 2 + oplength, nodeSize))
-
+    , binop = binopSize
     , productSize = \_ (_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
             let height = inih + endh + max 2 whath
                 sumW = maximum [iniw, endw, 3]
@@ -120,6 +108,27 @@ asciiSizer = Dimensioner
         in
         (mHeight `div` 2, (2 + mWidth, mHeight))
     }
+
+
+-- We must handle case like this :
+--  +-------+
+--  |       |+-------+
+--  +-------|+-------+
+--  |       ||       |
+--  +-------+|       |
+--           +-------+
+binopSize :: Conf -> BinOperator -> RelativePlacement -> RelativePlacement
+          -> RelativePlacement
+binopSize conf OpMul l@(bl,(w1,h1)) r@(br,(w2,h2))
+    | not $ mulAsDot conf = binopSize conf OpAdd l r -- fall back to normal case
+    | otherwise = (max bl br, (w1 + w2 + 1, nodeSize))
+            where nodeSize = base + max (h1 - bl) (h2 - br)
+                  base = max bl br
+
+binopSize _ op (bl,(w1,h1)) (br,(w2,h2)) = (base, (w1 + w2 + 2 + oplength, nodeSize))
+      where base = max bl br
+            oplength = length $ binopString op
+            nodeSize = base + max (h1 - bl) (h2 - br)
 
 -- | Convert entity to text, not much entity for
 -- the moment
@@ -337,6 +346,20 @@ renderF conf (BinOp OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
               (rw, _) = sizeOfTree t2
               leftBegin = x + (w - lw) `div` 2
               rightBegin = x + (w - rw) `div` 2
+
+renderF conf (BinOp OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y)
+    | mulAsDot conf = leftRender . rightRender . (:) ((x + lw, y + base), '.')
+    where (lw, _) = sizeOfTree t1
+          leftBase = baseLineOfTree t1
+          rightBase = baseLineOfTree t2
+
+          (leftTop, rightTop) =
+              if leftBase > rightBase
+                 then (y, y + leftBase - rightBase)
+                 else (y + rightBase - leftBase, y)
+
+          leftRender = renderF conf f1 t1 (x, leftTop)
+          rightRender = renderF conf f2 t2 (x + lw + 1, rightTop)
 
 renderF conf (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
   (++) [ ((i, y + base), c) | (i, c) <- zip [x + lw + 1 ..] opChar]

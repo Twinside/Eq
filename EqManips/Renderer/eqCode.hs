@@ -34,6 +34,7 @@ deparse :: Int -> Bool -> FormulaPrim -> ShowS
 -- INVISIBLE META NINJA !!
 deparse i r (Meta op f) = (++) (show op) . ('(' :) . deparse i r f . (')':)
 deparse i r (Poly p) = deparse i r . unTagFormula $ convertToFormula p
+deparse _ _ (Complex _) =error "Complex representation not decided yet"
 deparse _ _ (Truth True) = ("true" ++)
 deparse _ _ (Truth False) = ("false" ++)
 deparse _ _ (BinOp _ []) =

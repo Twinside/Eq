@@ -79,12 +79,14 @@ derivationRules evaluator variable (Formula func) = d func variable
        d (Variable v) var
            | v == var = return $ int 1
            | otherwise = return $ int 0
+       d (Fraction _) _ = return $ int 0
        d (CInteger _) _ = return $ int 0
        d (CFloat _) _ = return $ int 0
        d (NumEntity _) _ = return $ int 0
        d (App f [g]) var =
            (\f' g' -> (App f' [g]) * g') <$> d f var <*> d g var
      
+       d f@(Complex _) _ = unTagFormula <$> eqFail (Formula f) "No complex derivation yet"
        d f@(App _ _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_multi_app
        d f@(BinOp _ []) _ = unTagFormula <$> eqFail (Formula f) (Err.empty_binop "derivate - ")
        d f@(BinOp _ [_]) _ = unTagFormula <$> eqFail (Formula f) (Err.single_binop "derivate - ")

@@ -1,5 +1,7 @@
 module EqManips.Renderer.Latex ( latexRender, latexRenderS ) where
 
+import Data.Ratio
+
 import EqManips.Types
 import EqManips.Polynome
 import EqManips.Algorithm.Utils
@@ -62,6 +64,8 @@ lno = l (Nothing, False)
 
 l :: (Maybe BinOperator, Bool) -> FormulaPrim -> ShowS
 l op (Poly p) = l op . unTagFormula . treeIfyFormula $ convertToFormula p
+l op (Fraction f) = l op $ (CInteger $ numerator f) / (CInteger $ denominator f)
+l op (Complex (real, complex)) = l op $ real + Variable "i" * complex
 l _ (Block _ _ _) = str "block"
 l _ (Variable v) = str v
 l _ (NumEntity e) = str $ latexOfEntity e
