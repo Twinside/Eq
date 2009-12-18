@@ -4,16 +4,18 @@ module EqManips.Renderer.Mathml( mathmlRender ) where
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
+
 import EqManips.Renderer.Latex
 import EqManips.Renderer.EqCode
+import EqManips.Renderer.RenderConf
 
-mathmlRender :: Formula TreeForm -> String
-mathmlRender (Formula f) =
+mathmlRender :: Conf -> Formula TreeForm -> String
+mathmlRender conf (Formula f) =
     (str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n")
     . semantics ( presMarkup 
                 . annotation "MathML-Content" contentMarkup
                 . annotation "Eq-language" (str . cleanify $ unparse f)
-                . annotation "LaTeX" (str . cleanify . latexRender $ Formula f))
+                . annotation "LaTeX" (str . cleanify . latexRender conf $ Formula f))
     . (str "</math>\n") $ ""
         where contentMarkup = content f
               presMarkup = mrow $ prez f

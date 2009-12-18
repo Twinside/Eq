@@ -7,13 +7,15 @@ import EqManips.Polynome
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
 
-latexRender :: Formula TreeForm -> String
-latexRender f = latexRenderS f ""
+import EqManips.Renderer.RenderConf
 
-latexRenderS :: Formula TreeForm -> ShowS
-latexRenderS (Formula f) = (str "\\begin{equation}\n")
-                         . lno f 
-                         . (str "\n\\end{equation}\n")
+latexRender :: Conf -> Formula TreeForm -> String
+latexRender conf f = latexRenderS conf f ""
+
+latexRenderS :: Conf -> Formula TreeForm -> ShowS
+latexRenderS conf(Formula f) = (str "\\begin{equation}\n")
+                             . lno conf f 
+                             . (str "\n\\end{equation}\n")
 
 str :: String -> ShowS
 str = (++)
@@ -59,73 +61,87 @@ stringOfBinOp OpLe = " \\le "
 stringOfBinOp OpAttrib = " := "
 stringOfBinOp _ = error "stringOfBinOp - unknown op"
 
-lno :: FormulaPrim -> ShowS
-lno = l (Nothing, False)
+lno :: Conf -> FormulaPrim -> ShowS
+lno conf = l conf (Nothing, False)
 
-l :: (Maybe BinOperator, Bool) -> FormulaPrim -> ShowS
-l op (Poly p) = l op . unTagFormula . treeIfyFormula $ convertToFormula p
-l op (Fraction f) = l op $ (CInteger $ numerator f) / (CInteger $ denominator f)
-l op (Complex (real, complex)) = l op $ real + Variable "i" * complex
-l _ (Block _ _ _) = str "block"
-l _ (Variable v) = str v
-l _ (NumEntity e) = str $ latexOfEntity e
-l _ (Truth t) = shows t
-l _ (CInteger i) = shows i
-l _ (CFloat d) = shows d
-l op (Meta _ f) = l op f
-l _ (Lambda _clauses) = id
+l :: Conf -> (Maybe BinOperator, Bool) -> FormulaPrim -> ShowS
+l conf op (Poly p) = l conf op . unTagFormula . treeIfyFormula $ convertToFormula p
+l conf op (Fraction f) = l conf op $ (CInteger $ numerator f) / (CInteger $ denominator f)
+l conf op (Complex (real, complex)) = l conf op $ real + Variable "i" * complex
+l _ _ (Block _ _ _) = str "block"
+l _ _ (Variable v) = str v
+l _ _ (NumEntity e) = str $ latexOfEntity e
+l _ _ (Truth t) = shows t
+l _ _ (CInteger i) = shows i
+l _ _ (CFloat d) = shows d
+l conf op (Meta _ f) = l conf op f
+l _ _ (Lambda _clauses) = id
 
-l _ (BinOp OpDiv [a,b]) = str "\\frac{" . lno a . str "}{" . lno b . char '}'
-l _ (BinOp OpPow [a,b]) = char '{' . l (Just OpPow, False) a 
-                                   . str "}^{" . l (Just OpPow, True) b . char '}'
-l (Just pop,right) (BinOp op [a,b])
-    | needParenthesis right pop op =
-        str "\\left( " . l (Just op, False) a 
-                       . str (stringOfBinOp op) 
-                       . l (Just op, True) b . str "\\right) "
-    | otherwise = l (Just op, False) a . str (stringOfBinOp op) . l (Just op, True) b
-l (Nothing,_) (BinOp op [a,b]) = lno a . str (stringOfBinOp op) . lno b
-l _ (BinOp _ _) = error "latexification require treeified formula"
+l conf (Just pop,right) (BinOp OpMul [a,b])
+    | mulAsDot conf = if needParenthesis right pop OpMul
+            then str "\\left( " . expr . str "\\right) "
+            else expr
+        where expr = l conf (Just OpMul, False) a
+                   . str "\\cdot"
+                   . l conf (Just OpMul, True) b
+
+l conf (Nothing,_) (BinOp OpMul [a,b])
+    | mulAsDot conf =
+        l conf (Just OpMul, False) a . str "\\cdot" . l conf (Just OpMul, True) b
+
+l conf _ (BinOp OpDiv [a,b]) = str "\\frac{" . lno conf a . str "}{" . lno conf b . char '}'
+l conf _ (BinOp OpPow [a,b]) = char '{' . l conf (Just OpPow, False) a 
+                                   . str "}^{" . l conf (Just OpPow, True) b . char '}'
+l conf (Just pop,right) (BinOp op [a,b]) =
+    if needParenthesis right pop op
+        then str "\\left( " . expr . str "\\right) "
+        else expr
+      where expr = l conf (Just op, False) a 
+                 . str (stringOfBinOp op) 
+                 . l conf (Just op, True) b
+
+l conf (Nothing,_) (BinOp op [a,b]) = lno conf a . str (stringOfBinOp op) . lno conf b
+l _ _ (BinOp _ _) = error "latexification require treeified formula"
 
 -- Unary operators
-l _ (UnOp OpAbs f) = str "\\lvert " . lno f . str "\\rvert "
-l _ (UnOp OpFloor f) = str "\\lfloor " . lno f . str "\\rfloor"
-l _ (UnOp OpCeil f) = str "\\lceil " . lno f . str "\\rceil"
-l _ (UnOp OpFrac f) = str "\\lbrace " . lno f . str "\\rbrace"
-l _ (UnOp OpSqrt f) = str "\\sqrt{" . lno f . char '}'
-l _ (UnOp OpExp f) = str "\\exp ^ {" . l (Just OpPow, True) f . str "} "
-l _ (UnOp OpNegate f) 
-    | f `hasProp` LeafNode = str " -" . lno f
-    | otherwise = str "-\\left( " . lno f . str "\\right)"
-l _ (UnOp OpFactorial f) 
-    | f `hasProp` LeafNode = lno f . str "!"
-    | otherwise = str "\\left( " . lno f . str "\\right)!"
-l _ (UnOp op f)
-    | f `hasProp` LeafNode = str (stringOfUnOp op) . lno f
-    | otherwise = str (stringOfUnOp op) . str "\\left(" . lno f . str "\\right)"
+l conf _ (UnOp OpAbs f) = str "\\lvert " . lno conf f . str "\\rvert "
+l conf _ (UnOp OpFloor f) = str "\\lfloor " . lno conf f . str "\\rfloor"
+l conf _ (UnOp OpCeil f) = str "\\lceil " . lno conf f . str "\\rceil"
+l conf _ (UnOp OpFrac f) = str "\\lbrace " . lno conf f . str "\\rbrace"
+l conf _ (UnOp OpSqrt f) = str "\\sqrt{" . lno conf f . char '}'
+l conf _ (UnOp OpExp f) = str "\\exp ^ {" . l conf (Just OpPow, True) f . str "} "
+l conf _ (UnOp OpNegate f) 
+    | f `hasProp` LeafNode = str " -" . lno conf f
+    | otherwise = str "-\\left( " . lno conf f . str "\\right)"
+l conf _ (UnOp OpFactorial f) 
+    | f `hasProp` LeafNode = lno conf f . str "!"
+    | otherwise = str "\\left( " . lno conf f . str "\\right)!"
+l conf _ (UnOp op f)
+    | f `hasProp` LeafNode = str (stringOfUnOp op) . lno conf f
+    | otherwise = str (stringOfUnOp op) . str "\\left(" . lno conf f . str "\\right)"
 
-l _ (Sum begin end what) =
-    str "\\sum_{" . lno begin . str "}^{" . lno end . str "} " . lno what
-l _ (Product begin end what) =
-    str "\\prod_{" . lno begin . str "}^{" . lno end . str "} " . lno what
+l conf _ (Sum begin end what) =
+    str "\\sum_{" . lno conf begin . str "}^{" . lno conf end . str "} " . lno conf what
+l conf _ (Product begin end what) =
+    str "\\prod_{" . lno conf begin . str "}^{" . lno conf end . str "} " . lno conf what
 
-l _ (Integrate begin end what var) =
-    str "\\int_{" . lno begin . str "}^{" . lno end 
-                  . str "} \\! " . lno what . str " \\, d" . lno var
+l conf _ (Integrate begin end what var) =
+    str "\\int_{" . lno conf begin . str "}^{" . lno conf end 
+                  . str "} \\! " . lno conf what . str " \\, d" . lno conf var
 
-l _ (Derivate f var) =
-    str "\\frac{d " . lno f . str "}{ d" . lno var . char '}'
+l conf _ (Derivate f var) =
+    str "\\frac{d " . lno conf f . str "}{ d" . lno conf var . char '}'
 
-l _ (App func args) = 
-    lno func . str "\\left(" . latexargs args . str "\\right)"
+l conf _ (App func args) = 
+    lno conf func . str "\\left(" . latexargs args . str "\\right)"
      where latexargs [] = id
-           latexargs (x:xs) = foldr (\e acc -> lno e . str ", " . acc)
-                                    (lno x) xs
+           latexargs (x:xs) = foldr (\e acc -> lno conf e . str ", " . acc)
+                                    (lno conf x) xs
 
-l _ (Matrix _ _ lsts) = str "\\begin{bmatrix}\n"
+l conf _ (Matrix _ _ lsts) = str "\\begin{bmatrix}\n"
                       . matrixCells
                       . str "\\end{bmatrix}\n"
-    where perLine lst = interspereseS (str " & ") $ map lno lst
+    where perLine lst = interspereseS (str " & ") $ map (lno conf) lst
           matrixCells = interspereseS (str "\\\\\n") $ map perLine lsts
 
 

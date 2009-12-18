@@ -6,6 +6,7 @@ import EqManips.Renderer.Ascii
 import EqManips.Renderer.Latex
 import EqManips.Renderer.Mathml
 import EqManips.Renderer.Sexpr
+import EqManips.Renderer.RenderConf
 import System.Exit
 import System.IO
 import System.Console.GetOpt
@@ -202,9 +203,9 @@ commandList =
     , ("format", "Load and display the formula in ASCII Art"
             , formatCommand formatFormula, commonOption)
     , ("latexify", "Translate the formula into latex"
-            , formatCommand latexRender, commonOption)
+            , formatCommand $ latexRender defaultRenderConf, commonOption)
     , ("mathmlify", "Translate the formula into MathML"
-            , formatCommand mathmlRender, commonOption)
+            , formatCommand $ mathmlRender defaultRenderConf, commonOption)
     , ("toraw", "Show internal representation of formula"
             , formatCommand show, commonOption)
     , ("help", "Ask specific help for a command, or this"
