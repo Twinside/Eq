@@ -140,6 +140,7 @@ cOut _ (Derivate _ _) = outFail Err.c_out_derivate
 cOut _ (Integrate _ _ _ _) = outFail Err.c_out_integrate
 cOut _ (Lambda _) = outFail Err.c_out_lambda 
 cOut _ (Block _ _ _) = outFail Err.c_out_block
+cOut _ (Complex _) = outFail Err.c_out_complex
 
 iteration :: String -> FormulaPrim -> FormulaPrim -> FormulaPrim -> OutContext ShowS
 iteration op (BinOp OpEq [Variable v, iniExpr]) exprEnd what = do

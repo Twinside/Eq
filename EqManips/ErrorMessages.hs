@@ -80,6 +80,7 @@ c_out_block = "We can't output evaluation errors in C"
 c_out_matrix = "We can't output matrix in C for now (maybe in the future)"
 c_out_bad_iteration = "We can't translate product or sum to a meaningfull loop"
 c_out_bad_binop = "The binary operator has a wrong internal form"
+c_out_complex = "Complex is not yet decided for C/C++ output"
 
 --------------------------------------------------
 ----            Polynome
