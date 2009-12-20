@@ -18,7 +18,7 @@ mathmlRender conf (Formula f) =
                 . annotation "LaTeX" (str . cleanify . latexRender conf $ Formula f))
     . (str "</math>\n") $ ""
         where contentMarkup = content f
-              presMarkup = mrow $ prez f
+              presMarkup = mrow $ prez conf f
               semantics = tagger "semantics"
               annotation kind c =
                   str ("<annotation-xml encoding=\"" ++ kind ++ "\">\n")
@@ -66,77 +66,93 @@ mtr = tagger "mtr"
 enclose :: Char -> Char -> ShowS -> ShowS
 enclose beg end f = str ("<mo>" ++ (beg : "</mo>")) . f . str ("<mo>" ++ (end : "</mo>"))
 
-prez :: FormulaPrim -> ShowS
-prez = presentation Nothing
+prez :: Conf -> FormulaPrim -> ShowS
+prez conf = presentation conf Nothing
 
-presentation :: Maybe (BinOperator, Bool) -> FormulaPrim -> ShowS
-presentation _ (Block _ _ _) = mi $ str "block"
-presentation _ (Variable v) = mi $ str v
-presentation _ (NumEntity e) = mn $ str $ mathMlOfEntity e
-presentation _ (Truth t) = mn $ shows t
-presentation _ (CInteger i) = mn $ shows i
-presentation _ (CFloat d) = mn $ shows d
-presentation inf (Meta _ f) = presentation inf f
-presentation _ (Lambda _clauses) = id
+--centerdot
+--
+presentation :: Conf -> Maybe (BinOperator, Bool) -> FormulaPrim -> ShowS
+presentation _ _ (Block _ _ _) = mi $ str "block"
+presentation _ _ (Variable v) = mi $ str v
+presentation _ _ (NumEntity e) = mn $ str $ mathMlOfEntity e
+presentation _ _ (Truth t) = mn $ shows t
+presentation _ _ (CInteger i) = mn $ shows i
+presentation _ _ (CFloat d) = mn $ shows d
+presentation conf inf (Meta _ f) = presentation conf inf f
+presentation _ _ (Lambda _clauses) = id
 
-presentation _ (BinOp OpPow [a,b]) =
-    msup $ mrow (presentation (Just (OpPow, False)) a)
-         . mrow (presentation (Just (OpPow, True)) b)
+presentation conf _ (BinOp OpPow [a,b]) =
+    msup $ mrow (presentation conf (Just (OpPow, False)) a)
+         . mrow (presentation conf (Just (OpPow, True)) b)
 
-presentation _ (BinOp OpDiv [a,b]) =
-    mfrac $ mrow (prez a)
-          . mrow (prez b)
+presentation conf _ (BinOp OpDiv [a,b]) =
+    mfrac $ mrow (prez conf a)
+          . mrow (prez conf b)
 
-presentation (Just (pop,isRight)) f@(BinOp op _)
-    | needParenthesis isRight pop op = parens $ prez f
-    | otherwise = prez f
+presentation conf (Just (pop,isRight)) f@(BinOp op _)
+    | needParenthesis isRight pop op = parens $ prez conf f
+    | otherwise = prez conf f
 
-presentation Nothing (BinOp op [a,b]) =
-    presentation (Just (op, False)) a
+presentation conf Nothing (BinOp OpMul [a,b])
+    | mulAsDot conf = presentation conf (Just (OpMul, False)) a
+                    . mo (str "&centerdot;")
+                    . presentation conf (Just (OpMul, True)) b
+
+    | otherwise = presentation conf (Just (OpMul, False)) a
+                . mo (str "&times;")
+                . presentation conf (Just (OpMul, True)) b
+
+presentation conf Nothing (BinOp op [a,b]) =
+    presentation conf (Just (op, False)) a
     . mo (str . cleanify $ binopString op)
-    . presentation (Just (op, True)) b
+    . presentation conf (Just (op, True)) b
 
 -- Unary operators
-presentation _ (UnOp OpCeil f) = str "<mo>&lceil;</mo>" . prez f . str "<mo>&rceil;</mo>"
-presentation _ (UnOp OpFloor f) = str "<mo>&lfloor;</mo>" . prez f . str "<mo>&rfloor;</mo>"
-presentation _ (UnOp OpFrac f) = enclose '{' '}' $ prez f
-presentation _ (UnOp OpAbs f) = enclose '|' '|' $ prez f
-presentation _ (UnOp OpSqrt f) = msqrt $ prez f
-presentation _ (UnOp OpFactorial f)
-  | f `hasProp` LeafNode = prez f . mo (char '!')
-  | otherwise = (parens $ prez f) . mo (char '!')
-presentation _ (UnOp OpNegate f)
-  | f `hasProp` LeafNode = mo (char '-') . prez f
-  | otherwise = mo (char '-') . (parens $ prez f)
-presentation _ (UnOp op f)
-  | f `hasProp` LeafNode = mo (str $ unopString op) . prez f
-  | otherwise = mo (str $ unopString op) . parens (prez f)
+presentation conf _ (UnOp OpCeil f) = str "<mo>&lceil;</mo>"
+                                    . prez conf f 
+                                    . str "<mo>&rceil;</mo>"
+presentation conf _ (UnOp OpFloor f) = str "<mo>&lfloor;</mo>"
+                                     . prez conf f 
+                                     . str "<mo>&rfloor;</mo>"
+presentation conf _ (UnOp OpFrac f) = enclose '{' '}' $ prez conf f
+presentation conf _ (UnOp OpAbs f) = enclose '|' '|' $ prez conf f
+presentation conf _ (UnOp OpSqrt f) = msqrt $ prez conf f
+presentation conf _ (UnOp OpFactorial f)
+  | f `hasProp` LeafNode = prez conf f . mo (char '!')
+  | otherwise = (parens $ prez conf f) . mo (char '!')
+presentation conf _ (UnOp OpNegate f)
+  | f `hasProp` LeafNode = mo (char '-') . prez conf f
+  | otherwise = mo (char '-') . (parens $ prez conf f)
+presentation conf _ (UnOp op f)
+  | f `hasProp` LeafNode = mo (str $ unopString op) . prez conf f
+  | otherwise = mo (str $ unopString op) . parens (prez conf f)
 
-presentation _ (Sum begin end what) =
+presentation conf _ (Sum begin end what) =
     (msubsup $ mo (str "&sum;")
-             . mrow (prez begin)
-             . mrow (prez end)) . mrow (prez what)
+             . mrow (prez conf begin)
+             . mrow (prez conf end)) . mrow (prez conf what)
 
-presentation _ (Product begin end what) =
+presentation conf _ (Product begin end what) =
     (msubsup $ mo (str "&prod;")
-             . mrow (prez begin)
-             . mrow (prez end)) . mrow (prez what)
+             . mrow (prez conf begin)
+             . mrow (prez conf end)) . mrow (prez conf what)
 
-presentation _ (Integrate begin end what var) =
+presentation conf _ (Integrate begin end what var) =
     (msubsup $ mo (str "&int;")
-             . mrow (prez begin)
-             . mrow (prez end)) . mrow (prez what . mi (str "d") . prez var)
+             . mrow (prez conf begin)
+             . mrow (prez conf end))
+             . mrow (prez conf what . mi (str "d") . prez conf var)
 
-presentation _ (Derivate f var) =
+presentation conf _ (Derivate f var) =
     (mfrac $ mi (char 'd')
-           . mrow (mi (char 'd') . prez var)) . prez f
+           . mrow (mi (char 'd') . prez conf var)) . prez conf f
 
-presentation _ (App func args) =
-    prez func . parens (interspereseS (mo $ char ',') $ map prez args)
+presentation conf _ (App func args) =
+    prez conf func . parens (interspereseS (mo $ char ',') $ map (prez conf) args)
 
-presentation _ (Matrix _ _ lsts) =
-    mfenced $ mtable $ concatS [mtr $ concatS [ mtd $ prez cell | cell <- row] | row <- lsts ]
-presentation _ f = error $ "\n\nWrong MathML presentation rendering : " ++ unparse f ++ "\n" ++ show f
+presentation conf _ (Matrix _ _ lsts) =
+    mfenced $ mtable $ concatS [mtr $ concatS [ mtd $ prez conf cell | cell <- row] | row <- lsts ]
+presentation _ _ f = error $ "\n\nWrong MathML presentation rendering : " ++ unparse f ++ "\n" ++ show f
 
 -----------------------------------------------
 ----        Content

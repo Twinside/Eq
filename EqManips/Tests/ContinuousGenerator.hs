@@ -30,11 +30,14 @@ instance Arbitrary ContinuousUnop where
 instance Arbitrary ContinuousFormula where
     arbitrary = formulaGen 5
 
+{-
+-- Declared in last version apparently
 instance Applicative Gen where
     pure  = return 
     f <*> a = do f' <- f
                  a' <- a
                  return $ f' a'
+-}
     
 arbunop :: Gen UnOperator
 arbunop = arbitrary >>= \(ContinuousUnop op) -> return op

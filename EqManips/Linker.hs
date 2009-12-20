@@ -18,6 +18,8 @@ link :: FormulaPrim -> FormulaPrim
 link p@(Poly _) = p
 link (Variable "infinite") = NumEntity Infinite
 link (Variable "pi") = NumEntity Pi
+link (Variable "i") = Complex (CInteger 0, CInteger 1)
+
 -- Meta cases
 link (App (Variable "Hold") [f]) = Meta Hold $ link f
 link (App (Variable "Force") [f]) = Meta Force $ link f

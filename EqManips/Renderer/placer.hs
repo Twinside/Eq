@@ -92,6 +92,8 @@ sizeOfFormula conf sizer a b (Fraction f) =
     sizeOfFormula conf sizer a b
     $ (CInteger $ numerator f) / (CInteger $ denominator f)
 
+sizeOfFormula conf sizer a b (Complex (re, im)) = 
+    sizeOfFormula conf sizer a b $ re + Variable "i" * im
 sizeOfFormula conf sizer a b (Poly p) =
     sizeOfFormula conf sizer a b . unTagFormula . treeIfyFormula $ convertToFormula p
 -- Simply the size of rendered text
@@ -110,7 +112,6 @@ sizeOfFormula conf sizer _ _ (UnOp op f) =
               subFormula = sizeOfFormula conf sizer True prio f
               sizeDim = (unaryDim sizer) conf op (sizeExtract subFormula)
 
-sizeOfFormula _ _ _ _ (Complex _) = error "sizeOfFormula - Complex, unhandled case"
 sizeOfFormula _ _ _ _ (BinOp _ [_]) = error $ Err.single_binop "sizeOfFormula conf - "
 sizeOfFormula _ _ _ _ (BinOp _ []) = error $ Err.empty_binop "sizeOfFormula conf - "
 

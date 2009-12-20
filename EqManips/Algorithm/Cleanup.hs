@@ -184,6 +184,9 @@ polyclean p = resulter $ pclean p
 ---- Linking all the rules together
 ---------------------------------------------
 rules :: FormulaPrim -> FormulaPrim
+rules (Complex (re, CInteger 0)) = re
+rules (Complex (re, CFloat 0.0)) = re
+
 rules (Poly (PolyRest r)) = coefToFormula r
 rules (Poly p) = polyclean p
 rules (UnOp OpSin f) = sinus f

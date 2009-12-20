@@ -114,13 +114,15 @@ globalTests =
 ----        System
 -----------------------------------------------
 testRunner :: Testable a => a -> Bool -> String -> Int -> IO ()
-testRunner prop verbose txt count = check config prop
-    where config = defaultConfig { configMaxTest = count
-                                 , configMaxFail = 2 
-                                 , configEvery = display }
+testRunner prop _verbose _txt count = quickCheckWith config prop
+    where config = stdArgs { maxSuccess = count
+                           , maxDiscard = 2 
+                           }
+          {-
           display = if verbose
                 then \n args -> txt ++ " " ++ show n ++ ":\n" ++ unlines args
                 else \n _ -> let s = show n in s ++ [ '\b' | _ <- s ]
+                                 -}
 
 parseArgs :: (Bool, Int) -> [String] -> (Bool, Int)
 parseArgs params [] = params

@@ -292,7 +292,8 @@ renderF :: Conf         -- ^ Rendering preferences
 
 -- INVISIBLE META NINJA
 renderF conf (Meta _ f) node pos = renderF conf f node pos
-
+renderF conf (Complex (re, im)) node pos =
+    renderF conf (re + Variable "i" * im) node pos
 renderF conf (Poly p) node pos =
     renderF conf translated node pos
         where translated = unTagFormula 

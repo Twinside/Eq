@@ -3,6 +3,7 @@
 module EqManips.Tests.FullGenerator( formulaGen ) where
 
 import Data.Ratio
+
 import Control.Applicative
 import Control.Monad
 import Test.QuickCheck
@@ -10,9 +11,12 @@ import EqManips.Types
 
 -- | To generate variables without clashing everywhere else
 newtype VarLetter = VarLetter Char
+{-
+-- Defined in last version apparently :)
 instance Applicative Gen where
     pure = return
     a <*> b = do { a' <- a; b' <- b; return $ a' b' }
+-}
 
 instance Arbitrary Entity where
     arbitrary  = elements [Pi] 
@@ -31,6 +35,17 @@ instance Arbitrary UnOperator where
 instance Arbitrary FormulaPrim where
     arbitrary = formulaGen 1
 
+    shrink (Poly p) = map Poly $ shrink p
+    shrink (BinOp op lst)
+        | length lst > 2 =
+            map (BinOp op) . filter (\a -> length a >= 2) $ shrink lst
+
+    shrink (UnOp op f) = map (UnOp op) $ shrink f
+    shrink (CInteger i) = map CInteger $ shrink i
+    shrink (CFloat f) = map CFloat $ shrink f
+    shrink (Fraction r) = map Fraction $ shrink r
+    shrink _ = []
+
 instance Arbitrary PolyCoeff where
     arbitrary = do
         n :: Int <- choose (0,1)
@@ -39,10 +54,22 @@ instance Arbitrary PolyCoeff where
              1 -> (\a b -> CoeffRatio $ a % b) <$> choose (1,150) <*> choose (1,150)
              _ -> error "Not permited"
 
+    shrink (CoeffInt i) = map CoeffInt $ shrink i
+    shrink (CoeffRatio r) = map CoeffRatio $ shrink r
+    shrink (CoeffFloat f) = map CoeffFloat $ shrink f
+
 instance Arbitrary VarLetter where
     arbitrary = do
         n <- choose (0, 25)
         return . VarLetter . toEnum $ n + fromEnum 'a'
+
+instance Arbitrary Polynome where
+    arbitrary = polynomeGenerator 4
+
+    shrink (PolyRest r) = map PolyRest $ shrink r
+    shrink (Polynome v lst) = map (Polynome v) 
+                            . filter (\a -> length a > 1)
+                            $ shrink lst
 
 leafs :: [Gen FormulaPrim]
 leafs = 

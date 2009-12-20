@@ -1,6 +1,5 @@
-4:comment décrire les complexes
-4:Fix expand algorithm :]
 4:Write a documentation
+4:Fix expand algorithm :]
 3:Decide derivation for log
 3:Matrix multiplication order problem!
 1:Make a simplify algorithm
