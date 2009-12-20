@@ -16,6 +16,7 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , concatS 
                                 , concatMapS 
                                 , collectSymbols, collectSymbols'
+                                , complexTranslate 
                                 ) where
 
 import qualified Data.Monoid as Monoid
@@ -226,6 +227,14 @@ isFormulaScalar (CFloat _) = True
 isFormulaScalar (CInteger _) = True
 isFormulaScalar (UnOp OpNegate f) = isFormulaScalar f
 isFormulaScalar _ = False
+
+-- | Translate a complex to a simpler formula using '+' and '*'
+-- Perform mandatory simplification
+complexTranslate :: (FormulaPrim, FormulaPrim) -> FormulaPrim
+complexTranslate (a,b)
+    | b == CInteger 0 || b == CFloat 0.0 = a
+    | a == CInteger 0 || a == CFloat 0.0 = Variable "i" * b
+    | otherwise = a + Variable "i" * b
 
 -- | Tell if a formula can be reduced to a scalar somehow
 isFormulaConstant :: FormulaPrim -> Bool

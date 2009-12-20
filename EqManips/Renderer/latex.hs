@@ -13,9 +13,9 @@ latexRender :: Conf -> Formula TreeForm -> String
 latexRender conf f = latexRenderS conf f ""
 
 latexRenderS :: Conf -> Formula TreeForm -> ShowS
-latexRenderS conf(Formula f) = (str "\\begin{equation}\n")
+latexRenderS conf(Formula f) = (str "\\begin{equation*}\n")
                              . lno conf f 
-                             . (str "\n\\end{equation}\n")
+                             . (str "\n\\end{equation*}\n")
 
 str :: String -> ShowS
 str = (++)
@@ -24,25 +24,25 @@ char :: Char -> ShowS
 char = (:)
 
 latexOfEntity :: Entity -> String
-latexOfEntity Pi = "\\pi"
-latexOfEntity Nabla = "\\nabla"
-latexOfEntity Infinite = "\\infty"
+latexOfEntity Pi = "\\pi "
+latexOfEntity Nabla = "\\nabla "
+latexOfEntity Infinite = "\\infty "
 
 stringOfUnOp :: UnOperator -> String
-stringOfUnOp OpSin = "\\sin"
-stringOfUnOp OpSinh  = "\\sinh"
-stringOfUnOp OpASin  = "\\arcsin"
-stringOfUnOp OpASinh = "\\arcsinh"
-stringOfUnOp OpCos  = "\\cos"
-stringOfUnOp OpCosh  = "\\cosh"
-stringOfUnOp OpACos  = "\\arccos"
-stringOfUnOp OpACosh = "\\arccosh"
-stringOfUnOp OpTan  = "\\tan"
-stringOfUnOp OpTanh  = "\\tanh"
-stringOfUnOp OpATan  = "\\arctan"
-stringOfUnOp OpATanh = "\\arctanh"
-stringOfUnOp OpLn = "\\ln"
-stringOfUnOp OpLog = "\\log"
+stringOfUnOp OpSin = "\\sin "
+stringOfUnOp OpSinh  = "\\sinh "
+stringOfUnOp OpASin  = "\\arcsin "
+stringOfUnOp OpASinh = "\\arcsinh "
+stringOfUnOp OpCos  = "\\cos "
+stringOfUnOp OpCosh  = "\\cosh "
+stringOfUnOp OpACos  = "\\arccos "
+stringOfUnOp OpACosh = "\\arccosh "
+stringOfUnOp OpTan  = "\\tan "
+stringOfUnOp OpTanh  = "\\tanh "
+stringOfUnOp OpATan  = "\\arctan "
+stringOfUnOp OpATanh = "\\arctanh "
+stringOfUnOp OpLn = "\\ln "
+stringOfUnOp OpLog = "\\log "
 stringOfUnOp op = error $ "stringOfUnop : unknown op " ++ show op
 
 stringOfBinOp :: BinOperator -> String
@@ -67,7 +67,7 @@ lno conf = l conf (Nothing, False)
 l :: Conf -> (Maybe BinOperator, Bool) -> FormulaPrim -> ShowS
 l conf op (Poly p) = l conf op . unTagFormula . treeIfyFormula $ convertToFormula p
 l conf op (Fraction f) = l conf op $ (CInteger $ numerator f) / (CInteger $ denominator f)
-l conf op (Complex (real, complex)) = l conf op $ real + Variable "i" * complex
+l conf op (Complex c) = l conf op $ complexTranslate c
 l _ _ (Block _ _ _) = str "block"
 l _ _ (Variable v) = str v
 l _ _ (NumEntity e) = str $ latexOfEntity e
@@ -82,12 +82,12 @@ l conf (Just pop,right) (BinOp OpMul [a,b])
             then str "\\left( " . expr . str "\\right) "
             else expr
         where expr = l conf (Just OpMul, False) a
-                   . str "\\cdot"
+                   . str "\\cdot "
                    . l conf (Just OpMul, True) b
 
 l conf (Nothing,_) (BinOp OpMul [a,b])
     | mulAsDot conf =
-        l conf (Just OpMul, False) a . str "\\cdot" . l conf (Just OpMul, True) b
+        l conf (Just OpMul, False) a . str "\\cdot " . l conf (Just OpMul, True) b
 
 l conf _ (BinOp OpDiv [a,b]) = str "\\frac{" . lno conf a . str "}{" . lno conf b . char '}'
 l conf _ (BinOp OpPow [a,b]) = char '{' . l conf (Just OpPow, False) a 
@@ -140,7 +140,7 @@ l conf _ (App func args) =
 
 l conf _ (Matrix _ _ lsts) = str "\\begin{bmatrix}\n"
                       . matrixCells
-                      . str "\\end{bmatrix}\n"
+                      . str "\n\\end{bmatrix}"
     where perLine lst = interspereseS (str " & ") $ map (lno conf) lst
           matrixCells = interspereseS (str "\\\\\n") $ map perLine lsts
 

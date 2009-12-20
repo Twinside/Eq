@@ -92,8 +92,8 @@ sizeOfFormula conf sizer a b (Fraction f) =
     sizeOfFormula conf sizer a b
     $ (CInteger $ numerator f) / (CInteger $ denominator f)
 
-sizeOfFormula conf sizer a b (Complex (re, im)) = 
-    sizeOfFormula conf sizer a b $ re + Variable "i" * im
+sizeOfFormula conf sizer a b (Complex c) = 
+    sizeOfFormula conf sizer a b $ complexTranslate c
 sizeOfFormula conf sizer a b (Poly p) =
     sizeOfFormula conf sizer a b . unTagFormula . treeIfyFormula $ convertToFormula p
 -- Simply the size of rendered text
