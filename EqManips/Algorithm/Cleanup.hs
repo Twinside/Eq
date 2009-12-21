@@ -4,6 +4,9 @@ import EqManips.Types
 import EqManips.Polynome
 import EqManips.FormulaIterator
 import EqManips.Algorithm.Utils
+import Data.Ratio
+
+import qualified EqManips.ErrorMessages as Err
 
 type BiRuler = FormulaPrim -> FormulaPrim -> Either FormulaPrim (FormulaPrim, FormulaPrim)
 
@@ -160,7 +163,7 @@ exponential (CFloat 0.0) = int 1
 exponential f = exp f
 
 reOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
-reOp _ [] = error $ Err.reOp error
+reOp _ [] = error Err.reOp
 reOp _ [x] = x
 reOp op lst = BinOp op lst
 
@@ -186,9 +189,9 @@ polyclean p = resulter $ pclean p
 rules :: FormulaPrim -> FormulaPrim
 rules (Complex (re, CInteger 0)) = re
 rules (Complex (re, CFloat 0.0)) = re
-rules (Fraction f) =
-    | numerator a == 1 = denominator f
-    | denominator == 0 = CInteger 0
+rules (Fraction f)
+    | numerator f == 1 = CInteger $ denominator f
+    | denominator f == 0 = CInteger 0
 
 rules (Poly (PolyRest r)) = coefToFormula r
 rules (Poly p) = polyclean p

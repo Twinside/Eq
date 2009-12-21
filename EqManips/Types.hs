@@ -5,10 +5,11 @@
 module EqManips.Types
          ( FormulaPrim( .. )
          , Formula( .. )
-         , ListForm -- ^ Tell that the formula is in form
-                    -- binop op [a,b ...]
-         , TreeForm -- ^ Tell that the formula is in form
-                    -- binop op [a,b]
+
+         -- | Tell that the formula is in form binop op [a,b ...]
+         , ListForm
+         -- | Tell that formula is in form Binop op [a,b]
+         , TreeForm
 
          , BinOperator( .. )
          , UnOperator( .. )
@@ -16,9 +17,13 @@ module EqManips.Types
 
          , binopString
          , unopString
-         , AssocSide(..) -- To query associativity side
-         , OpAssoc( .. ) -- Return type for associativity side
-         , Priority(.. ) -- Gain access to operator's priority
+
+         -- | To query associativity side
+         , AssocSide(..) 
+         -- | Return type for associativity side
+         , OpAssoc( .. ) 
+         -- | Gain access to operator's priority
+         , Priority(.. )
          , LeafNode( .. )
          , OpProp( .. ) 
          , OperatorText(..)

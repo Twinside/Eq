@@ -11,6 +11,10 @@ module EqManips.Polynome( convertToPolynome
                         , isCoeffNull 
                         , prepareFormula 
                         , syntheticDiv 
+
+                        -- | Pack/simplify polynome with only one coefficient
+                        -- and/or null coef.
+                        , simplifyPolynome 
                         ) where
 
 import Control.Applicative( (<$>), (<*>) )
@@ -25,16 +29,24 @@ import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
-import System.IO.Unsafe
+--import System.IO.Unsafe
+
+-- | will pack/simplify internal representation of a polynome.
+-- If there is only one null coefficient only subPoly will be present
+simplifyPolynome :: Polynome -> Polynome
+simplifyPolynome (Polynome v p@[(lastCoeff, PolyRest constant)])
+    | isCoeffNull lastCoeff = PolyRest constant
+    | otherwise = Polynome v p
+simplifyPolynome (Polynome v p@[(lastCoeff, subPoly)])
+    | isCoeffNull lastCoeff = subPoly
+    | otherwise = Polynome v p
+simplifyPolynome a = a
 
 -- | Given a formula, it'll try to convert it to a polynome.
 -- Formula should be expanded and in list form to get this
 -- function to work (nested shit shouldn't work)
 convertToPolynome :: Formula ListForm -> Maybe Polynome
 convertToPolynome (Formula f) = polynomize 
-                              . (\a -> unsafePerformIO (do
-                                    print "Prepared =>"
-                                    print a) `seq` a)
                               $ prepareFormula f
 
 convertToFormula :: Polynome -> Formula ListForm
@@ -276,7 +288,6 @@ polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula]
 -- HMmm?
 polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don't distingate
                              . translator pow0  -- cases at the upper level.
-                             . (\a -> unsafePerformIO (print a) `seq` a)
                              . packCoefs
                              $ varGroup polys
   where (polys, pow0) = partitionEithers $ map extractFirstTerm lst
@@ -475,6 +486,7 @@ syntheticDiv poly@(Polynome var lst1) divisor@(Polynome var' lst2)
     && (fst $ last lst1) > (fst $ last lst2)=
         (finalize . packCoeffs *** finalize . packCoeffs)
       . splitAt (length coefList + 1 - length divCoeff)
+      {-
       . (\a -> unsafePerformIO (do
                 print "Expanded Poly =>"
                 print $ (firstCoeff:coefList)
@@ -482,7 +494,7 @@ syntheticDiv poly@(Polynome var lst1) divisor@(Polynome var' lst2)
                 print divCoeff
                 print "Divided =>"
                 print a
-                ) `seq` a)
+                ) `seq` a) -}
       $ firstCoeff : syntheticInnerDiv divCoeff firstCoeff coefList
     where Just (firstCoeff: coefList) = expandCoeff poly
           Just (_:divCoeff) = map negate <$> expandCoeff divisor

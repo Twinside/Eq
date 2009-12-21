@@ -10,6 +10,22 @@ import Data.List
 linkFormula :: Formula anyForm -> Formula anyForm
 linkFormula (Formula a) = Formula $ link a
 
+type DocString = String
+type LongDescr = String
+
+entityList :: [(String, (DocString, LongDescr, FormulaPrim))]
+entityList =
+    [ ("infinite", ("Represent the inifinity in this program."
+                   , ""
+                   , NumEntity Infinite))
+    , ("pi", ( "The number Pi (=3.14159...)."
+             , "When used, exact simplification can be used"
+             , NumEntity Pi))
+    , ("i", ( "The imaginary number, use it to describe complex numbers."
+            , "i * i = -1"
+            , Complex (CInteger 0, CInteger 1)))
+    ]
+
 -- | Function associating variables to symbol.
 -- It's a crude way to do it... 
 -- may need to change it to a real symbol table later

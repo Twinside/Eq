@@ -45,36 +45,14 @@ derivationRules evaluator variable (Formula func) = d func variable
 
        -- Poloynome with only ^ 0, degenerated case, but
        -- must handle it
-       d f@(Poly (PolyRest _)) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_bad_form_scalar
+       d   (Poly (PolyRest _)) _ = pure $ int 0
        d f@(Poly (Polynome _ [])) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_empty
 
        -- Eq:format derivate( sum( a_i * x^i ), x ) = sum( a_i * i * x ^ (i-1))
-       d (Poly (Polynome v coefs@((c,sub):xs))) var
-            | v /= var && isCoeffNull c = case sub of
-                    Polynome _ _ -> d (Poly sub) var
-                    coeff -> return $ Poly coeff
-            | v /= var = return $ int 0
-            | otherwise = do
-                let coefHead = if isCoeffNull c then xs else coefs
-                    derivator (coef, PolyRest subCoeff) =
-                        return (coef - CoeffInt 1, PolyRest $ coef * subCoeff)
+       d (Poly p) var = case polyDerivate p var of
+            PolyRest r -> return $ coefToFormula r
+            p' -> return $ Poly p'
 
-                    derivator (coef, subPoly@(Polynome _ _)) = do
-                        sub' <- d (Poly subPoly) var
-                        case sub' of
-                             Poly r@(PolyRest _) -> return (coef - CoeffInt 1, PolyRest coef * r)
-                             Poly (Polynome _ _) -> error "What to do - polynome derivation case"
-                             _ -> error $ Err.impossible "derivation poly other"
-
-                poly' <- mapM derivator coefHead
-                case poly' of
-                     [(lastCoeff, PolyRest constant)] -> if isCoeffNull lastCoeff
-                                           then return . unTagFormula $ convertToFormula (PolyRest constant)
-                                           else return . Poly $ Polynome v poly'
-                     [(lastCoeff, subPoly)] -> if isCoeffNull lastCoeff
-                                    then return $ Poly subPoly
-                                    else return . Poly $ Polynome v poly'
-                     p -> return . Poly $ Polynome v p
 
        d (Variable v) var
            | v == var = return $ int 1
@@ -208,3 +186,23 @@ derivationRules evaluator variable (Formula func) = d func variable
        d f@(Truth _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_bool
        d (Block _ _ _) _var = unTagFormula <$> eqFail (Formula $ Block 0 1 1) Err.deriv_block
 
+polyDerivate :: Polynome -> String -> Polynome
+polyDerivate (PolyRest _) _ = PolyRest $ CoeffInt 0
+polyDerivate (Polynome _ []) _ = error Err.polynome_empty 
+polyDerivate (Polynome v coefs@((c,_):xs)) var
+  | v /= var =      
+          let innerDerivate (coef,subPoly) = (coef, polyDerivate subPoly var)
+              emptyCoeff (_, (PolyRest rest)) = isCoeffNull rest
+              emptyCoeff _ = True
+          in simplifyPolynome
+           . Polynome v
+           . filter emptyCoeff
+           $ map innerDerivate coefs
+    
+  | otherwise = simplifyPolynome . Polynome v $ map derivator coefHead
+      where coefHead = if isCoeffNull c then xs else coefs
+
+            derivator (coef, subPoly@(Polynome _ _)) = (coef - CoeffInt 1, subPoly)
+            derivator (coef, PolyRest subCoeff) =
+                (coef - CoeffInt 1, PolyRest $ coef * subCoeff)
+          

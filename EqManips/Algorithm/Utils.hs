@@ -7,15 +7,20 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , isFormulaConstant, isFormulaConstant' 
                                 , isFormulaInteger, isFormulaScalar 
                                 , sortFormula, invSortFormula, sortBinOp  
-
-                                , nodeCount     -- ^ Count nodes in basic formula
-                                , nodeCount'    -- ^ Same version with form info.
+                                
+                                -- | Count nodes in basic formula
+                                , nodeCount     
+                                -- | Same version with form info.
+                                , nodeCount'    
                                 , needParenthesis 
                                 , needParenthesisPrio 
                                 , interspereseS 
                                 , concatS 
                                 , concatMapS 
                                 , collectSymbols, collectSymbols'
+
+                                -- | Translate complex into "simpler" format,
+                                -- intended for display use only!
                                 , complexTranslate 
                                 ) where
 
