@@ -6,6 +6,8 @@ module EqManips.ErrorMessages where
 ----            Generic stuff
 --------------------------------------------------
 shouldnt_happen = (++ "Shouldn't happen")
+reOp = "reOp Empty formula? WTF"
+impossible = (++ " It's impossible. Really.")
 
 --------------------------------------------------
 ----            Eval defs
@@ -69,6 +71,8 @@ deriv_no_bool = "No Boolean value allowed in differentiation"
 deriv_lambda = "Differentiation of lambdas"
 deriv_block = "An error as previously occured during evaluation, can't differentiate"
 deriv_no_factorial = "Differentiation of factorials is undefined"
+deriv_no_abs = "Absolute value is not derivable"
+deriv_no_log = "No position for Log for now"
 
 --------------------------------------------------
 ----            C output

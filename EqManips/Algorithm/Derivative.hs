@@ -64,7 +64,7 @@ derivationRules evaluator variable (Formula func) = d func variable
                         case sub' of
                              Poly r@(PolyRest _) -> return (coef - CoeffInt 1, PolyRest coef * r)
                              Poly (Polynome _ _) -> error "What to do - polynome derivation case"
-                             _ -> error "GNU?"
+                             _ -> error $ Err.impossible "derivation poly other"
 
                 poly' <- mapM derivator coefHead
                 case poly' of
@@ -192,9 +192,9 @@ derivationRules evaluator variable (Formula func) = d func variable
        d f@(Lambda _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_lambda
      
        d f@(UnOp OpLog _f) _var = unTagFormula <$>
-           eqFail (Formula f) "No position for Log for now"
+           eqFail (Formula f) Err.deriv_no_log
        d f@(UnOp OpAbs _f) _var = unTagFormula <$>
-           eqFail (Formula f) "abs is derivable? I don't think so"
+           eqFail (Formula f) Err.deriv_no_abs
      
        d f@(UnOp OpFactorial _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_factorial
        d f@(UnOp OpFloor _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_floor_not_continuous 
