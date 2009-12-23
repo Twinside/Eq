@@ -1,9 +1,17 @@
 -- | This module will link variable names to
 -- symbols.
-module EqManips.Linker( linkFormula ) where
+module EqManips.Linker( DocString, LongDescr
+                      , entityList
+                      , metaFunctionList 
+                      , unaryFunctions 
+                      , multiParamsFunctions
+                      , linkFormula
+                      ) where
 
 import EqManips.Types
 import Data.List
+import Data.Maybe( fromMaybe )
+import qualified Data.Map as Map
 
 -- | Linking formula doesn't change it's form,
 -- so we can keep it
@@ -26,77 +34,176 @@ entityList =
             , Complex (CInteger 0, CInteger 1)))
     ]
 
--- | Function associating variables to symbol.
--- It's a crude way to do it... 
--- may need to change it to a real symbol table later
-link :: FormulaPrim -> FormulaPrim
--- Nothing to see here.
-link p@(Poly _) = p
-link (Variable "infinite") = NumEntity Infinite
-link (Variable "pi") = NumEntity Pi
-link (Variable "i") = Complex (CInteger 0, CInteger 1)
+metaFunctionList :: [(String, (DocString, LongDescr, FormulaPrim -> FormulaPrim))]
+metaFunctionList =
+    [ ("Hold", ( "Avoid evaluating the expression passed as parameter."
+               , ""
+               , Meta Hold))
+    , ("Force", ( "Force the evaluation of sub-expression even if the enclosing"
+                , ""
+                , Meta Force))
+    , ("Expand", ( ""
+                 , ""
+                 , Meta Expand))
+    , ("Cleanup", ( "Make trivial simplification to the formula"
+                  , "Simplify things like '1 * x' to 'x'."
+                  , Meta Cleanup))
+    , ("Sort", ( ""
+               , ""
+               , Meta Sort))
+    ]
 
--- Meta cases
-link (App (Variable "Hold") [f]) = Meta Hold $ link f
-link (App (Variable "Force") [f]) = Meta Force $ link f
-link (App (Variable "Expand") [f]) = Meta Expand $ link f
-link (App (Variable "Cleanup") [f]) = Meta Cleanup $ link f
-link (App (Variable "Sort") [f]) = Meta Sort $ link f
-link (App (Variable "Lambda") [arg, body]) = Meta LambdaBuild $ Lambda [([arg], body)]
+unaryFunctions :: [(String, (DocString, LongDescr, FormulaPrim -> FormulaPrim))]
+unaryFunctions =
+    [ ("ceil", ( ""
+               , ""
+               , UnOp OpCeil))
+    , ("floor", ( ""
+                , ""
+                , UnOp OpFloor))
+    , ("frac", ( ""
+               , ""
+               , UnOp OpFrac))
+    , ("sin", ( ""
+              , ""
+              , UnOp OpSin))
+    , ("sinh", ( ""
+               , ""
+               , UnOp OpSinh))
+    , ("asin", ( ""
+               , ""
+               , UnOp OpASin))
+    , ("asinh", ( ""
+                , ""
+                , UnOp OpASinh))
+    , ("cos", ( ""
+              , ""
+              , UnOp OpCos))
+    , ("cosh", ( ""
+               , ""
+               , UnOp OpCosh))
+    , ("acos", ( ""
+               , ""
+               , UnOp OpACos))
+    , ("acosh", ( ""
+                , ""
+                , UnOp OpACosh))
+    , ("tan", ( ""
+              , ""
+              , UnOp OpTan))
+    , ("tanh", ( ""
+               , ""
+               , UnOp OpTanh))
+    , ("atan", ( ""
+               , ""
+               , UnOp OpATan))
+    , ("atanh", ( ""
+                , ""
+                , UnOp OpATanh))
+    , ("abs", ( ""
+              , ""
+              , UnOp OpAbs))
+    , ("sqrt", ( ""
+               , ""
+               , UnOp OpSqrt))
+    , ("exp", ( ""
+              , ""
+              , UnOp OpExp))
+    , ("log", ( ""
+              , ""
+              , UnOp OpLog))
+    , ("ln", ( ""
+             , ""
+             , UnOp OpLn))
+    ]
 
--- Special cases
-link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
-    Block (fromEnum i1) (fromEnum i2) (fromEnum i3)
-link (App (Variable "abs") [x]) = UnOp OpAbs $ link x
-link (App (Variable "sqrt") [x]) = UnOp OpSqrt $ link x
-link (App (Variable "exp") [x]) = UnOp OpExp $ link x
-link (App (Variable "sum") [ini, end, what]) = 
-    Sum (link ini) (link end) (link what)
-link (App (Variable "sum") [ini, what]) = 
-    Sum (link ini) (Variable "") (link what)
-link (App (Variable "sum") [what]) = 
-    Sum (Variable "") (Variable "") (link what)
+unaryTranslations :: Map.Map String (FormulaPrim -> FormulaPrim)
+unaryTranslations = Map.fromList
+    [ (name, fun) | (name, (_,_,fun)) <- unaryFunctions ++ metaFunctionList ]
 
-link (App (Variable "ceil") [x]) = UnOp OpCeil $ link x
-link (App (Variable "floor") [x]) = UnOp OpFloor $ link x
-link (App (Variable "frac") [x]) = UnOp OpFrac $ link x
+entityTranslation :: Map.Map String FormulaPrim
+entityTranslation = Map.fromList [(name, val) | (name, (_,_,val)) <- entityList]
 
-link (App (Variable "sin") [x]) = UnOp OpSin $ link x
-link (App (Variable "sinh") [x]) = UnOp OpSinh $ link x
-link (App (Variable "asin") [x]) = UnOp OpASin $ link x
-link (App (Variable "asinh") [x]) = UnOp OpASinh $ link x
+multiParametersFunction :: Map.Map String ([FormulaPrim] -> FormulaPrim)
+multiParametersFunction = Map.fromList [(name, f) | (name, (_,_,_,f)) <- multiParamsFunctions]
 
-link (App (Variable "cos") [x]) = UnOp OpCos $ link x
-link (App (Variable "cosh") [x]) = UnOp OpCosh $ link x
-link (App (Variable "acos") [x]) = UnOp OpACos $ link x
-link (App (Variable "acosh") [x]) = UnOp OpACosh $ link x
+multiParamsFunctions :: [ ( String
+                          , (DocString, LongDescr, [(DocString,LongDescr)], [FormulaPrim] -> FormulaPrim))]
+multiParamsFunctions =
+    [ ("Lambda", ( "Create an anonymous function"
+                 , "An anonymous function is a function with no name which can be passed as parameter."
+                 , [ ("Argument", "Variable to be bound when the lambda is called")
+                   , ("Body", "Expression to be evaluated after argument binding.\n"
+                            ++"The body is not evaluated during it's definition.")
+                   ]
+                 , lambdaBuilder )  )
+    , ("derivate", ( "Make a partial differentiation"
+                   , "Differentiate an expression for a variable given in parameter."
+                   , [ ("Expression", "Expression to be differentiated, no evaluation occur at binding, unless it is in Force()")
+                     , ("Variable", "Variable on which to perform partial differentiation. No evaluation done unless in Force()")
+                     ]
+                   , derivateBuilder
+                   ))
 
-link (App (Variable "tan") [x]) = UnOp OpTan $ link x
-link (App (Variable "tanh") [x]) = UnOp OpTanh $ link x
-link (App (Variable "atan") [x]) = UnOp OpATan $ link x
-link (App (Variable "atanh") [x]) = UnOp OpATanh $ link x
+    , ("sum", ( "Perform a sum of an expression"
+              , "The sum bind a variable over a range and perform a sum. If the arguments below are not given, no calculation is performed."
+              , [ ("Initial value", "An expression in the form x = something, to declare the start of iteration.")
+                , ("End value", "An upper bound for iteration, must be a number for calculation to happen")
+                , ("Expression", "Expression to be summed, can contain the variable bound by initial value.")
+                ]
+              , sumBuilder))
+    , ("product", ( "Perform a product of an expression"
+                , "The sum bind a variable over a range and perform a sum. If the arguments below are not given, no calculation is performed."
+                , [ ("Initial value", "An expression in the form x = something, to declare the start of iteration.")
+                  , ("End value", "An upper bound for iteration, must be a number for calculation to happen")
+                  , ("Expression", "Expression to be summed, can contain the variable bound by initial value.")
+                  ]
+                , productBuilder ))
+    , ("integrate", ( "Describe an integral"
+                    , "For the moment, no calculation is performed. Just used for the format command"
+                    , [ ("Initial Value", "Lower bound of the integral.")
+                      , ("End Value", "Upper bound of the integral.")
+                      , ("Expression", "The expression to be integrated.")
+                      , ("Variable", "The dx of the integral, where x is any variable.")
+                      ]
+                    , integrateBuilder))
+    , ("matrix", ( "Create a matrix"
+                 , ""
+                 , [("width", "Number of columns")
+                   ,("height", "Number of lines of the matrix")
+                   ,("...", "All the values")
+                   ]
+                 , matrixBuilder ))
+    ]
 
-link (App (Variable "ln") [x]) = UnOp OpLn $ link x
-link (App (Variable "log") [x]) = UnOp OpLog $ link x
+lambdaBuilder, derivateBuilder :: [FormulaPrim] -> FormulaPrim
+lambdaBuilder [arg, body] = Meta LambdaBuild $ Lambda [([arg], body)]
+lambdaBuilder lst = App (Variable "Lambda") lst
 
-link (App (Variable "derivate") [what, var]) =
-    Derivate (link what) (link var)
+derivateBuilder [what, var] = Derivate what var
+derivateBuilder lst = App (Variable "Derivate") lst
 
-link (App (Variable "product") [ini, end, what]) = 
-    Product (link ini) (link end) (link what)
-link (App (Variable "product") [ini, what]) = 
-    Product (link ini) (Variable "") (link what)
-link (App (Variable "product") [what]) = 
-    Product (Variable "") (Variable "") (link what)
-    
-link (App (Variable "integrate") [ini, end, what, dvar]) = 
-    Integrate (link ini) (link end) (link what) (link dvar)
-link (App (Variable "integrate") [ini, what, dvar]) = 
-    Integrate (link ini) (Variable "") (link what) (link dvar)
-link (App (Variable "integrate") [what, dvar]) = 
-    Integrate (Variable "") (Variable "") (link what) (link dvar)
 
-link (App (Variable "matrix") (CInteger n: CInteger m: exps))
+sumBuilder :: [FormulaPrim] -> FormulaPrim
+sumBuilder [ini, end, what] = Sum ini end what
+sumBuilder [ini, what] = Sum ini (Variable "") what
+sumBuilder [what] = Sum (Variable "") (Variable "") what
+sumBuilder lst = (App (Variable "sum") lst)
+
+productBuilder :: [FormulaPrim] -> FormulaPrim
+productBuilder [ini, end, what] = Product ini end what
+productBuilder [ini, what] = Product ini (Variable "") what
+productBuilder [what] = Product (Variable "") (Variable "") what
+productBuilder lst = (App (Variable "product") lst)
+
+integrateBuilder :: [FormulaPrim] -> FormulaPrim
+integrateBuilder [ini, end, what, dvar] = Integrate ini end what dvar
+integrateBuilder [ini, what, dvar] = Integrate ini (Variable "") what dvar
+integrateBuilder [what, dvar] = Integrate (Variable "") (Variable "") what dvar
+integrateBuilder lst = App (Variable "integrate") lst
+
+matrixBuilder :: [FormulaPrim] -> FormulaPrim
+matrixBuilder (CInteger n: CInteger m: exps)
     | fromEnum n * fromEnum m > length exps = error "The matrix has not enough expressions"
     | fromEnum n * fromEnum m < length exps = error "The matrix has too much expressions"
     | otherwise = Matrix (fromEnum n) (fromEnum m) $ splitMatrix exps
@@ -104,6 +211,26 @@ link (App (Variable "matrix") (CInteger n: CInteger m: exps))
               splitMatrix lst =
                 let (matrixLine, matrixRest) = genericSplitAt n lst
                 in map link matrixLine : splitMatrix matrixRest
+matrixBuilder lst = App (Variable "matrix") lst
+
+-- | Function associating variables to symbol.
+link :: FormulaPrim -> FormulaPrim
+link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
+    Block (fromEnum i1) (fromEnum i2) (fromEnum i3)
+
+-- Transformations for operators
+link p@(Poly _) = p
+link v@(Variable varName) =
+    fromMaybe v $ Map.lookup varName entityTranslation
+link (App (Variable funName) [x]) = 
+    maybe (App (Variable funName) [linked]) (\f -> f linked)
+    $ Map.lookup funName unaryTranslations
+        where linked = link x
+
+link (App (Variable v) flst) =
+    maybe (App (Variable v) linked) (\f -> f linked) 
+    $ Map.lookup v multiParametersFunction
+        where linked = map link flst
 
 -- General transformations
 link (App f flst) = App (link f) $ map link flst
@@ -114,7 +241,6 @@ link a@(CFloat _) = a
 link a@(CInteger _) = a
 link a@(NumEntity _) = a
 link a@(Block _ _ _) = a
-link v@(Variable _) = v
 link t@(Truth _) = t
 link f@(Fraction _) = f
 link (Complex (r,i)) = Complex (link r, link i)
