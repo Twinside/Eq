@@ -13,9 +13,11 @@ function performTestSuite( [string]$where, [bool]$isValid, [string]$command, [bo
 
     ls $($toSearch) | % {
         write-host -nonewline "."
-        $rez = ../eq $command -f $($testPath + $_.name)
+        $filename = $testPath + $_.name
+        $rez = ../eq $command -f $filename
         if ( $showAll ) {
             echo "`n==========================================================="
+            echo $filename
             cat $_
             $rez
         }
@@ -23,11 +25,11 @@ function performTestSuite( [string]$where, [bool]$isValid, [string]$command, [bo
         if (isInvalid $isValid)
         {
             if ( -not $showAll ) {
-                echo $_.fullname
                 echo "`n==========================================================="
                 cat $_
             }
             $rez
+            echo $filename
             echo "FAILURE OF TEST##########"
         }
     }
