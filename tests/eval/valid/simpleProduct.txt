@@ -1,2 +1,2 @@
-product( i = 1, 5, i )
+product( k = 1, 5, k )
 

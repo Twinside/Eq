@@ -1,4 +1,4 @@
 fact(0) := 1;
-fact(n) := product( i = 1, n, i );
+fact(n) := product( k = 1, n, k );
 
 fact( x )+fact( 0 ) + fact( 7 )

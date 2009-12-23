@@ -1,2 +1,2 @@
-sum( i = 0, 5, i + product( i = 1, 3, i * i ) )
+sum( k = 0, 5, k + product( k = 1, 3, k * k ) )
 
