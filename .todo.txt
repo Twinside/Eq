@@ -1,7 +1,4 @@
-4:Fix expand algorithm :]
 3:Decide derivation for log
-3:Matrix multiplication order problem!
 1:Make a simplify algorithm
 1:Make some validation about definition domain
 0:Make an integrator algorithm (urgh)
-0:Make some HLSL/GLSL output
