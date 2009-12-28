@@ -1,10 +1,17 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module EqManips.Algorithm.Unification( unify, getFirstUnifying ) where
 
-import Control.Applicative
-import EqManips.Types
-import Control.Monad.State.Lazy
 import Data.List( foldl' )
+
+import Control.Applicative
+import Data.Monoid
+import Control.Monad.Writer
+import Control.Monad.State.Lazy
+
+import EqManips.Types
+import EqManips.Polynome
+import EqManips.Algorithm.Utils
 
 infix 4 =~=
 
@@ -70,27 +77,86 @@ unifyFormula (Complex (re, im)) (Complex (re2, im2)) =
 
 unifyFormula (Poly left@(Polynome _ _))
              (Poly right@(Polynome _ _)) =
-  if valid then and <$> mapM (uncurry checkSymbol) subs
-           else return False
-    where (subs, valid) = subPolyEq left right
-          subPolyEq (PolyRest a) (PolyRest b)   = ([], a == b)
-          subPolyEq (PolyRest _) (Polynome _ _) = ([], False)
-          subPolyEq (Polynome _ _) (PolyRest _) = ([], False)
-          -- Equals at an alpha renaming
+                 if valid 
+                  then and <$> mapM (uncurry checkSymbol) subs
+                  else pure valid
+    where (valid, subs :: [(String, FormulaPrim)]) = runWriter $ subPolyEq left right
+          -- n == n'
+          subPolyEq (PolyRest a) (PolyRest b)   = return $ a == b
+          -- n == x^y + ... + ... <=> False
+          subPolyEq (PolyRest _) (Polynome _ _) = return False
+          -- x^y + ... + ... == n <=> False
+          subPolyEq (Polynome _ _) (PolyRest _) = return False
+
+          -- 1 * x ^ 1 <=> var / poly equivalence
+          subPolyEq (Polynome var1 [(c1, PolyRest c2)])
+                    replacement@(Polynome _ lst2')
+                | c1 == CoeffInt 1 && c2 == CoeffInt 1 =
+                    tell [(var1, Poly $ replacement)] >> return True
+
+          -- Are two polynoms equivalent?
           subPolyEq (Polynome var1 lst1')
-                    replacement@(Polynome _ lst2') =
-                if valid' then ((var1, Poly replacement) : substitu, True)
-                          else ([], False)
-            where (substitu, valid') = verifyCoeff lst1' lst2'
+                    replacement@(Polynome var2 lst2') = do
+                        valid' <- verifyCoeff lst1' lst2'
+                        when valid' $ tell [(var1, Variable var2)]
+                        return valid'
 
-          verifyCoeff a b = foldr coefEq ([], True) $ zip a b
+          verifyCoeff a b = foldM coefEq True $ zip a b
 
-          coefEq ((c1,sub1),(c2,sub2)) (alphas, acc) =
-              (alphas ++ alpha', acc && c1 == c2 && acc')
-                  where (alpha', acc') = subPolyEq sub1 sub2
+          coefEq acc ((c1,sub1),(c2,sub2)) =
+              ((acc && c1 == c2) &&) <$> subPolyEq sub1 sub2
 
-unifyFormula (BinOp OpAdd _added) (Poly (Polynome _v _lst)) =
-    return False
+unifyFormula (BinOp OpAdd added) (Poly (Polynome v lst)) =
+    if length added == length lst && valid
+       then and <$> mapM (uncurry checkSymbol) adds
+       else return valid
+    
+    where (valid, adds) = runWriter . validMatch . zip added $ zipper v lst
+          zipper var = map (\(c, s) -> (v,c,s))
+
+          -- a =~= x^y+z, ok it works
+          validMatch ( Variable pvar, (var, c, sub)) =
+              tell (pvar, Polynome var [(c,sub)]) >> return True
+
+          -- a ^ b =~= 1 * x ^ y
+          validMatch ( BinOp OpPow [ Variable pvar
+                                   , Variable powvar]
+                     , (var, c, PolyRest sub)) 
+            | CoeffInt 1 == sub = do
+                         tell (pvar, Variable var)
+                         tell (powvar, coefToFormula c)
+                         return True
+
+          -- a ^ 15 =~= 1*x^15
+          validMatch ( BinOp OpPow [ Variable pvar
+                                   , CInteger i], (var, c, PolyRest sub))
+            | CoeffInt 1 == sub && c == CoeffInt i =
+                  tell [(pvar, Variable var)] >> return True
+
+          -- n * ... <=> n' * x ^ 0
+          -- else it's wrong
+          validMatch ( BinOp OpMul (e:xs), (_, c, sub))
+            | isFormulaScalar e = case sub of
+                    PolyRest a -> return $ c == CoeffInt 0 && scalarToCoeff e == a
+                    _          -> return False
+
+          validMatch ( BinOp OpMul [Variable v], (var, c, PolyRest coeff))
+            | c /= 0 = return False
+            | otherwise = tell [(v, coefToFormula coeff)]
+                       >> return True
+
+          validMatch ( BinOp OpMul (Variable v:xs), (var1, c, poly@(Polynome _ _))) = do
+              valid <- validMatch (BinOp OpMul xs, poly)
+              when valid $ tell [(v, Variable var1)]
+              return valid
+
+          validMatch ( BinOp OpMul ((BinOp OpPow [ Variable pvar
+                                                 , CInteger i ])
+                                     :xs)
+                     , (_, c,sub)) = return False
+
+          -- General case : it's not valid.
+          validMatch _ = return False
 
 unifyFormula (Truth a) (Truth b) =
     return $ a == b
@@ -115,6 +181,8 @@ unifyFormula (Variable v1) f2 = checkSymbol v1 f2
 
 unifyFormula _ _ = return False
 
+-- | Add symbol if it doesn't exists, and check for equality
+-- of definition otherwise.
 checkSymbol :: String -> FormulaPrim -> UnificationContext Bool
 checkSymbol var what = do
     symbolList <- get
