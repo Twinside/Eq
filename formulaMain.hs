@@ -12,6 +12,7 @@ import System.IO
 import System.Console.GetOpt
 
 import Data.List( find )
+import Data.Maybe( fromMaybe )
 
 import qualified System.IO.UTF8 as Utf8
 
@@ -37,8 +38,8 @@ version = "0.1"
 
 commonOption :: [OptDescr (Flag, String)]
 commonOption =
-    [ Option ['o']  ["output"] (ReqArg ((,) Output) "FILE") "output FILE"
-    , Option ['f']  ["file"] (ReqArg ((,) Input) "FILE") "input FILE"
+    [ Option "o"  ["output"] (ReqArg ((,) Output) "FILE") "output FILE"
+    , Option "f"  ["file"] (ReqArg ((,) Input) "FILE") "input FILE"
     ]
 
 preprocOptions :: [OptDescr (Flag, String)]
@@ -50,9 +51,9 @@ formatOption = commonOption
 -- | Helper function to get file names for input/output
 getInputOutput :: [(Flag, String)] -> [String] -> (IO String, IO Handle)
 getInputOutput opts args = (inputFile, outputFile)
-   where outputFile = maybe (return stdout) (\name -> openFile name WriteMode)
+   where outputFile = maybe (return stdout) (flip openFile WriteMode)
                             (lookup Output opts)
-         inputFile = maybe (return $ args !! 0) Utf8.readFile
+         inputFile = maybe (return $ head args) Utf8.readFile
                            (lookup Input opts)
 
 filterCommand :: (String -> String) -> [String] -> IO Bool
@@ -106,8 +107,8 @@ preprocessCommand args =
            writeFile outName outFile
            return True
      where (opts, _, _) = getOpt Permute preprocOptions args
-           inName = maybe "" id (lookup Input opts)
-           outName = maybe inName id (lookup Output opts)
+           inName = fromMaybe "" (lookup Input opts)
+           outName = fromMaybe inName (lookup Output opts)
 
 transformParseFormula :: (Formula ListForm -> EqContext (Formula ListForm)) -> [String]
                       -> IO Bool
@@ -119,8 +120,8 @@ transformParseFormula operation args = do
            (\formulal -> do
                let rez = performLastTransformationWithContext defaultSymbolTable
                        $ mapM operation formulal
-               mapM (\a-> do hPutStr finalFile $ sexprRender a
-                             hPutStr finalFile "\n") formulal
+               mapM_ (\a-> do hPutStr finalFile $ sexprRender a
+                              hPutStr finalFile "\n") formulal
                
 #ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
@@ -151,7 +152,7 @@ helpCommand [] = do
     return True
     where maxCommandLen = 4 + maximum [ length c | (c,_,_,_) <- commandList ]
           spaces = repeat ' '
-          printCommand (com, hlp, _, _) = do
+          printCommand (com, hlp, _, _) =
               putStrLn $ ' ' : com 
                       ++ take (maxCommandLen - length com) spaces 
                       ++ hlp
@@ -224,9 +225,9 @@ main = do
     args <- getArgs
     if null args
        then error "No command give, try the help command"
-       else case lookup (args !! 0) reducedCommand of
-                 Just c -> (c $ tail args) >>= systemReturn
-                 Nothing -> error $ "Unknown command " ++ (args !! 0)
+       else case lookup (head args) reducedCommand of
+                 Just c -> c (tail args) >>= systemReturn
+                 Nothing -> error $ "Unknown command " ++ head args
      where systemReturn True = exitWith ExitSuccess
            systemReturn False = exitWith $ ExitFailure 1
               

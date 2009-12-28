@@ -101,8 +101,8 @@ cOut _ (Truth False) = return $ str "false"
 cOut _ (NumEntity Pi) = return $ str "M_PI"
 cOut _ (NumEntity _) = return $ str ""
 
-cOut _ (Fraction f) = return $ char '(' . (shows $ numerator f) 
-                             . str " / " . (shows $ denominator f)
+cOut _ (Fraction f) = return $ char '(' . shows (numerator f) 
+                             . str " / " . shows (denominator f)
                              . char ')'
 cOut _ (App func args) =
     (\fun args' -> fun . char '(' . interspereseS (str ", ") args' . char ')')

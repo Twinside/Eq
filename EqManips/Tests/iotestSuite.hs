@@ -46,7 +46,7 @@ preserveMeaning transformation f =
 
 mustVerify :: (FormulaPrim -> Bool) -> FormulaPrim -> Bool
 mustVerify f = getAll . foldf combiner mempty
-    where combiner formula acc = acc `mappend` (All $ f formula)
+    where combiner formula = (`mappend` (All $ f formula))
 
 -----------------------------------------------
 ----        Propreties
@@ -106,7 +106,7 @@ globalTests =
                                                                     . listifyFormula
                                                                     . Formula)
     , ("Cleanup don't change meaning", testRunner $ preserveMeaning cleanup)
-    , ("Treeify has BinOp of size 2", testRunner $ prop_treefi2)
+    , ("Treeify has BinOp of size 2", testRunner prop_treefi2)
     , ("FormulaPrim deparsing", testRunner prop_showBack)
     ]
 

@@ -97,20 +97,20 @@ sizeOfFormula conf sizer a b (Complex c) =
 sizeOfFormula conf sizer a b (Poly p) =
     sizeOfFormula conf sizer a b . unTagFormula . treeIfyFormula $ convertToFormula p
 -- Simply the size of rendered text
-sizeOfFormula conf sizer _ _ (Variable v) = EndNode $ varSize sizer conf $ v
-sizeOfFormula conf sizer _ _ (CInteger n) = EndNode $ intSize sizer conf $ n
-sizeOfFormula conf sizer _ _ (CFloat f) = EndNode $ floatSize sizer conf $ f
-sizeOfFormula conf sizer _ _ (Truth truthness) = EndNode $ truthSize sizer conf $ truthness
-sizeOfFormula conf sizer _ _ (NumEntity f) = EndNode . entitySize sizer conf $ f
+sizeOfFormula conf sizer _ _ (Variable v) = EndNode $ varSize sizer conf v
+sizeOfFormula conf sizer _ _ (CInteger n) = EndNode $ intSize sizer conf n
+sizeOfFormula conf sizer _ _ (CFloat f) = EndNode $ floatSize sizer conf f
+sizeOfFormula conf sizer _ _ (Truth truthness) = EndNode $ truthSize sizer conf truthness
+sizeOfFormula conf sizer _ _ (NumEntity f) = EndNode $ entitySize sizer conf f
 sizeOfFormula conf sizer _ _ (Block i1 i2 i3) = 
-    EndNode $ (blockSize sizer) conf (i1, i2, i3)
+    EndNode $ blockSize sizer conf (i1, i2, i3)
 
 -- Simply put a minus in front of the rest of the formula
 sizeOfFormula conf sizer _ _ (UnOp op f) =
     MonoSizeNode False sizeDim subFormula
         where prio = op `obtainProp` Priority
               subFormula = sizeOfFormula conf sizer True prio f
-              sizeDim = (unaryDim sizer) conf op (sizeExtract subFormula)
+              sizeDim = unaryDim sizer conf op (sizeExtract subFormula)
 
 sizeOfFormula _ _ _ _ (BinOp _ [_]) = error $ Err.single_binop "sizeOfFormula conf - "
 sizeOfFormula _ _ _ _ (BinOp _ []) = error $ Err.empty_binop "sizeOfFormula conf - "
@@ -124,7 +124,7 @@ sizeOfFormula conf sizer _ _ (BinOp OpDiv [f1,f2]) =
   BiSizeNode False sizeDim nodeLeft nodeRight
     where nodeLeft = sizeOfFormula conf sizer False maxPrio f1
           nodeRight = sizeOfFormula conf sizer True maxPrio f2
-          sizeDim = (divBar sizer) conf (sizeExtract nodeLeft) (sizeExtract nodeRight)
+          sizeDim = divBar sizer conf (sizeExtract nodeLeft) (sizeExtract nodeRight)
 
 -- do something like that
 --         %%%%%%%
@@ -136,7 +136,7 @@ sizeOfFormula conf sizer _isRight _prevPrio (BinOp OpPow [f1,f2]) =
     where nodeLeft = sizeOfFormula conf sizer False prioOfPow f1
           nodeRight = sizeOfFormula conf sizer True prioOfPow f2
           prioOfPow = OpPow `obtainProp` Priority
-          sizeDim = (powSize sizer) conf (sizeExtract nodeLeft) (sizeExtract nodeRight)
+          sizeDim = powSize sizer conf (sizeExtract nodeLeft) (sizeExtract nodeRight)
 
 -- add 3 char : ###### ! #######
 -- we add spaces around operators
@@ -148,7 +148,7 @@ sizeOfFormula conf sizer isRight prevPrio (BinOp op [formula1, formula2]) =
           nodeLeft = sizeOfFormula conf sizer False prio formula1
           nodeRight = sizeOfFormula conf sizer True prio formula2
 
-          (base, s) = (binop sizer) conf op (sizeExtract nodeLeft) (sizeExtract nodeRight)
+          (base, s) = binop sizer conf op (sizeExtract nodeLeft) (sizeExtract nodeRight)
 
           sizeDim = if needParenthes
                 then (base, addParens sizer conf s)
@@ -162,7 +162,7 @@ sizeOfFormula conf sizer _isRight _prevPrio (Integrate inite end what dx) =
         where sof = sizeOfFormula conf sizer False maxPrio
               trees = map sof [inite, end, what, dx]
               [iniDim, endDim, whatDim, dxDim] = map sizeExtract trees
-              sizeDim = (integralSize sizer) conf iniDim endDim whatDim dxDim
+              sizeDim = integralSize sizer conf iniDim endDim whatDim dxDim
 
 sizeOfFormula conf sizer _ _ (Matrix _ _ exprs) =
     SizeNodeArray False sizeDim mixedMatrix
@@ -184,7 +184,7 @@ sizeOfFormula conf sizer _ _ (Matrix _ _ exprs) =
                    [ maximum $ map widthOf column | column <- transpose sizeMatrix ]
 
               widthOf :: SizeTree -> Int
-              widthOf size = fst . snd $ sizeExtract size
+              widthOf = fst . snd . sizeExtract
 
               dimensionMatrix =
                   [ [(bases, (w, bases + depth)) | w <- widths] 
@@ -199,7 +199,7 @@ sizeOfFormula conf sizer _isRight _prevPrio (Product inite end what) =
         where sof = sizeOfFormula conf sizer False maxPrio
               trees = map sof [inite, end, what]
               [iniDim, endDim, whatDim] = map sizeExtract trees
-              sizeDim = (productSize sizer) conf iniDim endDim whatDim
+              sizeDim = productSize sizer conf iniDim endDim whatDim
 
 
 sizeOfFormula conf sizer _isRight _prevPrio (Derivate what vard) =
@@ -214,7 +214,7 @@ sizeOfFormula conf sizer _isRight _prevPrio (Sum inite end what) =
         where sof = sizeOfFormula conf sizer False maxPrio
               trees = map sof [inite, end, what]
               [iniDim, endDim, whatDim] = map sizeExtract trees
-              sizeDim = (sumSize sizer) conf iniDim endDim whatDim
+              sizeDim = sumSize sizer conf iniDim endDim whatDim
 
 
 -- do something like this :
@@ -229,7 +229,7 @@ sizeOfFormula conf sizer _ _ (App f1 f2) =
               funcSize = subSize f1
 
               accumulated = argSizes sizer conf trees
-              sizeDim = (appSize sizer) conf accumulated (sizeExtract funcSize)
+              sizeDim = appSize sizer conf accumulated (sizeExtract funcSize)
               (_, argsBase, _) = accumulated
 
 sizeOfFormula conf sizer _ _ (Lambda clauses) = SizeNodeClause False nodeSize finalTree
@@ -243,5 +243,5 @@ sizeOfFormula conf sizer _ _ (Lambda clauses) = SizeNodeClause False nodeSize fi
 
 argSizes :: Dimensioner -> Conf -> [SizeTree] -> (Int, Int, Int)
 argSizes sizer conf args = foldl' sizeExtractor (0, 0, 0) args
-    where sizeExtractor acc node = (argSize sizer) conf acc $ sizeExtract node
+    where sizeExtractor acc = argSize sizer conf acc . sizeExtract
 

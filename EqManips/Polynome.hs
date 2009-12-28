@@ -16,9 +16,10 @@ module EqManips.Polynome( convertToPolynome
                         -- and/or null coef.
                         , simplifyPolynome 
                         ) where
-
+import Data.Maybe( fromMaybe )
+import Data.Ord( comparing )
 import Control.Applicative( (<$>), (<*>) )
-import Control.Arrow( (***) )
+import Control.Arrow( (***), second )
 import Control.Monad( join )
 import Data.Either( partitionEithers )
 import Data.List( sortBy, groupBy, foldl' )
@@ -93,7 +94,7 @@ prepareFormula :: FormulaPrim -> FormulaPrim
 prepareFormula = polySort . formulaFlatter
 
 polySort :: FormulaPrim -> FormulaPrim
-polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
+polySort = depthFormulaPrimTraversal `asAMonad` sortBinOp sorter
     where lexicalOrder EQ b = b
           lexicalOrder a _ = a
 
@@ -115,7 +116,7 @@ polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
           -- x ^ n * y ^ n (n can be one, not shown)
           sorter (BinOp OpPow [Variable v1, p1])
                  (BinOp OpPow [Variable v2, p2]) =
-                     (compare v1 v2) `lexicalOrder` (compare p1 p2)
+                     compare v1 v2 `lexicalOrder` compare p1 p2
 
           -- x * y ^ n
           sorter (Variable v1)
@@ -137,12 +138,12 @@ polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
           -- (x ^ m * ...) + y ^ n
           sorter (BinOp OpMul (BinOp OpPow [Variable v1,p1]:_))
                  (BinOp OpPow [Variable v2, p2]) =
-                     (compare v1 v2) `lexicalOrder` (compare p1 p2)
+                     compare v1 v2 `lexicalOrder` compare p1 p2
 
           -- x ^ n + (y ^ m * ...)
           sorter (BinOp OpPow [Variable v1, p1])
                  (BinOp OpMul (BinOp OpPow [Variable v2,p2]:_)) =
-                     (compare v1 v2) `lexicalOrder` (compare p1 p2)
+                     compare v1 v2 `lexicalOrder` compare p1 p2
 
           -- Rules to fine sort the '+' elements, lowest variable
           -- first (x before y), smallest order first (x before x ^ 15)
@@ -150,16 +151,16 @@ polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
           -- (x^n * ....) + (y^n * ...)
           sorter (BinOp OpMul (BinOp OpPow (Variable v1: power1):_))
                  (BinOp OpMul (BinOp OpPow (Variable v2: power2):_)) = 
-                    (compare v1 v2) `lexicalOrder` (compare power1 power2)
+                    compare v1 v2 `lexicalOrder` compare power1 power2
 
           -- (x * ...) + (y^n * ...)
           sorter (BinOp OpMul (Variable v1:_))
                  (BinOp OpMul (BinOp OpPow (Variable v2:_):_)) =
-                     (compare v1 v2) `lexicalOrder` LT
+                     compare v1 v2 `lexicalOrder` LT
 
           -- (x^n * ...) + (y * ...)
           sorter (BinOp OpMul (BinOp OpPow (Variable v1:_):_))
-                 (BinOp OpMul (Variable v2:_)) = (compare v1 v2) `lexicalOrder` GT
+                 (BinOp OpMul (Variable v2:_)) = compare v1 v2 `lexicalOrder` GT
 
           -- (x * ...) + (y * ...)
           sorter (BinOp OpMul (Variable v1:_))
@@ -174,7 +175,7 @@ polySort = depthFormulaPrimTraversal `asAMonad` (sortBinOp sorter)
                  (Variable v2) = compare v1 v2
 
           sorter (BinOp OpPow a) (BinOp OpPow b) =
-                case compare (length a) (length b) of
+                case comparing length a b of
                      LT -> LT
                      GT -> GT
                      EQ -> foldl' (\acc (a', b') -> if acc == EQ
@@ -200,7 +201,7 @@ resign = globalResign
                         Nothing -> BinOp OpMul (CInteger (-1):a:xs) : acc
                         Just a' -> BinOp OpMul (a':xs) : acc
           globalResign (BinOp OpAdd lst) acc = foldr resign acc lst
-          globalResign a acc = (maybe ((CInteger (-1)) * a) id (atomicResign a)) : acc
+          globalResign a acc = fromMaybe (CInteger (-1) * a) (atomicResign a) : acc
 
           atomicResign (CInteger i) = Just $ CInteger (-i)
           atomicResign (CFloat i) = Just $ CFloat (-i)
@@ -343,7 +344,7 @@ polyCoeffMap f = polyMap mapper
 
 -- | polynome mapping
 polyMap :: ((PolyCoeff, Polynome) -> (PolyCoeff, Polynome)) -> Polynome -> Polynome
-polyMap f (Polynome s lst) = Polynome s $ map (\(c,p) -> (c, polyMap f p)) lst
+polyMap f (Polynome s lst) = Polynome s $ map (second $ polyMap f) lst
 polyMap f rest@(PolyRest _) = snd $ f (CoeffInt 0, rest)
 
 -- | Transform a scalar formula component to
@@ -425,8 +426,8 @@ polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
 -- | Multiply two polynomials between them using the brute force
 -- way, algorithm in O(n²)
 polyMul :: Polynome -> Polynome -> Polynome
-polyMul p@(Polynome _ _) (PolyRest c) = polyCoeffMap (\a -> a * c) p
-polyMul (PolyRest c) p@(Polynome _ _) = polyCoeffMap (\a -> c * a) p
+polyMul p@(Polynome _ _) (PolyRest c) = polyCoeffMap (* c) p
+polyMul (PolyRest c) p@(Polynome _ _) = polyCoeffMap (c *) p
 polyMul (PolyRest c) (PolyRest c2) = PolyRest $ coeffOp (*) c c2
 polyMul p1@(Polynome v1 _) p2@(Polynome v2 _) | v1 > v2 = polyMul p2 p1
 polyMul (Polynome v1 coefs1) p2@(Polynome v2 coefs2)
@@ -483,7 +484,7 @@ syntheticDiv :: Polynome -> Polynome -> (Maybe Polynome, Maybe Polynome)
 syntheticDiv poly@(Polynome var lst1) divisor@(Polynome var' lst2)
     | var == var'
     && isPolyMonovariate poly && isPolyMonovariate divisor
-    && (fst $ last lst1) > (fst $ last lst2)=
+    && fst (last lst1) > fst (last lst2)=
         (finalize . packCoeffs *** finalize . packCoeffs)
       . splitAt (length coefList + 1 - length divCoeff)
       {-

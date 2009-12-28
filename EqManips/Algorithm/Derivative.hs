@@ -62,7 +62,7 @@ derivationRules evaluator variable (Formula func) = d func variable
        d (CFloat _) _ = return $ int 0
        d (NumEntity _) _ = return $ int 0
        d (App f [g]) var =
-           (\f' g' -> (App f' [g]) * g') <$> d f var <*> d g var
+           (\f' -> (App f' [g] *)) <$> d f var <*> d g var
      
        d f@(Complex _) _ = unTagFormula <$> eqFail (Formula f) "No complex derivation yet"
        d f@(App _ _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_multi_app
@@ -89,7 +89,7 @@ derivationRules evaluator variable (Formula func) = d func variable
        -- Eq:format derivate( 1 / f, x ) =
        --  -derivate( f, x ) / f ^ 2
        d (BinOp OpDiv [(CInteger 1),f]) var =
-           (\f' -> (negate f') / f ** (int 2)) <$> d f var
+           (\f' -> negate f' / f ** int 2) <$> d f var
      
        -- Eq:format derivate( f / g, x ) =
        --  (derivate( f, x) * g - f * derivate( g, x )) 
@@ -98,7 +98,7 @@ derivationRules evaluator variable (Formula func) = d func variable
            if derivableDenumerator
               then (\f1' f2' -> (f1' * f2 - f1 * f2') / (f2 ** int 2))
                       <$> d f1 var <*> d f2 var
-               else (\f1' -> f1' / f2) <$> d f1 var
+               else (/ f2) <$> d f1 var
         where derivableDenumerator = getAny $ foldf notConst (Any False) f2
               notConst (Variable v) acc = Any (v == var) `mappend` acc
               notConst _ acc = acc
@@ -107,7 +107,7 @@ derivationRules evaluator variable (Formula func) = d func variable
        -- Eq:format derivate( f ^ n, x ) = 
        --  n * derivate( f, x ) * f ^ (n - 1)
        d (BinOp OpPow [f1,f2]) var =
-         (\f1' -> f2 * f1' * f1 ** (f2 - (int 1))) <$> d f1 var
+         (\f1' -> f2 * f1' * f1 ** (f2 - int 1)) <$> d f1 var
      
        d (BinOp op (x:x2:xs)) var =
            d (BinOp op [x, BinOp op $ x2:xs]) var
@@ -116,15 +116,14 @@ derivationRules evaluator variable (Formula func) = d func variable
        d (UnOp OpNegate f) var = negate <$> d f var
      
        -- Eq:format derivate(exp( f ), x) = exp(f) * derivate( f, x )
-       d (UnOp OpExp f) var = (\f' -> f' * exp f) <$> d f var
+       d (UnOp OpExp f) var = (* exp f) <$> d f var
      
        -- Eq:format derivate( sqrt(f),x) = derivate( f, x ) / (2 * sqrt(f))
        d (UnOp OpSqrt f) var =
-           (\f' -> f' / (int 2 * sqrt f)) <$> d f var
+           (/ (int 2 * sqrt f)) <$> d f var
      
        -- Eq:format derivate(sin(f),x) = derivate(f,x) * cos(f)
-       d (UnOp OpSin f) var =
-           (\f' -> f' * cos f) <$> d f var
+       d (UnOp OpSin f) var = (* cos f) <$> d f var
      
        -- Eq:format derivate(cos(f),x) = derivate(f,x) * -sin(f)
        d (UnOp OpCos f) var = do
@@ -133,29 +132,29 @@ derivationRules evaluator variable (Formula func) = d func variable
      
        -- Eq:format derivate(tan(f),x) = derivate(f,x) * 1 / cos(f) ^ 2
        d (UnOp OpTan f) var =
-           (\f' -> f' * (int 1 / cos f ** 2)) <$> d f var
+           (* (int 1 / cos f ** 2)) <$> d f var
      
        -- Eq:format derivate( asin( f ), x) = derivate(f,x) 
        --                             * 1/sqrt(1 - f^2)
        d (UnOp OpASin f) var =
-           (\f' -> f' * (int 1 / sqrt (int 1 - f ** int 2))) <$> d f var
+           (* (int 1 / sqrt (int 1 - f ** int 2))) <$> d f var
      
        -- Eq:format derivate( acos( f ), x) = - derivate( f, x) *
        --          (1/sqrt( 1 - f^2))
        d (UnOp OpACos f) var =
-           (\f' -> negate $ f' * (int 1 / sqrt (int 1 - f ** int 2))) <$> d f var
+           negate . (* (int 1 / sqrt (int 1 - f ** int 2))) <$> d f var
      
        -- Eq:format derivate( atan( f ),x ) = derivate( f, x) * 
        --                                  ( 1 / (1 + f^2) )
-       d (UnOp OpATan f) var = (\f' -> f' * (int 1 / (int 1 + f ** 2))) <$> d f var
-       d (UnOp OpSinh f) var = (\f' -> f' * cosh f) <$> d f var
-       d (UnOp OpCosh f) var = (\f' -> f' * sinh f) <$> d f var
-       d (UnOp OpTanh f) var = (\f' -> f' * tanh f ** 2) <$> d f var
+       d (UnOp OpATan f) var = (* (int 1 / (int 1 + f ** 2))) <$> d f var
+       d (UnOp OpSinh f) var = (* cosh f) <$> d f var
+       d (UnOp OpCosh f) var = (* sinh f) <$> d f var
+       d (UnOp OpTanh f) var = (* tanh f ** 2) <$> d f var
      
-       d (UnOp OpASinh f) var = (\f' -> f' * (int 1 / sqrt (f ** 2 + 1))) <$> d f var
-       d (UnOp OpACosh f) var = (\f' -> f' * (int 1 / sqrt (f ** 2 - 1))) <$> d f var
-       d (UnOp OpATanh f) var = (\f' -> f' * (int 1 / (int 1 - f ** 2))) <$> d f var
-       d fo@(UnOp OpLn f) var = (\f' -> f' / fo) <$> d f var
+       d (UnOp OpASinh f) var = (* (int 1 / sqrt (f ** 2 + 1))) <$> d f var
+       d (UnOp OpACosh f) var = (* (int 1 / sqrt (f ** 2 - 1))) <$> d f var
+       d (UnOp OpATanh f) var = (* (int 1 / (int 1 - f ** 2))) <$> d f var
+       d fo@(UnOp OpLn f) var = (/ fo) <$> d f var
      
        -- | We allow deriving of lambda with only one argument...
        d (Lambda [([Variable v], body)]) var = do

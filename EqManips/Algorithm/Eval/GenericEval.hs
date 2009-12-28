@@ -244,10 +244,10 @@ eval evaluator (App def var) = do
 #endif
                     popContext
                     return body'
-         needApply def' args = do
+         needApply def' args =
              return $ App def' args
 
-eval evaluator (BinOp OpAdd fs) = do
+eval evaluator (BinOp OpAdd fs) =
     binEval OpAdd (add evaluator) (add evaluator) =<< mapM evaluator fs
 eval evaluator (BinOp OpSub fs) =
     binEval OpSub (sub evaluator) (add evaluator) =<< mapM evaluator fs
@@ -276,7 +276,7 @@ eval evaluator (BinOp OpOr fs) = binEval OpOr binor binor =<< mapM evaluator fs
 
 -- | Special case for programs, don't evaluate left :]
 eval evaluator (BinOp OpAttrib [a,b]) =
-    evaluator b >>= return . BinOp OpAttrib . (a:) . (:[])
+    BinOp OpAttrib . (a:) . (:[]) <$> evaluator b
 
 eval _ f@(BinOp OpAttrib _) = eqPrimFail f Err.attrib_in_expr 
 
@@ -291,7 +291,7 @@ eval evaluator (UnOp OpAbs f) = fAbs =<< evaluator f
 eval evaluator (UnOp op f) = return . UnOp op =<< evaluator f
 
 eval evaluator (Derivate what (Meta op var)) =
-    metaEvaluation evaluator op var >>= (\a -> eval evaluator (Derivate what a))
+    metaEvaluation evaluator op var >>= eval evaluator . Derivate what
 
 eval evaluator (Derivate what (Variable s)) = do
 #ifdef _DEBUG
@@ -354,9 +354,9 @@ matrixScalar :: EvalFun
              -> FormulaPrim -> FormulaPrim
              -> EqContext FormulaPrim
 matrixScalar evaluator op s m@(Matrix _ _ _) = matrixScalar evaluator op m s
-matrixScalar evaluator op (Matrix n m mlines) s = cell >>= return . Matrix n m
+matrixScalar evaluator op (Matrix n m mlines) s = Matrix n m <$> cell
     where cell = sequence
-            [ mapM (\c -> evaluator $ c `op` s) line | line <- mlines]
+            [ mapM (evaluator . (`op` s)) line | line <- mlines]
 matrixScalar _ _ _ _ = error Err.matrixScalar_badop
 
 -- | Multiplication between two matrix. Check for matrix sizes.
@@ -386,7 +386,7 @@ matrixMatrixSimple evaluator op m1@(Matrix n m mlines) m2@(Matrix n' m' mlines')
     | n /= n' || m /= m' = do
         eqFail (Formula $ m1 `op` m2) Err.matrix_diff_size
         return $ Right (m1, m2)
-    | otherwise = newCells >>= return . Left . Matrix n m
+    | otherwise = Left . Matrix n m <$> newCells
         where dop (e1, e2) = evaluator $ e1 `op`e2
               newCells = sequence [ mapM dop $ zip line1 line2
                                      | (line1, line2) <- zip mlines mlines']

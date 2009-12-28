@@ -51,15 +51,14 @@ formulaPolynomiezer formulaText =
             case convertToPolynome formula of
                  Nothing -> putStrLn "Nothing"
                  Just p -> do
-                     when (not $ isPolySorted p) $ putStrLn "/!\\ UNSORTED!!"
-                     when (not $ isPolyFineRecursive p) $ putStrLn "/!\\ Unfine recursive"
+                     unless (isPolySorted p) $ putStrLn "/!\\ UNSORTED!!"
+                     unless (isPolyFineRecursive p) $ putStrLn "/!\\ Unfine recursive"
 
                      putStrLn . sexprRender . Formula $ Poly p
             putStr "\n==========================================\n"
             )
-         $ either Left (Right) . perfectParse $ formulaText
+         $ either Left Right . perfectParse $ formulaText
 
 main :: IO ()
-main = do
-    mapM_ formulaPolynomiezer polynomes
+main = mapM_ formulaPolynomiezer polynomes
 

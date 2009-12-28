@@ -11,12 +11,12 @@ import EqManips.Renderer.RenderConf
 
 mathmlRender :: Conf -> Formula TreeForm -> String
 mathmlRender conf (Formula f) =
-    (str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n")
+    str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n"
     . semantics ( presMarkup 
                 . annotation "MathML-Content" contentMarkup
                 . annotation "Eq-language" (str . cleanify $ unparse f)
                 . annotation "LaTeX" (str . cleanify . latexRender conf $ Formula f))
-    . (str "</math>\n") $ ""
+    . str "</math>\n" $ ""
         where contentMarkup = content f
               presMarkup = mrow $ prez conf f
               semantics = tagger "semantics"
@@ -39,7 +39,7 @@ tagger :: String -> ShowS -> ShowS
 tagger tag f = str ('<': tag ++ ">") . f . str ("</" ++ tag ++ ">")
 
 cleanify :: String -> String
-cleanify = concat . map deAnchor
+cleanify = concatMap deAnchor
     where deAnchor '<' = "&lt;"
           deAnchor '>' = "&gt;"
           deAnchor '&' = "&amp;"
@@ -119,32 +119,32 @@ presentation conf _ (UnOp OpAbs f) = enclose '|' '|' $ prez conf f
 presentation conf _ (UnOp OpSqrt f) = msqrt $ prez conf f
 presentation conf _ (UnOp OpFactorial f)
   | f `hasProp` LeafNode = prez conf f . mo (char '!')
-  | otherwise = (parens $ prez conf f) . mo (char '!')
+  | otherwise = parens (prez conf f) . mo (char '!')
 presentation conf _ (UnOp OpNegate f)
   | f `hasProp` LeafNode = mo (char '-') . prez conf f
-  | otherwise = mo (char '-') . (parens $ prez conf f)
+  | otherwise = mo (char '-') . parens (prez conf f)
 presentation conf _ (UnOp op f)
   | f `hasProp` LeafNode = mo (str $ unopString op) . prez conf f
   | otherwise = mo (str $ unopString op) . parens (prez conf f)
 
 presentation conf _ (Sum begin end what) =
-    (msubsup $ mo (str "&sum;")
+     msubsup ( mo (str "&sum;")
              . mrow (prez conf begin)
              . mrow (prez conf end)) . mrow (prez conf what)
 
 presentation conf _ (Product begin end what) =
-    (msubsup $ mo (str "&prod;")
+     msubsup ( mo (str "&prod;")
              . mrow (prez conf begin)
              . mrow (prez conf end)) . mrow (prez conf what)
 
 presentation conf _ (Integrate begin end what var) =
-    (msubsup $ mo (str "&int;")
+     msubsup ( mo (str "&int;")
              . mrow (prez conf begin)
              . mrow (prez conf end))
              . mrow (prez conf what . mi (str "d") . prez conf var)
 
 presentation conf _ (Derivate f var) =
-    (mfrac $ mi (char 'd')
+     mfrac ( mi (char 'd')
            . mrow (mi (char 'd') . prez conf var)) . prez conf f
 
 presentation conf _ (App func args) =
@@ -211,7 +211,7 @@ stringOfBinOp OpPow = "<power/>"
 stringOfBinOp OpSub = "<minus/>"
 stringOfBinOp OpAttrib = "<!-- Attrib -->"
 
-bigOperator :: [Char] -> String -> FormulaPrim -> FormulaPrim -> FormulaPrim
+bigOperator :: String -> String -> FormulaPrim -> FormulaPrim -> FormulaPrim
             -> ShowS
 bigOperator operator var def end what = 
     apply $ str operator

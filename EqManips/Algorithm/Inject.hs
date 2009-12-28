@@ -1,5 +1,6 @@
 module EqManips.Algorithm.Inject( inject ) where
 
+import Control.Applicative
 import EqManips.Types
 import EqManips.FormulaIterator
 import EqManips.EvaluationContext
@@ -10,7 +11,7 @@ import EqManips.Algorithm.Utils
 -- the variable like that.
 inject :: Formula ListForm -> EqContext (Formula ListForm)
 inject (Formula f) =
-    depthPrimTraversal scopePreserver injectIntern f >>= return . Formula
+    Formula <$> depthPrimTraversal scopePreserver injectIntern f
 
 -- | This function perform a sort of alpha
 -- renaming on subScope, it's called when arriving
@@ -24,7 +25,7 @@ scopePreserver f = keepSafe $ reBoundVar f
 
 injectIntern :: FormulaPrim -> EqContext FormulaPrim
 injectIntern f@(Variable v) =
-    symbolLookup v >>= return . maybe f unTagFormula
+    maybe f unTagFormula <$> symbolLookup v
 
 injectIntern f = scope $ reBoundVar f
     where scope Nothing = return f

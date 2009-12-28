@@ -1,3 +1,4 @@
+SHELL=cmd
 
 build: EqManips/BaseLibrary.hs
 	runhaskell Setup.hs build
@@ -30,4 +31,7 @@ run:
 
 help:
 	dist/build/eq/eq.exe help
+
+hlint:
+	unixfind . -name *.hs | grep -v dist | grep -v ErrorMessages | xargs hlint
 

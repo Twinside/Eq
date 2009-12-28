@@ -71,7 +71,7 @@ division eval (Complex (a,b)) (Complex (c, d)) =
         <*> eval (reshape $ imagNumerator / denom)
     where realNumerator = a * c + b * d
           imagNumerator = b * c - a * d
-          denom = c ** (CInteger 2) + d ** (CInteger 2)
+          denom = c ** CInteger 2 + d ** CInteger 2
 division eval (Complex (r1,i1)) rightp | isFormulaScalar rightp =
     (\real imag -> Left $ Complex (real, imag))
             <$> eval (reshape $ r1 / rightp)

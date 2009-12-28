@@ -88,7 +88,7 @@ instance Monad EqContext where
     {-# INLINE (>>=) #-}
     prev >>= k = EqContext $ \c -> 
         let (c', a) = runEqTransform prev c
-        in runEqTransform (k a) $ c'
+        in runEqTransform (k a) c'
 
 -- | A basic initial context
 emptyContext :: EqTransformInfo 

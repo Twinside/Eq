@@ -1,5 +1,7 @@
 module EqManips.Algorithm.Eval.Utils where
 
+import Control.Applicative
+
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Eval.Types
@@ -23,15 +25,15 @@ binOp op lst = BinOp op lst
 -- | Evaluate a binary operator
 binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext FormulaPrim
 binEval op f inv formulaList 
-    | op `hasProp` Associativ && op `hasProp` Commutativ = do
+    | op `hasProp` Associativ && op `hasProp` Commutativ =
 #ifdef _DEBUG
-        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList)
+        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList) >>
 #endif
-        biAssocM f inv (sort formulaList) >>= return . binOp op
+        binOp op <$> biAssocM f inv (sort formulaList)
 
-    | otherwise = do
+    | otherwise =
 #ifdef _DEBUG
-        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ BinOp op formulaList)
+        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ BinOp op formulaList) >>
 #endif
-        biAssocM f inv formulaList >>= return . binOp op
+        binOp op <$> biAssocM f inv formulaList
 

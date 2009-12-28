@@ -27,7 +27,7 @@ data ReducedXmlTree =
     deriving (Show)
 
 mathMlToEqLang' :: String -> String
-mathMlToEqLang' txt = either id id (mathMlToEqLang txt)
+mathMlToEqLang' = either id id . mathMlToEqLang
 
 -- | Input XML code encoded in a string
 -- output a string in Eq Language, ready to
@@ -43,7 +43,7 @@ simplifyXml :: Document a -> Either String ReducedXmlTree
 simplifyXml (Document a b (Elem "m:math" c lst) l) =
     simplifyXml (Document a b (Elem "math" c lst) l)
 simplifyXml (Document _ _ (Elem "math" _ lst) _) =
-    Xrow <$> (eitherMap $ map simplifyContent lst)
+    Xrow <$> eitherMap (map simplifyContent lst)
 simplifyXml _ = error "The xml document has the wrong format"
 
 strOfContent :: Content a -> String
@@ -85,7 +85,7 @@ simplify (Elem ('m':':':xs) att cont) = simplify (Elem xs att cont)
 simplify (Elem "mi" _ [c]) = Right . Xsymb $ strOfContent c
 simplify (Elem "mn" _ [c]) = Right . Xnum $ strOfContent c
 simplify (Elem "mo" _ [c]) = Right . Xop $ strOfContent c
-simplify (Elem "mrow" _ lst) = Xrow <$> (eitherMap $ map simplifyContent lst)
+simplify (Elem "mrow" _ lst) = Xrow <$> eitherMap (map simplifyContent lst)
 simplify (Elem "msqrt" _ lst) = Xsqrt . Xrow <$> eitherMap (map simplifyContent lst)
 simplify (Elem "mfrac" _ [a,b]) = Xfrac <$> simplifyContent a <*> simplifyContent b
 simplify (Elem "msup" _ [a,b]) = Xsup <$> simplifyContent a <*> simplifyContent b
@@ -97,7 +97,7 @@ simplify (Elem "mtable" _ lst) = Xtable <$> lineList
 
           unrow (Elem "m:mtr" a b) = unrow (Elem "mtr" a b)
           unrow (Elem "mtr" _ cells) = eitherMap $ map (uncell . elemOfContent) cells
-          unrow _ = Left $ "Ill formed MathML Matrix"
+          unrow _ = Left "Ill formed MathML Matrix"
 
           uncell (Elem "m:mtd" a b) = uncell (Elem "mtd" a b)
           uncell (Elem "mtd" _ cellList) = Xrow <$> eitherMap (map simplifyContent cellList)
@@ -106,7 +106,7 @@ simplify (Elem "mtable" _ lst) = Xtable <$> lineList
 simplify (Elem "mfenced" [ ("open", AttValue [Left openChar])
                          , ("close", AttValue [Left closeChar]) ] lst) =
 
-    Xfenced openChar closeChar . Xrow <$> (eitherMap $ map simplifyContent lst)
+    Xfenced openChar closeChar . Xrow <$> eitherMap (map simplifyContent lst)
 
 simplify (Elem "mfenced" attrs _lst) = Left $ show attrs
     

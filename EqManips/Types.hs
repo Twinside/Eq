@@ -36,6 +36,7 @@ module EqManips.Types
          , distributeOver 
          ) where
 
+import Data.Ord( comparing )
 import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
 import qualified EqManips.ErrorMessages as Err
@@ -231,7 +232,7 @@ instance Show (Formula anyForm) where
           ('{':)
         . sexprRenderS (Formula a)
         . (++) "}\n"
-        . showsPrec 0 a
+        . shows a
 
 instance Ord PolyCoeff where
     compare left right = case polyCoeffCast left right of
@@ -292,7 +293,7 @@ instance Ord FormulaPrim where
             | otherwise = compare p1 p2
     
     compare (BinOp OpPow a) (BinOp OpPow b) =
-        case compare (length a) (length b) of
+        case comparing length a b of
              LT -> LT
              EQ -> foldl' (\acc (a', b') -> acc <<>> compare a' b') EQ $ zip a b
              GT -> GT
@@ -328,7 +329,7 @@ instance Ord FormulaPrim where
 
     compare (Block _ _ _) _ = GT
     compare (NumEntity _) _ = LT
-    compare f1 f2 = compare (nodeCount f1) $ nodeCount f2
+    compare f1 f2 = comparing nodeCount f1 f2
         where nodeCount = getSum . foldf 
                     (\_ a -> Monoid.Sum $ getSum a + 1)
                     (Monoid.Sum 0 :: Monoid.Sum Int)
@@ -366,7 +367,7 @@ data OpProp = Associativ -- ^ if (a . b) . c <=> a . (b . c)
     deriving (Eq, Show)
 
 emptyProps :: e -> [p] -> [(p,e)]
-emptyProps e = map $ flip (,) e
+emptyProps = map . flip (,)
 
 instance Property BinOperator OpProp BinOperator where
     getProps OpEq  = []
@@ -391,7 +392,7 @@ instance Property BinOperator OpProp BinOperator where
         (InverseOp, OpMul) : emptyProps OpDiv [Distributiv]
 
 canDistributeOver :: BinOperator -> BinOperator -> Bool
-canDistributeOver op1 op2 = op2 `elem` distributeOver op1
+canDistributeOver op1 = (`elem` distributeOver op1)
 
 distributeOver :: BinOperator -> [BinOperator]
 distributeOver OpMul = [OpAdd, OpSub]
@@ -536,7 +537,7 @@ foldf f acc fo@(Derivate what var) = f fo $ whatAcc `mappend` varAcc
               varAcc = foldf f acc var
 
 foldf f acc fo@(Matrix _ _ cells) = f fo finalAcc
-    where lineFolder acc' formu = acc' `mappend` (foldf f acc formu)
+    where lineFolder acc' formu = acc' `mappend` foldf f acc formu
           rowAccs = [ foldl' lineFolder mempty row | row <- cells]
           finalAcc = foldl1' mappend rowAccs
 

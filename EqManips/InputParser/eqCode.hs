@@ -124,16 +124,16 @@ term = try trueConst
     <?> "Term error"
 
 trueConst :: Parsed st FormulaPrim
-trueConst = (return $ Truth True) <* (string "true" >> whiteSpace)
+trueConst = return (Truth True) <* (string "true" >> whiteSpace)
 
 falseConst :: Parsed st FormulaPrim
-falseConst = (return $ Truth False) <* (string "false" >> whiteSpace)
+falseConst = return (Truth False) <* (string "false" >> whiteSpace)
 
 -----------------------------------------------
 ----        Little helpers
 -----------------------------------------------
 binary :: String -> (a -> a -> a) -> Assoc -> Operator String st Identity a
-binary  name fun assoc = Infix (do{ reservedOp name; return fun }) assoc
+binary name fun = Infix (do{ reservedOp name; return fun })
 
 prefix :: String -> (a -> a) -> Operator String st Identity a
 prefix  name fun       = Prefix (do{ reservedOp name; return fun })

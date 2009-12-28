@@ -23,7 +23,7 @@ sexprS (Fraction f) = sexprS $ (CInteger $ numerator f) / (CInteger $ denominato
 sexprS (Poly v@(PolyRest _)) = sexprS . unTagFormula $ convertToFormula v
 sexprS (Poly (Polynome v lst)) =
     str "(poly " . str v . char ' ' . concatMapS coeffPrinter lst . char ')'
-        where coeffSexpr c = sexprS . unTagFormula $ convertToFormula (PolyRest c)
+        where coeffSexpr = sexprS . unTagFormula . convertToFormula . PolyRest
               coeffPrinter (coeff, poly) =
                     char '(' . coeffSexpr coeff . str ", "
                   . sexprS (Poly poly)

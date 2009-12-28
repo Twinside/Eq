@@ -16,16 +16,13 @@ newtype ContinuousUnop = ContinuousUnop UnOperator
 newtype ContinuousFormula = ContinuousFormula FormulaPrim
 
 instance Arbitrary ContinuousEntity where
-    arbitrary  = elements [ Pi ] 
-               >>= return . ContinuousEntity 
+    arbitrary  = ContinuousEntity <$> elements [ Pi ] 
 
 instance Arbitrary ContinuousBinop where
-    arbitrary  = elements [ OpAdd, OpSub, OpMul, OpDiv, OpPow ] 
-               >>= return . ContinuousBinop
+    arbitrary  = ContinuousBinop <$> elements [ OpAdd, OpSub, OpMul, OpDiv, OpPow ] 
 
 instance Arbitrary ContinuousUnop where
-    arbitrary  = elements [ OpNegate, OpSqrt, OpSin, OpCos, OpTan, OpLn, OpExp ]
-               >>= return . ContinuousUnop 
+    arbitrary  = ContinuousUnop <$> elements [ OpNegate, OpSqrt, OpSin, OpCos, OpTan, OpLn, OpExp ]
 
 instance Arbitrary ContinuousFormula where
     arbitrary = formulaGen 5

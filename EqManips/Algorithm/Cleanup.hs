@@ -61,9 +61,9 @@ mul (BinOp OpDiv [CInteger 1, denom]) x = Left $ x / denom
 mul x (BinOp OpDiv [CInteger 1, denom]) = Left $ x / denom
 
 -- Eq:format (-1/denom) * x = -x / denom
-mul (BinOp OpDiv [UnOp OpNegate (CInteger 1), denom]) x = Left $ (negate x) / denom
+mul (BinOp OpDiv [UnOp OpNegate (CInteger 1), denom]) x = Left $ negate x / denom
 -- Eq:format x * (-1/denom) = -x / denom
-mul x (BinOp OpDiv [UnOp OpNegate (CInteger 1), denom]) = Left $ (negate x) / denom
+mul x (BinOp OpDiv [UnOp OpNegate (CInteger 1), denom]) = Left $ negate x / denom
 
 -- Eq:format a ^ n * a ^ m = a ^ (n + m)
 mul (BinOp OpPow [a, n]) (BinOp OpPow [b, m]) | a == b = Left $ a ** (n + m)
@@ -93,8 +93,8 @@ divide x (CInteger 1) = Left x
 divide f1@(CInteger i1) f2@(CInteger i2)
     | i1 `mod` i2 == 0 = Left . int $ i1 `div` i2
     | otherwise = if greatestCommonDenominator > 1
-                        then Left $ (int $ i1 `quot` greatestCommonDenominator)
-                                  / (int $ i2 `quot` greatestCommonDenominator)
+                        then Left $ int (i1 `quot` greatestCommonDenominator)
+                                  / int (i2 `quot` greatestCommonDenominator)
                         else Right (f1,f2)
         where greatestCommonDenominator = gcd i1 i2
 divide x y = Right (x,y)

@@ -26,7 +26,7 @@ type UnificationContext a = State [(String, FormulaPrim)] a
 -- consise code.
 (=~=) :: FormulaPrim -> FormulaPrim
       -> UnificationContext Bool
-a =~= b = unifyFormula a b
+(=~=) = unifyFormula
 
 -- | Return the first pattern matching the given formula
 -- and a list of substitution to be made on the function
@@ -48,7 +48,7 @@ unify :: Formula anyKind -> Formula anyKind
 unify (Formula a) (Formula b) =
      if rez
         then Nothing
-        else Just $ [(s, Formula f) | (s,f) <- list]
+        else Just [(s, Formula f) | (s,f) <- list]
     where (rez, list) = runState (a =~= b) []
 
 -- | Helper function to unify list of formula side by side.
@@ -92,7 +92,7 @@ unifyFormula (Poly left@(Polynome _ _))
           subPolyEq (Polynome var1 [(c1, PolyRest c2)])
                     replacement@(Polynome _ lst2')
                 | c1 == CoeffInt 1 && c2 == CoeffInt 1 =
-                    tell [(var1, Poly $ replacement)] >> return True
+                    tell [(var1, Poly replacement)] >> return True
 
           -- Are two polynoms equivalent?
           subPolyEq (Polynome var1 lst1')
@@ -101,16 +101,19 @@ unifyFormula (Poly left@(Polynome _ _))
                         when valid' $ tell [(var1, Variable var2)]
                         return valid'
 
-          verifyCoeff a b = foldM coefEq True $ zip a b
+          verifyCoeff a = foldM coefEq True . zip a
 
           coefEq acc ((c1,sub1),(c2,sub2)) =
               ((acc && c1 == c2) &&) <$> subPolyEq sub1 sub2
 
 unifyFormula (BinOp OpAdd added) (Poly (Polynome v lst)) =
+    {-
     if length added == length lst && valid
        then and <$> mapM (uncurry checkSymbol) adds
        else return valid
+       -} return False
     
+          {-
     where (valid, adds) = runWriter . validMatch . zip added $ zipper v lst
           zipper var = map (\(c, s) -> (v,c,s))
 
@@ -144,7 +147,6 @@ unifyFormula (BinOp OpAdd added) (Poly (Polynome v lst)) =
             | c /= 0 = return False
             | otherwise = tell [(v, coefToFormula coeff)]
                        >> return True
-
           validMatch ( BinOp OpMul (Variable v:xs), (var1, c, poly@(Polynome _ _))) = do
               valid <- validMatch (BinOp OpMul xs, poly)
               when valid $ tell [(v, Variable var1)]
@@ -157,6 +159,7 @@ unifyFormula (BinOp OpAdd added) (Poly (Polynome v lst)) =
 
           -- General case : it's not valid.
           validMatch _ = return False
+          -}
 
 unifyFormula (Truth a) (Truth b) =
     return $ a == b

@@ -24,7 +24,9 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , complexTranslate 
                                 ) where
 
+import Control.Applicative
 import qualified Data.Monoid as Monoid
+
 import Data.Monoid( All( .. ), mempty )
 import EqManips.Algorithm.EmptyMonad
 import EqManips.Propreties
@@ -37,9 +39,9 @@ import Data.List( foldl', sortBy )
 -----------------------------------------------------------
 -- | Count the number of nodes in a formula.
 nodeCount :: FormulaPrim -> Int
-nodeCount f = Monoid.getSum $ foldf 
+nodeCount = Monoid.getSum . foldf 
    (\_ a -> Monoid.Sum $ Monoid.getSum a + 1)
-   (Monoid.Sum 0) f
+   (Monoid.Sum 0)
 
 nodeCount' :: Formula anyForm -> Int
 nodeCount' (Formula a) = nodeCount a
@@ -48,7 +50,7 @@ nodeCount' (Formula a) = nodeCount a
 -- front and rassembling terms
 sortFormula :: Formula ListForm -> Formula ListForm
 sortFormula (Formula a) = Formula 
-                        $ (depthFormulaPrimTraversal `asAMonad` (sortBinOp compare)) a
+                        $ (depthFormulaPrimTraversal `asAMonad` sortBinOp compare) a
 
 -- | Sort a binary operator, used by sortFormula to sort globally
 -- a formula
@@ -59,8 +61,8 @@ sortBinOp _f a = a
 
 invSortFormula :: Formula ListForm -> Formula ListForm
 invSortFormula (Formula f) =
-    Formula $ (depthFormulaPrimTraversal `asAMonad` (sortBinOp cmp)) f
-        where cmp a b = invOrd $ compare a b
+    Formula $ (depthFormulaPrimTraversal `asAMonad` sortBinOp cmp) f
+        where cmp a = invOrd . compare a
               invOrd GT = LT
               invOrd LT = GT
               invOrd EQ = EQ
@@ -128,8 +130,8 @@ needParenthesis :: Bool         -- ^ if the node is on the right side of parent 
                 -> BinOperator  -- ^ Parent operator
                 -> BinOperator  -- ^ This node operator
                 -> Bool
-needParenthesis v parentOp op =
-    needParenthesisPrio v (parentOp `obtainProp` Priority) op
+needParenthesis v =
+    needParenthesisPrio v . (`obtainProp` Priority)
 
 -- | Little helper to know if a renderer need to put parenthesis
 -- given his parent's priority
@@ -147,13 +149,12 @@ needParenthesisPrio False parentPrio op =
 biAssoc :: (a -> a -> Either a (a,a)) 
         -> (a -> a -> Either a (a,a)) 
         -> [a] -> [a]
-biAssoc f finv lst = fromEmptyMonad 
-                   $ biAssocM (\a -> return . f a) 
-                              (\a -> return . finv a)
-                              lst
+biAssoc f finv = fromEmptyMonad 
+               . biAssocM (\a -> return . f a) 
+                          (\a -> return . finv a)
 
 -- | same as biAssoc, but use monads.
-biAssocM :: (Monad m) 
+biAssocM :: (Monad m, Functor m)
          => (a -> a -> m (Either a (a,a))) 
          -> (a -> a -> m (Either a (a,a))) 
          -> [a] -> m [a]
@@ -165,7 +166,7 @@ biAssocM f finv lst = assocInner f lst
               Right (v1, v2) -> return [v1, v2]
           assocInner f' (x:y:xs) = f' x y >>= \val -> case val of
               Left v -> assocInner f' (v:xs)
-              Right (v1, v2) -> assocInner finv (v2:xs) >>= return . (v1:) 
+              Right (v1, v2) -> (v1:) <$> assocInner finv (v2:xs)
 
 -- | Work like concat on list, but instead
 -- just combine functions of kind of ShowS.

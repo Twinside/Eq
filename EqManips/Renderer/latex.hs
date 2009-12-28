@@ -13,9 +13,9 @@ latexRender :: Conf -> Formula TreeForm -> String
 latexRender conf f = latexRenderS conf f ""
 
 latexRenderS :: Conf -> Formula TreeForm -> ShowS
-latexRenderS conf(Formula f) = (str "\\begin{equation*}\n")
+latexRenderS conf(Formula f) = str "\\begin{equation*}\n"
                              . lno conf f 
-                             . (str "\n\\end{equation*}\n")
+                             . str "\n\\end{equation*}\n"
 
 str :: String -> ShowS
 str = (++)
@@ -141,7 +141,7 @@ l conf _ (App func args) =
 l conf _ (Matrix _ _ lsts) = str "\\begin{bmatrix}\n"
                       . matrixCells
                       . str "\n\\end{bmatrix}"
-    where perLine lst = interspereseS (str " & ") $ map (lno conf) lst
+    where perLine = interspereseS (str " & ") . map (lno conf)
           matrixCells = interspereseS (str "\\\\\n") $ map perLine lsts
 
 

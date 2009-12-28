@@ -5,6 +5,8 @@
 -- evaluation to preserve the "true" meaning of the formula.
 module EqManips.Algorithm.Eval.Floating ( evalFloat, floatEvalRules ) where
 
+import Control.Applicative
+
 import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.EvaluationContext
@@ -16,7 +18,7 @@ import Data.Maybe( fromMaybe )
 -- | General function favored to use the reduction rules
 -- as it preserve meta information about the formula form.
 evalFloat :: Formula anyForm -> EqContext (Formula anyForm)
-evalFloat (Formula f) = floatEvalRules f >>= (return . Formula)
+evalFloat (Formula f) = Formula <$> floatEvalRules f
 
 floatCastingOperator :: (Double -> Double -> Double) -> EvalOp
 floatCastingOperator f (CInteger i1) (CFloat f2) =
@@ -106,7 +108,7 @@ floatEvalRules formula@(UnOp op f) =
           funOf OpATan = atan
           funOf OpATanh = atanh
           funOf OpLn = log
-          funOf OpLog = \n -> log n / log 10.0
+          funOf OpLog = logBase 10.0
           funOf OpExp = exp
           funOf OpAbs = error $ Err.not_here "unop : abs - "
           funOf OpNegate = error $ Err.not_here "unop : negate - "
@@ -121,7 +123,7 @@ floatEvalRules end = return end
 ---- Scalar related function
 --------------------------------------------------------------
 unOpReduce :: (forall a. (Floating a) => a -> a) -> FormulaPrim -> Maybe FormulaPrim
-unOpReduce f (CInteger i) = unOpReduce f . CFloat $ (fromInteger i)
+unOpReduce f (CInteger i) = unOpReduce f . CFloat $ fromInteger i
 unOpReduce f (CFloat num) = Just . CFloat $ f num
 unOpReduce _ _ = Nothing
 

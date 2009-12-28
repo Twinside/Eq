@@ -112,7 +112,7 @@ removeBeginComment :: LangDef -> String -> Maybe (String, String)
 removeBeginComment langDef line = do
         let (iniSpace, restLine) = eatSpaces line
         rest <- stripPrefix (initComm langDef) restLine
-        return ( iniSpace ++ (initComm langDef)
+        return ( iniSpace ++ initComm langDef
                , stripSuffix (endLineComm langDef) rest)
 
 -- | Grab a word from a string, returning it and
@@ -168,7 +168,7 @@ produce lang (initSpace, command, eqData) =
           mayParsedFormla = parseFormula $ concat eqData
 
           commentLine = initSpace ++ " "
-          commentEnd = " " ++ emark
+          commentEnd = ' ' : emark
 
           spaceCount acc ' ' = 1 + acc
           spaceCount acc '\t' = 4 + acc
@@ -191,9 +191,9 @@ produce lang (initSpace, command, eqData) =
                                     | (form, txt) <- errs ]
           process _ (Right _) = ["Unknown command " ++ command]
 
-          printResult f =
+          printResult =
               reverse . map (\l -> commentLine ++ l ++ commentEnd)
-                      $ formulaTextTable f
+                      . formulaTextTable
                       
 
 

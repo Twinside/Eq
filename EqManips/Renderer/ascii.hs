@@ -205,7 +205,9 @@ renderSquareBracket (x,y) (w,h) top bottom =
              lastLine = y + h - 1
              topSymbols s = [((x + 1   , y ), s), ((rightCol - 1, y ), s)] 
              bottomSymbols s = [((x + 1, lastLine), s), ((rightCol - 1, lastLine ), s)] 
-             upper = if top then topSymbols '¯' else []
+             matrixTopSymbol = '¯'
+             upper = if top then topSymbols matrixTopSymbol 
+                            else []
              downer = if bottom then bottomSymbols '_' else []
 
 

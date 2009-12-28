@@ -9,9 +9,7 @@ data Openness =
 data Bound = (Double, Openness)
 
 -- | Yeay, interval
-data Interval =
-    Interval !Bound !Bound
-    deriving (Eq, Show)
+data Interval = Interval !Bound !Bound deriving (Eq, Show)
 
 data Domain = 
     -- | Describe an application, typically :

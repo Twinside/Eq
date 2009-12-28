@@ -27,5 +27,5 @@ class (Eq propKey) => Property onType propKey propVal
 
                                  
 obtainProp :: (Property a p c) => a -> p -> c
-obtainProp a p = fromJust $ getProp a p
+obtainProp a = fromJust . getProp a
 

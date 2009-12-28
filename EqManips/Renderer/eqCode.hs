@@ -70,7 +70,7 @@ deparse _ _ (Integrate i i1 i2 i3) =
 
 deparse _ _ (UnOp OpFactorial f) = ('(':) . deparse maxPrio False f . (")!" ++)
 deparse _ _ (UnOp op f) =
-    ((++) $ unopString op ) . 
+    (++) (unopString op) . 
         ('(':) . deparse maxPrio False f . (')':)
 
 deparse _ _ (Fraction f) =
@@ -119,5 +119,5 @@ deparse _ _ (Matrix n m fl) =
     ("matrix("++) . shows n 
                   . (',':) 
                   . shows m 
-                  . (',':) .  (argListToString $ concat fl) . (')':)
+                  . (',':) .  argListToString (concat fl) . (')':)
 

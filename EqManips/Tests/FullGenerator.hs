@@ -51,7 +51,7 @@ instance Arbitrary PolyCoeff where
         n :: Int <- choose (0,1)
         case n of
              0 -> CoeffInt <$> choose (1,150)
-             1 -> (\a b -> CoeffRatio $ a % b) <$> choose (1,150) <*> choose (1,150)
+             1 -> (\a -> CoeffRatio . (a %)) <$> choose (1,150) <*> choose (1,150)
              _ -> error "Not permited"
 
     shrink (CoeffInt i) = map CoeffInt $ shrink i

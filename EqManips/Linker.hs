@@ -188,13 +188,13 @@ sumBuilder :: [FormulaPrim] -> FormulaPrim
 sumBuilder [ini, end, what] = Sum ini end what
 sumBuilder [ini, what] = Sum ini (Variable "") what
 sumBuilder [what] = Sum (Variable "") (Variable "") what
-sumBuilder lst = (App (Variable "sum") lst)
+sumBuilder lst = App (Variable "sum") lst
 
 productBuilder :: [FormulaPrim] -> FormulaPrim
 productBuilder [ini, end, what] = Product ini end what
 productBuilder [ini, what] = Product ini (Variable "") what
 productBuilder [what] = Product (Variable "") (Variable "") what
-productBuilder lst = (App (Variable "product") lst)
+productBuilder lst = App (Variable "product") lst
 
 integrateBuilder :: [FormulaPrim] -> FormulaPrim
 integrateBuilder [ini, end, what, dvar] = Integrate ini end what dvar

@@ -14,7 +14,7 @@ addLambda varName args body = do
     case symb of
       Nothing -> addSymbol varName . Formula
                     $ Lambda [(map unTagFormula args, unTagFormula body)]
-      Just (Formula (Lambda clauses@((prevArg,_):_))) -> do
+      Just (Formula (Lambda clauses@((prevArg,_):_))) ->
           if length prevArg /= length args
             then do
              eqFail (Formula $ Variable varName) Err.def_diff_argcount
