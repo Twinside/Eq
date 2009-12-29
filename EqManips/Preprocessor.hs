@@ -148,15 +148,18 @@ gatherInput lang info@(initSpace, command, eqInfo) line =
                       (const $ PState (skip lang info) $ pure [])
                       $ stripPrefix beginResultMark line'
 
+-- Prelude const :: a -> b -> a
+-- Prelude maybe :: b -> (a -> b) -> Maybe a -> b
+-- Data.List stripPrefix :: Eq a => [a] -> [a] -> Maybe [a]
 skip :: LangDef -> (String, String, [String]) -> String -> PreprocessState
 skip lang info line =
     maybe (PState (skip lang info) (pure []))
           endSearch
           $ removeBeginComment lang line
         where endSearch (_,line') =
-                  maybe (PState (skip lang info) (pure []))
-                        (const . PState (begin lang) $ produce lang info)
-                        $ stripPrefix endResultMark line'
+                  if stripPrefix endResultMark line' == Nothing
+                      then PState (skip lang info) (pure [])
+                      else PState (begin lang) $ produce lang info
 
 produce :: LangDef -> (String, String, [String]) -> EqContext [String]
 produce lang (initSpace, command, eqData) =

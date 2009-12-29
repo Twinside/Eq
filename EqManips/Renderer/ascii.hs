@@ -306,17 +306,17 @@ renderF conf (Poly p) node pos =
 -- then recurse to the normal flow for the regular render.
 renderF conf node (MonoSizeNode True (base, dim) st) (x,y) =
     renderParens (x,y) dim . renderF conf node neoTree (x+1, y) 
-        where subSize = (remParens asciiSizer) conf dim
+        where subSize = remParens asciiSizer conf dim
               neoTree = MonoSizeNode False (base, subSize) st
 -- Parentheses for binop
 renderF conf node (BiSizeNode True (base, dim) st1 st2) (x,y) =
     renderParens (x,y) dim . renderF conf node neoTree (x+1, y) 
-        where subSize = (remParens asciiSizer) conf dim
+        where subSize = remParens asciiSizer conf dim
               neoTree = BiSizeNode False (base, subSize) st1 st2
 -- Parenthesis for something else
 renderF conf node (SizeNodeList True (base, dim) abase stl) (x,y) =
     renderParens (x,y) dim . renderF conf node neoTree (x+1, y)
-        where subSize = (remParens asciiSizer) conf dim
+        where subSize = remParens asciiSizer conf dim
               neoTree = SizeNodeList False (base, subSize) abase stl
 
 -- Here we make the "simple" rendering, just a conversion.
@@ -436,7 +436,7 @@ renderF conf (UnOp op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
 
 renderF conf (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
         (x,y) =
-    (snd $ renderArgs conf (x + fw, y) argBase h mixedList) . renderF conf func s (x,baseLine) 
+    snd (renderArgs conf (x + fw, y) argBase h mixedList) . renderF conf func s (x,baseLine) 
         where (fw, _) = sizeOfTree s
               baseLine = y + base
               mixedList = zip flist ts
@@ -495,7 +495,7 @@ renderF conf (Product ini end what)
     -- Top line
     . (++) [ ((i, y + eh), '_') | i <- [x .. whatBegin - 1]]
     -- Descending line
-    . ((++) $ concat [ [((x,i), '|'), ((whatBegin - 1,i), '|')] 
+    . (++) (concat [ [((x,i), '|'), ((whatBegin - 1,i), '|')] 
                                    | i <- [ y + eh + 1.. bottom] ])
         where (_, (ww, wh)) = sizeExtract whatSize
               (_, (ew, eh)) = sizeExtract endSize

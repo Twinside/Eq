@@ -6,7 +6,7 @@ data Openness =
   | Exclude     -- ^ ]0;1[ 0 and 1 excluded
   deriving (Eq, Show)
 
-data Bound = (Double, Openness)
+type Bound = (Double, Openness)
 
 -- | Yeay, interval
 data Interval = Interval !Bound !Bound deriving (Eq, Show)
@@ -32,6 +32,11 @@ union i1@(Interval (l,kl) (h,kh)) i2@(Interval (l',kl') (h',kh'))
     -- [+       +]      [-      -]
     | otherwise = [i1, i2]
 
+instance Ord Openness where
+    (<) Include Exclude = True
+    (<) Include Include = False
+    (<) Exclude Include  = False
+    (<) Exclude Exclude = False
 
 instance Num Interval where
     (Interval x1 x2) + (Interval y1 y2) =
