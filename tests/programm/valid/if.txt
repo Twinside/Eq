@@ -1,6 +1,9 @@
-if( 1, a, b ) := a;
-if( 0, a, b ) := b;
-if( n, a, b ) := undefined;
+-- Renamed test from if to ifroot
+-- to avoid clashes with the standard
+-- library
+ifroot( true, a, b ) := a;
+ifroot( false, a, b ) := b;
+ifroot( n, a, b ) := undefined;
 
-if( n, 10, 15 )
+ifroot( 3 > 2, 10, 15 )
 

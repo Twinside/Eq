@@ -127,6 +127,7 @@ transformParseFormula operation args = do
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"
+               hPutStrLn finalFile . show $ result rez
                hPutStrLn finalFile . sexprRender $ result rez
 #endif
                printErrors $ errorList rez

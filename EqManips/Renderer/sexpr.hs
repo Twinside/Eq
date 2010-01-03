@@ -40,7 +40,7 @@ sexprS (Lambda clauses) =
     str "(lambda " . concatMapS clauseRender clauses
                    . char ')'
         where clauseRender (args, body) =
-                  str "((" . concatMapS sexprS args . str ") "
+                  str "((" . interspereseS (' ':) (map sexprS args) . str ") "
                            . sexprS body
                            . char ')'
 
@@ -73,8 +73,8 @@ sexprS (Derivate f var) =
                      . sexprS var . char ')'
 
 sexprS (App func args) = 
-    str "(apply " . sexprS func
-                  . concatMapS sexprS args
+    str "(apply " . sexprS func . char ' '
+                  . interspereseS (' ':) (map sexprS args)
                   . char ')'
 
 sexprS (Matrix n m lsts) =

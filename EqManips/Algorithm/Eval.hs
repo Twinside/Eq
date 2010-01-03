@@ -16,6 +16,7 @@ import EqManips.Algorithm.Eval.Polynomial
 import EqManips.Algorithm.Eval.Ratio
 import EqManips.Algorithm.Eval.Complex
 import EqManips.Algorithm.Eval.Types
+import System.IO.Unsafe
 
 evalGlobalLossyStatement, evalGlobalLosslessStatement :: FormulaEvaluator
 evalGlobalLossyStatement = evalGlobalStatement reduce'
@@ -41,8 +42,12 @@ exactReduce = taggedEvaluator exactReduce'
 -- | same as exactReduce, but perform on raw formula.
 exactReduce' :: EvalFun
 exactReduce' f = eval exactReduce' (cleaner f)
+             >>= (\a -> unsafePerformIO (putStr "\neval >> " >> print a) `seq` return a)
              >>= ratioEvalRules
+             >>= (\a -> unsafePerformIO (putStr "\nratio >> " >> print a) `seq` return a)
              >>= complexEvalRules exactReduce'
-             >>= polyEvalRules exactReduce'
+             >>= (\a -> unsafePerformIO (putStr "\ncomplex >> " >> print a) `seq` return a)
+             >>= polyEvalRules exactReduce' . cleaner
+             >>= (\a -> unsafePerformIO (putStr "\npolyCleaned >> " >> print a) `seq` return a)
     where cleaner = unTagFormula . cleanupRules . Formula
 
