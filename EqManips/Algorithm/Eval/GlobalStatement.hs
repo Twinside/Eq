@@ -39,17 +39,29 @@ addVar varName body = do
 
 -- | Evaluate top level declarations
 evalGlobalStatement :: EvalFun -> Formula ListForm -> EqContext (Formula ListForm)
-evalGlobalStatement _ (Formula (BinOp OpAttrib [ (App (Variable funName) argList)
-                                               , body ])) = do
+evalGlobalStatement evaluator (Formula (BinOp OpAttrib [ (App (Variable funName) argList)
+                                                       , body ])) = do
+    pushContext
+    body' <- evaluator body
+    popContext
+    addLambda funName (map Formula argList) (Formula body')
+    return $ Formula (BinOp OpAttrib [(App (Variable funName) argList), body])
+
+evalGlobalStatement _ (Formula (BinOp OpLazyAttrib [ (App (Variable funName) argList)
+                                                   , body ])) = do
     addLambda funName (map Formula argList) (Formula body)
-    return $ Formula (BinOp OpEq [(App (Variable funName) argList), body])
+    return $ Formula (BinOp OpLazyAttrib [(App (Variable funName) argList), body])
 
 evalGlobalStatement evaluator (Formula (BinOp OpAttrib [(Variable varName), body])) = do
     pushContext
     body' <- evaluator body
     popContext
     addVar varName (Formula body')
-    return $ Formula (BinOp OpEq [(Variable varName), body'])
+    return $ Formula (BinOp OpAttrib [(Variable varName), body'])
+
+evalGlobalStatement _ (Formula (BinOp OpLazyAttrib [(Variable varName), body])) = do
+    addVar varName (Formula body)
+    return $ Formula (BinOp OpLazyAttrib [(Variable varName), body])
 
 evalGlobalStatement evaluator (Formula e) = do
     pushContext

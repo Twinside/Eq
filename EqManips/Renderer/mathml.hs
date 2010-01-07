@@ -210,6 +210,7 @@ stringOfBinOp OpOr = "<or/>"
 stringOfBinOp OpPow = "<power/>"
 stringOfBinOp OpSub = "<minus/>"
 stringOfBinOp OpAttrib = "<!-- Attrib -->"
+stringOfBinOp OpLazyAttrib = "<!-- LazyAttrib -->"
 
 bigOperator :: String -> String -> FormulaPrim -> FormulaPrim -> FormulaPrim
             -> ShowS

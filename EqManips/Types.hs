@@ -65,14 +65,16 @@ data BinOperator  =
     | OpAnd -- ^ '&'
     | OpOr -- ^ '|'
 
-    | OpEq -- ^ '='
-	| OpNe -- ^ '/='
-	| OpLt -- ^ '<'
-	| OpGt -- ^ '>'
-	| OpGe -- ^ '>='
-	| OpLe -- ^ '<='
 
-    | OpAttrib -- ^ ':='
+    | OpEq -- ^ '='
+    | OpNe -- ^ '/='
+    | OpLt -- ^ '<'
+    | OpGt -- ^ '>'
+    | OpGe -- ^ '>='
+    | OpLe -- ^ '<='
+
+    | OpLazyAttrib  -- ^ ':>'
+    | OpAttrib      -- ^ ':='
     deriving (Eq,Show,Read)
 
 -- | All `unary` operators are in there. some are mathematical
@@ -229,10 +231,10 @@ a <<>> b = ordIt a
 -----------------------------------------------------------
 instance Show (Formula anyForm) where
     showsPrec _ (Formula a) =
-          ('{':)
+          ("{-"++)
         . sexprRenderS (Formula a)
-        . (++) "}\n"
-        . shows a
+        . (++) "-} Formula ("
+        . shows a . (++) ")"
 
 instance Ord PolyCoeff where
     compare left right = case polyCoeffCast left right of
@@ -382,6 +384,7 @@ instance Property BinOperator OpProp BinOperator where
 
     getProps OpPow = []
     getProps OpAttrib = []
+    getProps OpLazyAttrib = []
 
     getProps OpSub = [(InverseOp, OpAdd)]
     getProps OpAdd =
@@ -444,7 +447,8 @@ instance Property UnOperator OperatorText String where
 -- of binary operators
 binopDefs :: [(BinOperator, (Int,String))]
 binopDefs =
-	[ (OpAttrib, (7, ":="))
+    [ (OpAttrib,     (7, ":="))
+    , (OpLazyAttrib, (7, ":>"))
     , (OpAnd, (6, "&"))
     , (OpOr, (6, "|"))
     , (OpEq, (5, "="))
@@ -453,11 +457,11 @@ binopDefs =
     , (OpGt, (5, ">"))
     , (OpGe, (5, ">="))
     , (OpLe, (5, "<="))
-	, (OpAdd, (4, "+"))
-	, (OpSub, (4, "-"))
-	, (OpMul, (3, "*"))
-	, (OpDiv, (3, "/"))
-	, (OpPow, (2, "^"))
+    , (OpAdd, (4, "+"))
+    , (OpSub, (4, "-"))
+    , (OpMul, (3, "*"))
+    , (OpDiv, (3, "/"))
+    , (OpPow, (2, "^"))
     ]
 
 binopString :: BinOperator -> String

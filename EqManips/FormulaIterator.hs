@@ -57,8 +57,8 @@ topDownTraversal f l@(Lambda eqs) =
                   [ ( map (topDownTraversal f) args
                     , topDownTraversal f body) | (args, body) <- eqs]
 
-topDownTraversal f meta@(Meta _ form) =
-    fromMaybe (topDownTraversal f form) $ f meta
+topDownTraversal f meta@(Meta op form) =
+    fromMaybe (Meta op $ topDownTraversal f form) $ f meta
 
 topDownTraversal f formula@(App func args) =
     fromMaybe (App mayFunc mayArgs) $ f formula

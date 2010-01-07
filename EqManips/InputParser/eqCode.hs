@@ -99,7 +99,7 @@ operatorDefs =
       ,binary "<" (binop OpLt)  AssocLeft,  binary ">"  (binop OpGt) AssocLeft
       ,binary "<=" (binop OpLe) AssocLeft,  binary ">=" (binop OpGe) AssocLeft]
     , [binary "&" (binop OpAnd) AssocLeft, binary "|" (binop OpOr) AssocLeft]
-    , [binary ":=" (binop OpAttrib) AssocRight]
+    , [binary ":>" (binop OpLazyAttrib) AssocRight, binary ":=" (binop OpAttrib) AssocRight]
     ]
 
 funCall :: Parsed st FormulaPrim

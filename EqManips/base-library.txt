@@ -1,29 +1,30 @@
 -- derivaten( function, var, order )
-derivaten( f, var, 0 ) := f;
-derivaten( f, var, 1 ) := derivate( Force(f), Force(var) );
-derivaten( f, var, n ) := derivate( Force(derivaten( f, var, n-1 ))
+derivaten( f, var, 0 ) :> f;
+derivaten( f, var, 1 ) :> derivate( Force(f), Force(var) );
+derivaten( f, var, n ) :> derivate( Force(derivaten( f, var, n-1 ))
                                   , Force(var) );
 -- if( condition (boolean), then, else )
-if( true, a, b ) := a;
-if( false, a, b ) := b;
-if( otherwise, a, b ) := undefined;
+if( true, a, b )  :> a;
+if( false, a, b ) :> b;
+if( otherwise, a, b ) :> undefined;
 
 -- well, a max function
-max( a, b ) := if( a > b, a, b );
+max( a, b ) :> if( a > b, a, b );
 
 -- well, a min function
-min( a, b ) := if( a < b, a, b );
+min( a, b ) :> if( a < b, a, b );
 
 -- provide equality when everything else is undefined :-P
-eq( a, a ) := true;
-eq( a, b ) := false;
+eq( a, a ) :> true;
+eq( a, b ) :> false;
+
 
 -- taylor( function (as a lambda!!), derivation var, onVar, order )
-taylorin( f, var, a, 0 ) := f(a);
-taylorin( f, var, a, n ) := taylorin( f, var, a, n - 1 ) 
+taylorin( f, var, a, 0 ) :> f(a);
+taylorin( f, var, a, n ) :> taylorin( f, var, a, n - 1 ) 
                           + (derivaten(f, var, Force(n)))( a ) / n! * (x - a) ^ n;
 
 -- taylor( formula, derivation var, onVar, order )
-taylor( f, var, a, n ) :=
+taylor( f, var, a, n ) :>
     Sort( Cleanup( taylorin( Lambda( var, f ), var, a, n )))
 

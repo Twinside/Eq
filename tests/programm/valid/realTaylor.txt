@@ -1,7 +1,7 @@
 -- Previously named derivaten, but no conflicting with standard symbols
-dn( 0, f, x ) := f;
-dn( 1, f, x ) := derivate( f, x );
-dn( n, f, x ) := derivate( Force( dn( n-1, f, x ) ) , Force( x ) );
+dn( 0, f, x ) :> f;
+dn( 1, f, x ) :> derivate( Force( f ), x );
+dn( n, f, x ) :> derivate( Force( dn( n-1, f, x ) ) , Force( x ) );
 
 dn( 3, sin(x), x )
 
