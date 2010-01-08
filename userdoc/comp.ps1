@@ -10,7 +10,8 @@ function indexmaker()
     '    <div class="section">'
     '        <h2>Eq - documentation</h2>'
     '        <ul>'
-    ls *.html | ? { $_.name -ne 'temp.html' } | ? { $_.name -ne 'common.html' } | % {
+    ls *.html | ? { $_.name -ne 'temp.html' } | ? { $_.name -ne 'common.html' } | ? {
+                    $_.name -ne 'footer.html' } | ? { $_.name -ne 'header.html' } | % {
         '<li><a href="' + $_.name + '">' + $($_.name -replace '.html','') + '</a></li>'
     }
     '        </ul>'

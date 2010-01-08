@@ -276,8 +276,8 @@ eval evaluator (BinOp OpGe fs) = predicateList OpGe (compOperator (>=)) =<< mapM
 
 {-evaluator (BinOp OpNe fs) = binEval OpNe (compOperator (/=)) =<< mapM evaluator fs-}
 
-eval evaluator (BinOp OpEq [v@(Variable _),f2]) = do
-    f2' <- evaluator f2
+eval evaluator (BinOp OpEq lst) = do
+    (first, rest) <- mapM evaluator lst
     return $ BinOp OpEq [v,f2']
 
 eval evaluator (BinOp OpAnd fs) = binEval OpAnd binand binand =<< mapM evaluator fs
