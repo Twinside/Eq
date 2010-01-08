@@ -61,7 +61,7 @@ h3 a {
 }
 
 /* text! */
-div.chapter p,
+td,
 div.section p {
 	font-family: verdana, "trebuchet ms";
 	color: #797979;
@@ -77,16 +77,15 @@ div.sample
     margin: 5px;
 }
 
-div.output code
+code,
+div.section p ul li code,
+div.section table tr td code
 {
 
 	font-size:1.1em;
 	background: #efc;
 	border-bottom: 1px dotted #ad9;
 	color: #555;
-    background-color: rgb(0, 0, 0);  
-    color: rgb(255, 255,255);
-    margin: 5px;
 }
 
 div.whole {
@@ -123,12 +122,6 @@ div.chapter, div.section
     left: 12.5%;
 	margin-top: 45px;
 	padding-left: 50px;
-}
-
-span.inline
-{
-    background-color: rgb( 200, 200, 200 );
-    font-family: monospace;
 }
 
 /* tables still need 'cellspacing="0"' in the markup */

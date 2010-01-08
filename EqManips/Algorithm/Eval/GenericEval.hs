@@ -170,11 +170,28 @@ predicateList op f (x:y:xs) = lastRez
           lastRez ([e],_,_) = return e
           lastRez (lst,_,_) = return $ BinOp op lst
 
+-- | In charge of implementing the casting for '=' and '/='
+-- operators.
+equalityOperator :: (forall a. Eq a => a -> a -> Bool)
+                 -> FormulaPrim -> FormulaPrim
+                 -> Maybe Bool
+equalityOperator f (CInteger a) (CInteger b) = Just $ f a b
+equalityOperator f (CFloat a) (CFloat b) = Just $ f a b
+equalityOperator f a@(CFloat _) (CInteger b) =
+    equalityOperator f a . CFloat $ fromIntegral b
+equalityOperator f (CInteger a) b@(CFloat _) =
+    equalityOperator f (CFloat $ fromIntegral a) b
+equalityOperator _ _ _ = Nothing
+
+-- | Casting for comparaison operator.
 compOperator :: (forall a. Ord a => a -> a -> Bool)
              -> FormulaPrim -> FormulaPrim
              -> Maybe Bool
 compOperator f (CInteger a) (CInteger b) = Just $ f a b
 compOperator f (CFloat a) (CFloat b) = Just $ f a b
+compOperator f (Fraction a) (Fraction b) = Just $ f a b
+compOperator f (CInteger a) (Fraction b) = Just $ f (a % 1) b
+compOperator f (Fraction a) (CInteger b) = Just $ f a (b % 1)
 compOperator f a@(CFloat _) (CInteger b) =
     compOperator f a . CFloat $ fromIntegral b
 compOperator f (CInteger a) b@(CFloat _) =
