@@ -19,22 +19,18 @@
             </div>
             <div class="section">
                 <h3><a name="preprocformat">Let's format!</a></h3>
-<!-- %% cat ../tests/preprocess/test.c -->
+<!-- %% cat ../tests/preprocess/formattest.c -->
 <!-- %%%cpp -->
                 <p>
-                    Pretty isn't it? As a disgression, I would like to mention
-                    that camembert refer to <img src="img/camembert.jpg" width="50%">. Why is it there?
-                    well, I don't know. Maybe eq can produce it. Or not.
-                </p>
-                <p>
-                    let's get real and preprocess it.
+                    The important point here is the special comment. Let's see
+                    the result before explaining it.
                 </p>
 <!-- %% eq preprocess -o temp.c -f ../tests/preprocess/formattest.c -->
 <!-- %% cat temp.c -->
 <!-- %%%cpp -->
             </div>
             <div class="section">
-                <h3><a name="howpreprocessor">How to embed preprocessor in your language?</a></h3>
+                <h3><a name="howpreprocessor">How to mark your source code?</a></h3>
                 <p>
                     The little embedded markup format is really simple. To use it, you
                     must write it in <strong>mono line</strong> comment. Let's digg a bit
@@ -65,6 +61,22 @@
                     they permit the preprocessor to re-analyze the file and update
                     the previous render, if someone got a better idea, please send
                     me a mail about it.
+                </p>
+            </div>
+            <div class="section">
+                <h3><a name="whopreprocessor">Which languages are available?</a></h3>
+                <p>Let's see!</p>
+<!-- %% eq show --languages -->
+<!-- %%% -->
+                <p>
+                    As you can see, many languages are already supported for formatting.
+                    Some language name are common due to the similarity of their mono line
+                    comment format. If you want your favorite language to be included here,
+                    please drop me a mail.
+                </p>
+                <p>
+                    For the moment Eq use the file extension to guess the language. It
+                    might change in the future.
                 </p>
             </div>
         </div>

@@ -18,6 +18,13 @@ module EqManips.Types
          , binopString
          , unopString
 
+         -- | Exported only to permit the main program to display
+         -- accurate help.
+         , binopDefs 
+         -- | For more information about others unary operator,
+         -- refer to the link section.
+         , realUnopOperators
+
          -- | To query associativity side
          , AssocSide(..) 
          -- | Return type for associativity side
@@ -409,7 +416,8 @@ distributeOver _ = []
 data Priority = Priority deriving Eq
 
 instance Property BinOperator Priority Int where
-    getProps op = [(Priority, fst . fromJust $ lookup op binopDefs)]
+    getProps op = [(Priority, first. fromJust $ lookup op binopDefs)]
+        where first (f,_,_) = f
     
 instance Property UnOperator Priority Int where
     getProps OpFactorial = [(Priority, 0)]
@@ -445,37 +453,41 @@ instance Property UnOperator OperatorText String where
     
 -- | Priority and textual representation
 -- of binary operators
-binopDefs :: [(BinOperator, (Int,String))]
+binopDefs :: [(BinOperator, (Int, String, String))]
 binopDefs =
-    [ (OpAttrib,     (7, ":="))
-    , (OpLazyAttrib, (7, ":>"))
-    , (OpAnd, (6, "&"))
-    , (OpOr, (6, "|"))
-    , (OpEq, (5, "="))
-    , (OpNe, (5, "/="))
-    , (OpLt, (5, "<"))
-    , (OpGt, (5, ">"))
-    , (OpGe, (5, ">="))
-    , (OpLe, (5, "<="))
-    , (OpAdd, (4, "+"))
-    , (OpSub, (4, "-"))
-    , (OpMul, (3, "*"))
-    , (OpDiv, (3, "/"))
-    , (OpPow, (2, "^"))
+    [ (OpAttrib,     (7, ":=", "Attribution operator"))
+    , (OpLazyAttrib, (7, ":>", "Lazy attribution operator"))
+    , (OpAnd, (6,  "&", "Logical and operator"))
+    , (OpOr,  (6,  "|", "Logical or operator"))
+    , (OpEq,  (5,  "=", "Equality operator"))
+    , (OpNe,  (5, "/=", "Different operator"))
+    , (OpLt,  (5, "<" , "Lower than operator"))
+    , (OpGt,  (5, ">" , "Greater than operator"))
+    , (OpGe,  (5, ">=", "Greater or equal operator"))
+    , (OpLe,  (5, "<=", "Lower or equal operator"))
+    , (OpAdd, (4,  "+", "Addition operator"))
+    , (OpSub, (4,  "-", "Substraction operator"))
+    , (OpMul, (3,  "*", "Multiplication operator"))
+    , (OpDiv, (3,  "/", "Division/fraction operator"))
+    , (OpPow, (2,  "^", "Power operator"))
     ]
 
 binopString :: BinOperator -> String
-binopString a = snd . fromJust $ lookup a binopDefs
+binopString a = second . fromJust $ lookup a binopDefs
+    where second (_, s, _) = s
 
 unopString :: UnOperator -> String
 unopString a = fromJust $ lookup a unOpNames
 
+realUnopOperators :: [(UnOperator, String, String)]
+realUnopOperators = [ (OpNegate, "-", "Negation operator, put it before expression (-x)")
+                    , (OpFactorial, "!", "Factorial operator, put it after expression (x!)")
+                    ]
+
 -- | Textual representation of "unary" operators
 unOpNames :: [(UnOperator, String)]
-unOpNames =
-    [ (OpNegate, "-")
-    , (OpFactorial, "!")
-    , (OpAbs, "abs")
+unOpNames = [ (op, reprez) | (op, reprez,_) <- realUnopOperators] ++
+    [ (OpAbs, "abs")
     , (OpSqrt, "sqrt")
 
     , (OpSin, "sin")

@@ -213,6 +213,12 @@ matrixBuilder (CInteger n: CInteger m: exps)
                 in map link matrixLine : splitMatrix matrixRest
 matrixBuilder lst = App (Variable "matrix") lst
 
+multivarLinker :: String -> [FormulaPrim] -> FormulaPrim
+multivarLinker v flst =
+    maybe (App (Variable v) linked) (\f -> f linked) 
+    $ Map.lookup v multiParametersFunction
+        where linked = map link flst
+
 -- | Function associating variables to symbol.
 link :: FormulaPrim -> FormulaPrim
 link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
@@ -223,14 +229,11 @@ link p@(Poly _) = p
 link v@(Variable varName) =
     fromMaybe v $ Map.lookup varName entityTranslation
 link (App (Variable funName) [x]) = 
-    maybe (App (Variable funName) [linked]) (\f -> f linked)
+    maybe (multivarLinker funName [x]) (\f -> f linked)
     $ Map.lookup funName unaryTranslations
         where linked = link x
 
-link (App (Variable v) flst) =
-    maybe (App (Variable v) linked) (\f -> f linked) 
-    $ Map.lookup v multiParametersFunction
-        where linked = map link flst
+link (App (Variable v) flst) = multivarLinker v flst
 
 -- General transformations
 link (App f flst) = App (link f) $ map link flst

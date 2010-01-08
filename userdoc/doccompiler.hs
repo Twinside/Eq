@@ -1,7 +1,8 @@
 import Control.Applicative
 import Control.Monad( when )
-
 import Control.Monad.State.Lazy
+
+import Data.Char
 
 import System.Process
 import System.Environment
@@ -14,7 +15,7 @@ type MatchExtended = Maybe (String,String,String, [String])
 
 codeBrush, outputBrush :: String
 codeBrush = "brush: shell"
-outputBrush = "brush: js"
+outputBrush = "brush: shell"
 
 printUsage :: IO ()
 printUsage = print "bidule [infile] [outfile]"
@@ -42,16 +43,18 @@ commandMatcher str =
          Just _ -> return Nothing
 
 insertMatcher :: String -> StateT String IO (Maybe [String])
-insertMatcher str = case (str =~~ "<!-- %%%([^ ]*) -->" :: MatchExtended) of
-        Nothing -> return Nothing
-        Just (prev,curr,_, []) -> do
+insertMatcher str = produce (str =~~ "<!-- %%%([^ ]*) -->" :: MatchExtended)
+    where produce Nothing = return Nothing
+          produce (Just (prev,curr,_, [])) = do
             toInsert <- get
             return $ Just [prev, curr
                           ,"<pre class=\"" ++ outputBrush ++ "\">", toInsert, "</pre>"]
-        Just (prev,curr,_, [kind]) -> do
-            toInsert <- get
-            return $ Just [prev, curr
-                          ,"<pre class=\"brush: " ++ kind ++ "\">", toInsert, "</pre>"]
+          produce (Just (prev,curr,next,[kind]))
+                | all isSpace kind = produce (Just (prev, curr, next, []))
+                | otherwise = do
+                    toInsert <- get
+                    return $ Just [prev, curr
+                                  ,"<pre class=\"brush: " ++ kind ++ "\">", toInsert, "</pre>"]
 
 includerMatcher :: String -> StateT String IO (Maybe [String])
 includerMatcher str = case (str =~~ ".*<!-- %INCLUDE% ([^ ]*) -->" :: MatchExtended) of

@@ -1,4 +1,7 @@
-module EqManips.Preprocessor ( processFile ) where
+module EqManips.Preprocessor ( processFile
+                             , LangDef( .. )
+                             , kindAssociation
+                             ) where
 
 import System.FilePath
 import Data.List
@@ -15,6 +18,7 @@ import EqManips.Types
 
 data LangDef = LangDef {
           initComm :: String
+        , languageName :: String
         , endLineComm :: String
         , formater :: Formula TreeForm -> [String]
     }
@@ -24,15 +28,31 @@ voidLang :: LangDef
 voidLang = LangDef
     { initComm = ""
     , endLineComm = ""
+    , languageName = ""
     , formater = formulaTextTable
     }
 
 shellLang, cppLang, cLang, ocamlLang, haskellLang :: LangDef
-cppLang = voidLang { initComm = "//", endLineComm = "", formater = (\f -> [convertToCpp f]) }
-shellLang = voidLang { initComm = "#", endLineComm = "" }
-cLang = voidLang { initComm = "/*", endLineComm = "*/" }
-haskellLang = voidLang { initComm = "--", endLineComm = "" }
-ocamlLang = voidLang { initComm = "(*", endLineComm = "*)" }
+cppLang = voidLang { initComm = "//"
+                   , endLineComm = ""
+                   , formater = (\f -> [convertToCpp f])
+                   , languageName = "C++ like"
+                   }
+
+shellLang = voidLang { initComm = "#"
+                     , endLineComm = ""
+                     , languageName = "Shell like"
+                     }
+
+cLang = voidLang { initComm = "/*", endLineComm = "*/"
+                 , languageName = "C like"}
+
+haskellLang = voidLang { initComm = "--", endLineComm = ""
+                       , languageName = "Haskell"
+                       }
+
+ocamlLang = voidLang { initComm = "(*", endLineComm = "*)"
+                     , languageName = "OCaml" }
 
 kindAssociation :: [(String, LangDef)]
 kindAssociation =

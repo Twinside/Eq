@@ -1,12 +1,17 @@
-import System.Environment
 import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Cleanup
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.Latex
 import EqManips.Renderer.Mathml
-import EqManips.Renderer.Sexpr
 import EqManips.Renderer.RenderConf
+#ifdef _DEBUG
+import EqManips.Renderer.Sexpr
+#endif
+
+import Control.Monad
+
+import System.Environment
 import System.Exit
 import System.IO
 import System.Console.GetOpt
@@ -31,6 +36,9 @@ import EqManips.InputParser.EqCode
 data Flag =
       Output
     | Input
+    | SupportedFunction
+    | SupportedOperators
+    | SupportedPreprocLanguages
     deriving Eq
 
 version :: String
@@ -40,6 +48,16 @@ commonOption :: [OptDescr (Flag, String)]
 commonOption =
     [ Option "o"  ["output"] (ReqArg ((,) Output) "FILE") "output FILE"
     , Option "f"  ["file"] (ReqArg ((,) Input) "FILE") "input FILE"
+    ]
+
+askingOption :: [OptDescr (Flag, String)]
+askingOption =
+    [ Option "" ["functions"] (NoArg (SupportedFunction,""))
+                "Ask for defined function list"
+    , Option "" ["operators"] (NoArg (SupportedOperators,""))
+                "Ask for defined operator list"
+    , Option "" ["languages"] (NoArg (SupportedPreprocLanguages,""))
+                "Ask for supported languages for the preprocessor"
     ]
 
 preprocOptions :: [OptDescr (Flag, String)]
@@ -72,13 +90,13 @@ filterCommand transformator args = do
 -- | Command which just format an equation
 -- without affecting it's form.
 formatCommand :: (Formula TreeForm -> String) -> [String] -> IO Bool
-formatCommand formater args = do
+formatCommand formulaFormater args = do
     formulaText <- input
     let formula = perfectParse formulaText
     output <- outputFile
     either (parseErrorPrint output)
            (\formula' -> do 
-                hPutStrLn output . formater $ treeIfyFormula formula'
+                hPutStrLn output . formulaFormater $ treeIfyFormula formula'
                 hClose output
                 return True)
            formula
@@ -96,6 +114,47 @@ parseErrorPrint finalFile err = do
     hPutStr finalFile $ show err
     hClose finalFile
     return False
+
+-- | Give the user some information about the defined
+-- elements. This help cannot lie =)
+introspect :: [String] -> IO Bool
+introspect args = do
+    when ((SupportedFunction, "") `elem` opts)
+         (do putStrLn "Supported functions :"
+             putStrLn "====================="
+             putStrLn "(to be implemented)")
+
+    when ((SupportedOperators, "") `elem` opts)
+         (do putStrLn "Supported operators :   "
+             putStrLn "====================="
+
+             putStrLn "\nBinary operators (Priority - name - description)"
+             putStrLn "------------------------------------------------"
+             let names = [n | (_,(_,n,_)) <- binopDefs]
+                 maxName = maximum $ map length names
+                 binFormat (prio, name, descr) = '\t':
+                     show prio ++ " - " ++ name
+                               ++ replicate (maxName - length name) ' '
+                               ++ " - " ++ descr
+             mapM_ (putStrLn . binFormat . snd) binopDefs
+
+             putStrLn "\nUnary operators (name - description)"
+             putStrLn "------------------------------------"
+             mapM_ (putStrLn . (\(_, n, d) -> '\t' : n ++ " - " ++ d)) realUnopOperators)
+
+    when ((SupportedPreprocLanguages, "") `elem` opts)
+         (do putStrLn "Supported languages for preprocessing :"
+             putStrLn "======================================="
+             let maxi = maximum [ length n | (n, _) <- kindAssociation ]
+                 preprocFormat (ext, lang) =
+                     '\t' : ext ++ replicate (maxi - length ext) ' '
+                                ++ " - "
+                                ++ languageName lang
+             mapM_ (putStrLn . preprocFormat) kindAssociation 
+             )
+
+    return True
+   where (opts, _, _) = getOpt Permute askingOption args
 
 preprocessCommand :: [String] -> IO Bool
 preprocessCommand args =
@@ -215,6 +274,8 @@ commandList =
             , preprocessCommand, commonOption)
     , ("demathmlify", "Try to transform a MathML Input to EQ language"
             , filterCommand mathMlToEqLang', commonOption)
+    , ("show"       , "Try to retrieve some information about supported options"
+            , introspect, askingOption)
     ]
 
 reducedCommand :: [(String, [String] -> IO Bool)]
