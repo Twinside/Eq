@@ -13,7 +13,7 @@ type Match = Maybe (String,String,String)
 type MatchExtended = Maybe (String,String,String, [String])
 
 codeBrush, outputBrush :: String
-codeBrush = "brush: js"
+codeBrush = "brush: shell"
 outputBrush = "brush: js"
 
 printUsage :: IO ()
@@ -42,12 +42,16 @@ commandMatcher str =
          Just _ -> return Nothing
 
 insertMatcher :: String -> StateT String IO (Maybe [String])
-insertMatcher str = case (str =~~ "(.*)<!-- %%% -->" :: Match) of
+insertMatcher str = case (str =~~ "<!-- %%%([^ ]*) -->" :: MatchExtended) of
         Nothing -> return Nothing
-        Just (prev,curr,_) -> do
+        Just (prev,curr,_, []) -> do
             toInsert <- get
             return $ Just [prev, curr
                           ,"<pre class=\"" ++ outputBrush ++ "\">", toInsert, "</pre>"]
+        Just (prev,curr,_, [kind]) -> do
+            toInsert <- get
+            return $ Just [prev, curr
+                          ,"<pre class=\"brush: " ++ kind ++ "\">", toInsert, "</pre>"]
 
 includerMatcher :: String -> StateT String IO (Maybe [String])
 includerMatcher str = case (str =~~ ".*<!-- %INCLUDE% ([^ ]*) -->" :: MatchExtended) of

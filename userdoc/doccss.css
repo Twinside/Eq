@@ -59,6 +59,18 @@ h3 a {
 	letter-spacing: -0.05em;
 	color: #8a8a8a;
 }
+
+/* text! */
+div.chapter p,
+div.section p {
+	font-family: verdana, "trebuchet ms";
+	color: #797979;
+	font-size: 0.8em;
+	line-height: 1.4em;
+	margin-bottom: 1.4em;
+	padding-right: 50px;
+}
+
 div.sample
 {
     background-color: rgb(160, 160, 160);
@@ -77,6 +89,33 @@ div.output code
     margin: 5px;
 }
 
+div.whole {
+	margin-top: 45px;
+	padding-left: 50px;
+}
+
+div.section dl a,
+div.section ul a,
+div.section p a {
+	color: #778744;
+}
+
+div.section ul,
+div.section ol {
+	font-family: verdana, "trebuchet ms";
+	color: #797979;
+	font-size: 0.8em;
+	line-height: 1.4em;
+	margin-bottom: 1.4em;
+	padding-right: 50px;
+	list-style-type: disc;
+	list-style-position: outside;
+	margin-left: 2em;
+}
+
+div#content p a:hover {
+	color: #97a764;
+}
 
 div.chapter, div.section
 {
@@ -92,3 +131,5 @@ span.inline
     font-family: monospace;
 }
 
+/* tables still need 'cellspacing="0"' in the markup */
+table { border-collapse: collapse; border-spacing: 0; }

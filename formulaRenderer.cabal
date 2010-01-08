@@ -9,7 +9,7 @@ Maintainer: Vincent Berthoux
 
 Executable eq
     Main-Is: formulaMain.hs
-    ghc-options:-Wall
+    ghc-options:-Wall -O3
     extensions: CPP
     Build-Depends: base >= 4.1
                  , parsec >= 3.0
