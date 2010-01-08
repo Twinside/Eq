@@ -3,6 +3,7 @@ SHELL=cmd
 build: EqManips/BaseLibrary.hs
 	runhaskell Setup.hs build
 	cp dist/build/eq/eq.exe .
+	cp dist/build/deq/deq.exe .
 	cp dist/build/iotest/iotest.exe .
 
 clean:

@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+    <head>
+<!-- %INCLUDE% common.html -->
+        <title>Eq - as a calculator</title>
+    </head>
+    <body>
+        <h2>Eq as a calculator</h2>
+
+        <div class="chapter">
+        </div>
+
+        <div class="chapter">
+            <h3><a name="basiccalc">Basic calculation</a></h3>
+            <p>
+                Eq can perform simple calculations, by calling it on the command line
+                and giving it an expression as parameter.
+            </p>
+<!-- %% eq exacteval "3 + 3" -->
+<!-- %%% -->
+            <p>
+                Here you can see the term exact eval. There is two important command
+                for program/expression evaluation.
+                <ul>
+                    <li>exacteval : evaluate without compromising precision, no operation involving
+                                    float are performed.</li>
+                    <li>eval : try to reduce an expression as much as possible, without regard for
+                                    precision. If you want to obtain a numerical answer, that's the command
+                                    to use.</li>
+                </ul>
+            </p>
+            <p>Let's illustrate the difference</p>
+<!-- %% eq exacteval "3 / 9" -->
+<!-- %%% -->
+
+<!-- %% eq eval "3 / 9" -->
+<!-- %%% -->
+
+            <p>
+                And for some trigonometry :
+            </p>
+<!-- %% eq exacteval "sin(2)" -->
+<!-- %%% -->
+
+<!-- %% eq eval "sin(2)" -->
+<!-- %%% -->
+
+        </div>
+        <div class="section">
+            <p>
+                You can use the usual operators (+, -, *, /) for addition, subtraction,
+                multiplication and division respectively.
+            </p>
+            <p>
+                You can also use some comparison operators :
+                <ul>
+                    <li><span class="inline">=</span> : equality</li>
+                    <li><span class="inline">/=</span> : inequality.</li>
+                    <li><span class="inline">&lt;</span> : lower than</li>
+                    <li><span class="inline">&gt;</span> : greater than</li>
+                    <li><span class="inline">&gt;=</span> : greater or equal</li>
+                    <li><span class="inline">&lt;=</span> : lower or equal</li>
+                </ul>
+            </p>
+
+<!-- %% eq eval "3 * 6 < 15" -->
+<!-- %%% -->
+
+<!-- %% eq eval "3 * 6 > 15" -->
+<!-- %%% -->
+        </div>
+    </body>
+</html>
+

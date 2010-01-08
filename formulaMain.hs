@@ -120,10 +120,10 @@ transformParseFormula operation args = do
            (\formulal -> do
                let rez = performLastTransformationWithContext defaultSymbolTable
                        $ mapM operation formulal
+#ifdef _DEBUG
                mapM_ (\a-> do hPutStr finalFile $ sexprRender a
                               hPutStr finalFile "\n") formulal
                
-#ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"
@@ -175,10 +175,9 @@ transformParseDebug operation formulaText = do
            (\formulal -> do
                let rez = performLastTransformationWithContext defaultSymbolTable
                        $ mapM operation formulal
+#ifdef _DEBUG
                mapM (\a-> do hPutStr stdout $ sexprRender a
                              hPutStr stdout "\n") formulal
-               
-#ifdef _DEBUG
                hPutStrLn stdout "\n####### <TRACE> #########"
                printTrace stdout rez
                hPutStrLn stdout "####### </TRACE> #########\n"

@@ -1,0 +1,94 @@
+
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset,
+form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	font-size: 100%;
+	vertical-align: baseline;
+	background: transparent;
+}
+
+body { line-height: 1; }
+ol, ul { list-style: none; }
+
+blockquote, q {	quotes: none; }
+
+blockquote:before, blockquote:after, q:before, q:after {
+	content: '';
+	content: none;
+}
+
+/* Now, on to real styling. */
+body {
+	background: #fff;
+	background-repeat: repeat-x;
+	background-position: 50% 0;
+}
+pre { font-family: Monospace; }
+
+/* titles and subtitles */
+h2 {
+	height: 40px;
+	margin-bottom: 5px;
+	font-family: Helvetica, Arial;
+	font-weight: bold;
+	font-size: 2.6em;
+	letter-spacing: -0.05em;
+	color: #a7b774;
+}
+
+h3 {
+	height: 35px;
+	margin-left: -50px;
+	margin-bottom: 40px;
+	margin-top: 45px;
+	padding-left: 50px;
+	border-bottom: 1px solid #ddd;
+}
+
+h3.coming_soon,
+h3 a {
+	text-decoration: none;
+	font-family: Helvetica, Arial;
+	font-weight: bold;
+	font-size: 1.55em;
+	letter-spacing: -0.05em;
+	color: #8a8a8a;
+}
+div.sample
+{
+    background-color: rgb(160, 160, 160);
+    margin: 5px;
+}
+
+div.output code
+{
+
+	font-size:1.1em;
+	background: #efc;
+	border-bottom: 1px dotted #ad9;
+	color: #555;
+    background-color: rgb(0, 0, 0);  
+    color: rgb(255, 255,255);
+    margin: 5px;
+}
+
+
+div.chapter, div.section
+{
+    width: 75%;
+    left: 12.5%;
+	margin-top: 45px;
+	padding-left: 50px;
+}
+
+span.inline
+{
+    background-color: rgb( 200, 200, 200 );
+    font-family: monospace;
+}
+

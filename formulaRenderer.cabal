@@ -11,6 +11,19 @@ Executable eq
     Main-Is: formulaMain.hs
     ghc-options:-Wall
     extensions: CPP
+    Build-Depends: base >= 4.1
+                 , parsec >= 3.0
+                 , HaXml >= 1.9
+                 , array
+                 , mtl
+                 , containers
+                 , filepath
+                 , utf8-string >= 0.3.5
+
+Executable deq
+    Main-Is: formulaMain.hs
+    ghc-options:-Wall
+    extensions: CPP
     cpp-options: -D_DEBUG
     Build-Depends: base >= 4.1
                  , parsec >= 3.0
