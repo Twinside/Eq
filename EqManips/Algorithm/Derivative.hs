@@ -154,7 +154,8 @@ derivationRules evaluator variable (Formula func) = d func variable
        d (UnOp OpASinh f) var = (* (int 1 / sqrt (f ** 2 + 1))) <$> d f var
        d (UnOp OpACosh f) var = (* (int 1 / sqrt (f ** 2 - 1))) <$> d f var
        d (UnOp OpATanh f) var = (* (int 1 / (int 1 - f ** 2))) <$> d f var
-       d fo@(UnOp OpLn f) var = (/ fo) <$> d f var
+       d (UnOp OpLn f) var = (/ f) <$> d f var
+       d (UnOp OpLog f) var = (/ (f * log 10))<$> d f var
      
        -- | We allow deriving of lambda with only one argument...
        d (Lambda [([Variable v], body)]) var = do
@@ -168,8 +169,6 @@ derivationRules evaluator variable (Formula func) = d func variable
      
        d f@(Lambda _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_lambda
      
-       d f@(UnOp OpLog _f) _var = unTagFormula <$>
-           eqFail (Formula f) Err.deriv_no_log
        d f@(UnOp OpAbs _f) _var = unTagFormula <$>
            eqFail (Formula f) Err.deriv_no_abs
      

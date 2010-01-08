@@ -2,6 +2,7 @@
 module EqManips.Algorithm.Eval.GenericEval ( eval ) where
 
 import Data.Maybe
+import Data.Ratio
 
 import qualified EqManips.ErrorMessages as Err
 import Control.Applicative
@@ -294,8 +295,8 @@ eval evaluator (BinOp OpGe fs) = predicateList OpGe (compOperator (>=)) =<< mapM
 {-evaluator (BinOp OpNe fs) = binEval OpNe (compOperator (/=)) =<< mapM evaluator fs-}
 
 eval evaluator (BinOp OpEq lst) = do
-    (first, rest) <- mapM evaluator lst
-    return $ BinOp OpEq [v,f2']
+    {-(first, rest) <- mapM evaluator lst-}
+    return $ BinOp OpEq lst
 
 eval evaluator (BinOp OpAnd fs) = binEval OpAnd binand binand =<< mapM evaluator fs
 eval evaluator (BinOp OpOr fs) = binEval OpOr binor binor =<< mapM evaluator fs

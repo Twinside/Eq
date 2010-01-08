@@ -77,6 +77,20 @@ div.sample
     margin: 5px;
 }
 
+a.navigation {
+	color: #a7b774;
+	font-family: helvetica, arial;
+	text-decoration: underline;
+	font-weight: bold;
+	font-size: 1.4em;
+	text-decoration: underline;
+	letter-spacing: -0.05em;
+}
+
+a.navigation:hover {
+	color: #666;
+}
+
 code,
 div.section p ul li code,
 div.section table tr td code

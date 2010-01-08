@@ -39,15 +39,34 @@ function stripDocToc( $filename )
                     % { $_ -replace 'name="', $( 'href="' + $filename + '#' ) }
 }
 
+echo "=> Updating CSS"
 cp doccss.css compiled/doccss.css
-ls *.html | ? { -not ($excludeList -contains $_.name ) } | % { 
-    echo $("=> " + $_.name);
-    runhaskell doccompiler.hs $_.name $("compiled/" + $_.name)
-}
 
 # create the index
 echo "=> Index"
 indexmaker | out-file -encoding ASCII temp.html
 runhaskell doccompiler.hs temp.html 'compiled/index.html'
 rm temp.html
+
+$i = 0;
+$fileList = ls *.html | ? { -not ($excludeList -contains $_.name ) } | % { $_.name }
+
+$fileList | % { 
+    echo $("=> " + $_);
+
+    if ($i -ne 0)
+        { echo $('<a href="' + $fileList[$i - 1] + '" class="navigation">Previous</a>') | out-file -encoding ASCII previous.txt }
+    else { echo "" | out-file -encoding ASCII previous.txt }
+
+    if ($i -lt $fileList.length - 1)
+        { echo $('<a href="' + $fileList[$i + 1] + '" class="navigation">Next</a>') | out-file -encoding ASCII next.txt }
+    else { echo "" | out-file -encoding ASCII next.txt }
+
+    runhaskell doccompiler.hs $_ $("compiled/" + $_)
+
+    $i = $i + 1;
+}
+
+rm previous.txt
+rm next.txt
 

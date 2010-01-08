@@ -36,8 +36,8 @@ commandMatcher str =
          Just (_,_,_, [command]) -> 
             let (prog:params) = parseParam command
             in do
-             text <- liftIO $ readProcess prog params ""
-             put text
+             (_,text,errText) <- liftIO $ readProcessWithExitCode prog params ""
+             put $ errText ++ '\n' : text
              return $ Just ["<pre class=\"" ++ codeBrush ++ "\">", command, "</pre>"]
 
          Just _ -> return Nothing
@@ -60,8 +60,8 @@ includerMatcher :: String -> StateT String IO (Maybe [String])
 includerMatcher str = case (str =~~ ".*<!-- %INCLUDE% ([^ ]*) -->" :: MatchExtended) of
         Nothing -> return Nothing
         Just (_,_,_,[file]) -> do
-            fileData <- liftIO $ readFile file
-            return $ Just [fileData]
+            fileData <- liftIO $ lines <$> readFile file
+            Just . concat <$> (mapM matcher fileData)
 
 preprocessCommand :: [String -> StateT String IO (Maybe [String])]
 preprocessCommand = [ commandMatcher
