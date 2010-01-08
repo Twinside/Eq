@@ -1,0 +1,52 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+    <head>
+<!-- %INCLUDE% common.html -->
+        <title>Eq - as a pretty printer</title>
+    </head>
+    <body>
+        <div class="whole">
+        <h2>Eq as a pretty printer</h2>
+
+        <div class="section">
+            <h3><a name="prettyterminal">Pretty print in a terminal</a></h3>
+            <p>
+                Eq can be used just to create an <i>ASCII Art</i> representation
+                of an equation. To do this, type the following command in a command
+                line :
+            </p>
+<!-- %% eq format "sqrt( 3 * 3 / 4! )" -->
+            <p>And admire the result :</p>
+<!-- %%% -->
+        </div>
+
+        <div class="section">
+            <h3><a name="prettyfile">Pretty Printing to a file</a></h3>
+            <p>
+                For your convenience, you also could store the result of the command
+                line into a file. With great originality, doing this require using the
+                <code>-o</code> switch.
+            </p>
+<!-- %% eq format -o foo.txt "sqrt( 3 * 3 / 4! )" -->
+<!-- %% cat foo.txt -->
+<!-- %%% -->
+        </div>
+        <div class="section">
+            <h3><a name="prettyfile">Pretty Printing from a file</a></h3>
+            <p>
+                If you want to pretty print a formula stored in a file,
+                if it's the result of another program for example. You can
+                use the -f switch.
+            </p>
+<!-- %% echo 3 * 5 / 2 > foo.txt -->
+<!-- !%% eq format -f foo.txt  -->
+<!-- !%%% -->
+            <p>
+                And you can combine every switch in every way, store a file in a
+                file whil reading from another. Yes, it's completly mad.
+            </p>
+        </div>
+    </div>
+    </body>
+</html>
+
