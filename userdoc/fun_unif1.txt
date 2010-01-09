@@ -1,0 +1,4 @@
+uniftest( 3, a ) := 2 * a;
+uniftest( 1, a ) := a * a;
+
+uniftest( 3, 12 ) * uniftest( 1, 2 )

@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+    <head>
+<!-- %INCLUDE% common.html -->
+        <title>Eq - Unification 909</title>
+    </head>
+    <body>
+<!-- %INCLUDE% header.html -->
+        <div class="whole">
+            <h2>Unification 909</h2>
+
+            <p>
+                We've barely scratched the surface of unification as implemented
+                in Eq. We now need to digg into the subject by following a tiny
+                example. I've not yet implemented a modulo operator in the language,
+                so it's a nice occasion to implement one ourselves.
+            </p>
+
+            <div class="section">
+                <h3><a name="modulo101">Modulo 101</a></h3>
+                <p>
+                    Let's write our modulo in the most straightforward way.
+                </p>
+<!-- %% cat modulo101.txt -->
+<!-- %%% -->
+                <p>
+                    Here we have written a loop within the <code>modintern</code> function, the codition of
+                    the loop is symbolized by the first argument, unifying to a boolean. The rest can be
+                    seen as a local variable, as for the num. We remove the modulo while the rest is still
+                    greater than it. So, now let's try it.
+                </p>
+<!-- %% eq eval -f modulo101.txt -->
+<!-- %%% -->
+                <p>DUH?</p>
+                <p>
+                    We got two errors we some cryptic messages (yes it's in my <strong><i>TODO</i></strong>
+                    list to ameliorate them). But what the OMGWTFBBQ!!!!111!!!ELEVEN!!! has happenned?
+                </p>
+                <p align="center">
+                    <br />
+                    <br />
+                    <code style="font-size: 8em;"><a href="01_05_asadefiningdefine.html#definition">:=</a></code>
+                </p>
+            </div>
+            <div class="section">
+                <h3><a name="modulo202">Modulo 202</a></h3>
+                <p>
+                    <quote>
+                    The <code>:=</code> operator let you set the value of a variable.
+                        The right and side of the operator (3 here), is evaluated at the definition site. 
+                    </quote>
+                </p>
+                <p>
+                    Crap.
+                </p>
+                <p>
+                    <code>modintern( false, rest, num ) := modintern( rest - num < num, rest - num, num );</code>
+                </p>
+                <p>
+                    The first arrise when we use the second definition of the function. We already have defined
+                    a part of the function. As the <code>:=</code> operator evaluate it's right part, it tries
+                    to unify <code>( rest - num &lt; num, rest - num, num )</code> As those variables are not yet
+                    defined, they cannot be reduced to a boolean. And as you can imagine
+                    <code>true =~= (rest - num &lt; num, rest - num, num)</code> is false. (I use <code>=~=</code>
+                    as a shorthand for unification, don't try to use it, it doesn't exist, yet). In the same
+                    way the difinition of the modulo function can only fail.
+                </p>
+            </div>
+            <div class="section">
+                <h3><a name="modulo303">Modulo 303</a></h3>
+                <img src="img/TB303-midi-frontview.png" />
+                <p>:-)</p>
+            </div>
+            <div class="section">
+                <h3><a name="modulo404">Modulo 404</a></h3>
+                <p>(Not Found)</p>
+            </div>
+            <div class="section">
+                <h3><a name="modulo505">Modulo 505</a></h3>
+                <p>So, new program :</p>
+<!-- %% cat modulo606.txt -->
+<!-- %%% -->
+                <p>Notice the new <code>:&gt;</code> operator.</p>
+<!-- %% eq eval -f modulo606.txt -->
+<!-- %%% -->
+                <p>
+                    The <code>:&gt;</code> operator is the <i>Lazy attribute operator</i>. It has exactly
+                    the same function as <code>:=</code>, but it doesn't evaluate it's right side. It
+                    kept it's right side frozen, the right side is <i>unfrozen</i> when the function
+                    is called. All the functions in the standard library are defined with the <i>Lazy</i>
+                    operator to avoid problem at definition site.
+            </div>
+            <div class="section">
+                <h3><a name="unification606">Unification 606</a></h3>
+                <p>
+                    During the conception of Eq, I wrote an interseting test that I want to share with you.
+                </p>
+<!-- %% cat ../tests/programm/valid/map.txt  -->
+<!-- %%% -->
+                <p>
+                    Notice the <code>x + y</code> and <code>x - y</code> parameters in the definition
+                    of the <code>map</code> function.
+                </p>
+<!-- %% eq eval -f ../tests/programm/valid/map.txt  -->
+<!-- %%% -->
+                <p>
+                    The map function in the context of functional languages, is a function which take
+                    a set/list of elements, apply an operation on it and return the same structure with
+                    it's element transformed by the given operation.
+                </p>
+                <p>
+                    Here we got a set of variables, and we are creating a sort of list/tree of variables.
+                    We link them using <code>+</code> or <code>-</code> operators. Then we want to multiply
+                    all variables by 2, so we map them and apply the function 2.
+                </p>
+                <p>
+                    This example show an important property of Eq. You don't manipulate value, you manipulate
+                    expression tree in this language. If you're lucky, your expression tree can be reduced to
+                    a single value and thus giving you the impression on working on values for some cases.
+                </p>
+            </div>
+            <div class="section">
+                <h3><a name="tree707">All you need is tree (707)</a></h3>
+                <p>If we reuse the formula :
+                    <code>x + y - z + w - k + m </code>, we can obtain the following
+                    expression tree in memory :
+                </p>
+                <img src="img/tree.png" />
+                <p>
+                    What I'm going to explain here is not always true, Eq reorganize
+                    expression, sort them, does whatever it wants to help reduce them.
+                    So you can't be sure that the final order will be respected. But
+                    for the sake of explanation, let's assume order is preserved.
+                </p>
+                <p>
+                    When map is called the first time, the first equation is applied,
+                    because <code>+</code> unify with <code>+</code>, <code>m</code>
+                    unify with <code>y</code> and <code>x</code> unify with
+                    <code>x + y - z + w - k</code>. Giving two subtrees :
+                </p>
+                <p>
+                    <img src="img/tree1left.png" /> and <img src="img/tree1right.png" />
+                </p>
+                <p>
+                    For the first recursive call, the second equation will be used,
+                    leading to two new tree.
+                </p>
+                <p>
+                    <img src="img/tree2left.png" /> and <img src="img/tree2right.png" />
+                </p>
+                <p>
+                    So in fact, the language is powerfull enough to deconstruct expressions
+                    and rewrite them. You can react not only to specific value, but to the
+                    form of the given formula. To be able to send formula without problem, 
+                    you have to control their evaluation somehow, this question will be
+                    adressed in the next session.
+                </p>
+            </div>
+            <div class="section">
+                <h3><a name="unification808">Unification 808</a></h3>
+                <p>Rollback.</p>
+<!-- %% eq eval "x - 3 = x - 3" -->
+<!-- %%% -->
+                <p>
+                    The <code>=</code> is thought to compare equality on value,
+                    but some times you want to check deep equality, like in the
+                    previous sample. The two sub-tree are identical, you could
+                    try to write some weird function deconstructing the two
+                    subexpression to provide equality. Or you can try a very
+                    simple trick.
+                </p>
+<!-- %% eq eval "equal( a, a ) :> true; equal( a, b ) :> false; equal( x - 3, x - 3)" -->
+<!-- %%% -->
+                <p>
+                    <code>equal( a, a )</code> does all the job, the first argument unify himself
+                    with the variable, and then a is substitued by the first argument in the argument
+                    list and in the function body. Then the second argument has a complex tree to
+                    unify to. If it does, the first equation is chosen, giving a deep equality check.
+                    Otherwise, the all accepting clause <code>equal( a, b )</code> is selected
+                    and reject the equality.
+                </p>
+            </div>
+            <div class="section">
+                <h3><a name="revolution909">Revolution 909</a></h3>
+                <p>
+                If you're like a <a href="http://www.youtube.com/watch?v=uURB-vo9rZ4">red tomato</a> now,
+                just take a break. Revolution 909 is all about tomatoes. Don't forget to peal away the skin.
+                </p>
+            </div>
+        </div>
+<!-- %INCLUDE% footer.html -->
+    </body>
+</html>
+

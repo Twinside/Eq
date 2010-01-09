@@ -1,0 +1,4 @@
+fun_multi( x, y ) := sum( n = x, 10, y * x );
+
+fun_multi( 8, 2 )
+

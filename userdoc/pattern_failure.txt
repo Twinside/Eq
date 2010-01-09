@@ -1,0 +1,6 @@
+myfunc( 1 ) := ok;
+myfunc( 2 ) := foo;
+myfunc( 3 ) := bar;
+
+myfunc( 42 )
+

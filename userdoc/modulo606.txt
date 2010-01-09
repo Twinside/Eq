@@ -1,0 +1,7 @@
+modintern( true, rest, num ) :> rest;
+modintern( false, rest, num ) :> modintern( rest - num < num, rest - num, num );
+
+modulo( n, p ) :> modintern( n < p, n, p );
+
+modulo( 18, 4 )
+

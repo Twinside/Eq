@@ -18,6 +18,12 @@ min( a, b ) :> if( a < b, a, b );
 eq( a, a ) :> true;
 eq( a, b ) :> false;
 
+-- modintern( n<p, rest, module )
+modintern( true, rest, num ) :> rest;
+modintern( false, rest, num ) :> modintern( rest - num < num, rest - num, num );
+
+-- give the value of n modulo p
+modulo( n, p ) :> modintern( n < p, n, p );
 
 -- taylor( function (as a lambda!!), derivation var, onVar, order )
 taylorin( f, var, a, 0 ) :> f(a);

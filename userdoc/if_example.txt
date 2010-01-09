@@ -1,0 +1,7 @@
+-- if( condition (boolean), then, else )
+if_( true, a, b )  := a;
+if_( false, a, b ) := b;
+if_( otherwise, a, b ) := undefined;
+
+if_( 3 > 2, yes, no )
+

@@ -1,0 +1,31 @@
+digraph ExprTree
+{
+    plus1 [label="+", shape="none"]
+    plus2 [label="+", shape="none"]
+    plus3 [label="+", shape="none"]
+
+    minus1 [label="-", shape="none"]
+    minus2 [label="-", shape="none"]
+
+    x   [shape="none"]
+    y   [shape="none"]
+    z   [shape="none"]
+    w   [shape="none"]
+    k   [shape="none"]
+    m   [shape="none"]
+
+   plus1 -> x
+   plus1 -> y
+   
+   minus1 -> plus1
+   minus1 -> z
+
+   plus2 -> minus1
+   plus2 -> w
+
+   minus2 -> plus2
+   minus2 -> k
+
+   plus3 -> minus2
+   plus3 -> m
+}
