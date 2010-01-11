@@ -231,6 +231,8 @@ isFormulaInteger = getAll . foldf isConstant mempty
 isFormulaScalar :: FormulaPrim -> Bool
 isFormulaScalar (CFloat _) = True
 isFormulaScalar (CInteger _) = True
+isFormulaScalar (Fraction _) = True
+isFormulaScalar (Complex (a,b)) = isFormulaScalar a && isFormulaScalar b
 isFormulaScalar (UnOp OpNegate f) = isFormulaScalar f
 isFormulaScalar _ = False
 

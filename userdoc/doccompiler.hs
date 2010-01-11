@@ -10,6 +10,18 @@ import System.Exit
 
 import Text.Regex.TDFA
 
+-- Mumble, shell call
+import System.Process.Internals
+
+import System.IO.Error
+import qualified Control.Exception as C
+import Control.Concurrent
+import Control.Monad
+import Foreign
+import Foreign.C
+import System.IO
+-- /Mumble
+
 type Match = Maybe (String,String,String)
 type MatchExtended = Maybe (String,String,String, [String])
 
@@ -19,6 +31,37 @@ outputBrush = "brush: shell"
 
 printUsage :: IO ()
 printUsage = print "bidule [infile] [outfile]"
+
+shellExecute :: FilePath -> IO String
+shellExecute cmd = do
+    (_ , Just outh, Just errh, pid) <-
+        createProcess (shell cmd){ std_in  = Inherit,
+                                       std_out = CreatePipe,
+                                       std_err = CreatePipe }
+
+    -- fork off a thread to start consuming the output
+    output  <- hGetContents outh
+    errOutput <- hGetContents errh
+    outMVar <- newEmptyMVar
+    errMVar <- newEmptyMVar
+    forkIO $ C.evaluate (length output) >> putMVar outMVar ()
+    forkIO $ C.evaluate (length errOutput) >> putMVar errMVar ()
+
+    -- wait on the output
+    takeMVar outMVar
+    hClose outh
+
+    takeMVar errMVar
+    hClose errh
+
+    -- wait on the process
+    ex <- waitForProcess pid
+
+    case ex of
+     ExitSuccess   -> return $ errOutput ++ output
+     ExitFailure r -> do
+        putStrLn $ show r ++ " - " ++ cmd
+        return ""
 
 parseParam :: String -> [String]
 parseParam [] = []
@@ -34,10 +77,10 @@ commandMatcher str =
     case (str =~~ "<!-- %% (.*) -->" :: MatchExtended) of
          Nothing -> return Nothing
          Just (_,_,_, [command]) -> 
-            let (prog:params) = parseParam command
+            let realCommand = command --reverse . tail $ reverse command
             in do
-             (_,text,errText) <- liftIO $ readProcessWithExitCode prog params ""
-             put $ errText ++ '\n' : text
+             text <- liftIO $ shellExecute realCommand
+             put text
              return $ Just ["<pre class=\"" ++ codeBrush ++ "\">", command, "</pre>"]
 
          Just _ -> return Nothing

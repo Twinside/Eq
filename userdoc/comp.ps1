@@ -45,7 +45,7 @@ cp doccss.css compiled/doccss.css
 # create the index
 echo "=> Index"
 indexmaker | out-file -encoding ASCII temp.html
-runhaskell doccompiler.hs temp.html 'compiled/index.html'
+./doccompiler.ps1 temp.html 'compiled/index.html'
 rm temp.html
 
 $i = 0;
@@ -62,7 +62,7 @@ $fileList | % {
         { echo $('<a href="' + $fileList[$i + 1] + '" class="navigation">Next</a>') | out-file -encoding ASCII next.txt }
     else { echo "" | out-file -encoding ASCII next.txt }
 
-    runhaskell doccompiler.hs $_ $("compiled/" + $_)
+    ./doccompiler.ps1 $_ $("compiled/" + $_)
 
     $i = $i + 1;
 }

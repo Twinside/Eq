@@ -171,18 +171,54 @@ predicateList op f (x:y:xs) = lastRez
           lastRez ([e],_,_) = return e
           lastRez (lst,_,_) = return $ BinOp op lst
 
+
+equality, inequality :: [FormulaPrim] -> EqContext FormulaPrim
+equality = eqApplying (==) OpEq
+inequality = eqApplying (/=) OpNe
+
+eqApplying :: (forall a. Eq a => a -> a -> Bool) -> BinOperator
+           -> [FormulaPrim] -> EqContext FormulaPrim
+eqApplying _ _ [] = return $ Block 1 1 1
+eqApplying f op (x:xs) = return . reOp . fst $ foldr applyer (Just [x], x) xs
+    where reOp Nothing = Truth False
+          reOp (Just [_]) = Truth True
+          reOp (Just a) = BinOp op a
+
+          applyer val (Nothing, _) = (Nothing, val)
+          applyer val (Just acc, prev) = case equalityOperator f prev val of
+                Nothing -> (Just $ val : acc, val)
+                Just False -> (Nothing, val)
+                Just True -> (Just acc, val)
+
 -- | In charge of implementing the casting for '=' and '/='
 -- operators.
 equalityOperator :: (forall a. Eq a => a -> a -> Bool)
                  -> FormulaPrim -> FormulaPrim
                  -> Maybe Bool
 equalityOperator f (CInteger a) (CInteger b) = Just $ f a b
+
+-- Fraction/Int
+equalityOperator f (Fraction a) (Fraction b) = Just $ f a b
+equalityOperator f (CInteger a) (Fraction b) = Just $ f (a % 1) b
+equalityOperator f (Fraction a) (CInteger b) = Just $ f a (b % 1)
+
+-- Float/Int
 equalityOperator f (CFloat a) (CFloat b) = Just $ f a b
 equalityOperator f a@(CFloat _) (CInteger b) =
     equalityOperator f a . CFloat $ fromIntegral b
 equalityOperator f (CInteger a) b@(CFloat _) =
     equalityOperator f (CFloat $ fromIntegral a) b
+
+-- Complex/Other
+equalityOperator f (Complex (r1, i1)) (Complex (r2, i2)) =
+    (&&) <$> equalityOperator f r1 r2
+         <*> equalityOperator f i1 i2
+
+equalityOperator f number a@(Complex (r, i)) 
+    | isFormulaScalar a = (&&) <$> equalityOperator f number r
+                               <*> equalityOperator f (CInteger 0) i
 equalityOperator _ _ _ = Nothing
+
 
 -- | Casting for comparaison operator.
 compOperator :: (forall a. Ord a => a -> a -> Bool)
@@ -292,11 +328,8 @@ eval evaluator (BinOp OpGt fs) = predicateList OpGt (compOperator (>)) =<< mapM 
 eval evaluator (BinOp OpLe fs) = predicateList OpLe (compOperator (<=)) =<< mapM evaluator fs
 eval evaluator (BinOp OpGe fs) = predicateList OpGe (compOperator (>=)) =<< mapM evaluator fs
 
-{-evaluator (BinOp OpNe fs) = binEval OpNe (compOperator (/=)) =<< mapM evaluator fs-}
-
-eval evaluator (BinOp OpEq lst) = do
-    {-(first, rest) <- mapM evaluator lst-}
-    return $ BinOp OpEq lst
+eval evaluator (BinOp OpNe fs) = mapM evaluator fs >>= inequality
+eval evaluator (BinOp OpEq lst) = mapM evaluator lst >>= equality
 
 eval evaluator (BinOp OpAnd fs) = binEval OpAnd binand binand =<< mapM evaluator fs
 eval evaluator (BinOp OpOr fs) = binEval OpOr binor binor =<< mapM evaluator fs
