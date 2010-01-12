@@ -47,7 +47,7 @@ version = "0.1"
 commonOption :: [OptDescr (Flag, String)]
 commonOption =
     [ Option "o"  ["output"] (ReqArg ((,) Output) "FILE") "output FILE"
-    , Option "f"  ["file"] (ReqArg ((,) Input) "FILE") "input FILE"
+    , Option "f"  ["file"] (ReqArg ((,) Input) "FILE") "input FILE, use - for stdin"
     ]
 
 askingOption :: [OptDescr (Flag, String)]
@@ -71,8 +71,12 @@ getInputOutput :: [(Flag, String)] -> [String] -> (IO String, IO Handle)
 getInputOutput opts args = (inputFile, outputFile)
    where outputFile = maybe (return stdout) (flip openFile WriteMode)
                             (lookup Output opts)
-         inputFile = maybe (return $ head args) Utf8.readFile
+
+         inputFile = maybe (return $ head args) infiler
                            (lookup Input opts)
+
+         infiler "-" = Utf8.hGetContents stdin
+         infiler f = Utf8.readFile f
 
 filterCommand :: (String -> String) -> [String] -> IO Bool
 filterCommand transformator args = do
