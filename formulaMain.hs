@@ -289,7 +289,7 @@ main :: IO ()
 main = do
     args <- getArgs
     if null args
-       then error "No command give, try the help command"
+       then error "No command given, try the help command"
        else case lookup (head args) reducedCommand of
                  Just c -> c (tail args) >>= systemReturn
                  Nothing -> error $ "Unknown command " ++ head args
