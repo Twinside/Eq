@@ -18,7 +18,7 @@ main = do
 	    let rez = performLastTransformation $
 						mapM evalGlobalLosslessStatement formulal
 		in do
-		outFile <- openFile "EqManips\\BaseLibrary.hs" WriteMode
+		outFile <- openFile "EqManips/BaseLibrary.hs" WriteMode
 		hPutStr outFile "module EqManips.BaseLibrary( defaultSymbolTable ) where\n"
 		hPutStr outFile "\n"
 		hPutStr outFile "import EqManips.Types\n"

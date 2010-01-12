@@ -10,7 +10,7 @@ clean:
 	runhaskell Setup.hs clean
 
 EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.txt
-	runhaskell -cpp EqManips\libMaker.hs
+	runhaskell -cpp EqManips/libMaker.hs
 
 showdoc:
 	echo dist\doc\html\FormulaRenderer\eq\index.html
