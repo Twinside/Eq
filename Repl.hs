@@ -41,18 +41,19 @@ evalExpr operation prevContext = do
     putStr "> "
     hFlush stdout
     exprText <- getLine
-    if exprText == "exit"
-       then return Nothing
-       else do
-        let formulaList = parseProgramm exprText
-        either (parseErrorPrint (Just prevContext))
-               (\formulal -> do
-                   let rez = performLastTransformationWithContext prevContext
-                           $ mapM operation formulal
+    case exprText of
+         []     -> evalExpr operation prevContext
+         "exit" -> return Nothing
+         _      -> do
+            let formulaList = parseProgramm exprText
+            either (parseErrorPrint (Just prevContext))
+                   (\formulal -> do
+                       let rez = performLastTransformationWithContext prevContext
+                               $ mapM operation formulal
 
-                   printErrors $ errorList rez
-                   putStr . formatFormula . treeIfyFormula $ result rez
-                   return . Just $ context rez
-                   )
-               formulaList
+                       printErrors $ errorList rez
+                       putStr . formatFormula . treeIfyFormula $ result rez
+                       return . Just $ context rez
+                       )
+                   formulaList
 
