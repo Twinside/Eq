@@ -18,15 +18,15 @@ char :: Char -> ShowS
 char = (:)
 
 sexprS :: FormulaPrim -> ShowS
-sexprS (Complex (re, im)) = str "(complex " . sexprS re . char ' ' . sexprS im . char ')'
+sexprS (Complex _ (re, im)) = str "(complex " . sexprS re . char ' ' . sexprS im . char ')'
 sexprS (Fraction f) = sexprS $ (CInteger $ numerator f) / (CInteger $ denominator f)
-sexprS (Poly v@(PolyRest _)) = sexprS . unTagFormula $ convertToFormula v
-sexprS (Poly (Polynome v lst)) =
+sexprS (Poly _ v@(PolyRest _)) = sexprS . unTagFormula $ convertToFormula v
+sexprS (Poly _ (Polynome v lst)) =
     str "(poly " . str v . char ' ' . concatMapS coeffPrinter lst . char ')'
         where coeffSexpr = sexprS . unTagFormula . convertToFormula . PolyRest
-              coeffPrinter (coeff, poly) =
+              coeffPrinter (coeff, polyn) =
                     char '(' . coeffSexpr coeff . str ", "
-                  . sexprS (Poly poly)
+                  . sexprS (poly polyn)
                   . str ") "
 
 sexprS (Block _ _ _) = str "(block)"
@@ -35,8 +35,8 @@ sexprS (NumEntity e) = shows e
 sexprS (Truth t) = shows t
 sexprS (CInteger i) = shows i
 sexprS (CFloat d) = shows d
-sexprS (Meta op f) = char '(' . shows op . char ' ' . sexprS f . char ')'
-sexprS (Lambda clauses) =
+sexprS (Meta _ op f) = char '(' . shows op . char ' ' . sexprS f . char ')'
+sexprS (Lambda _ clauses) =
     str "(lambda " . concatMapS clauseRender clauses
                    . char ')'
         where clauseRender (args, body) =
@@ -44,40 +44,40 @@ sexprS (Lambda clauses) =
                            . sexprS body
                            . char ')'
 
-sexprS (BinOp op lst) =
+sexprS (BinOp _ op lst) =
     char '(' . str (binopString op)
              . concatMapS (\a -> char ' ' . sexprS a) lst
              . char ')'
 
-sexprS (UnOp op f) = char '(' . str (unopString op) . char ' '
-                              . sexprS f . char ')'
+sexprS (UnOp _ op f) = char '(' . str (unopString op) . char ' '
+                                . sexprS f . char ')'
 
-sexprS (Sum begin end what) =
+sexprS (Sum _ begin end what) =
     str "(sum " . sexprS begin . char ' '
                 . sexprS end . char ' '
                 . sexprS what . char ')'
 
-sexprS (Product begin end what) =
+sexprS (Product _ begin end what) =
     str "(product " . sexprS begin . char ' '
                     . sexprS end . char ' '
                     . sexprS what . char ')'
 
-sexprS (Integrate begin end what var) =
+sexprS (Integrate _ begin end what var) =
     str "(integral " . sexprS begin . char ' '
                      . sexprS end . char ' '
                      . sexprS what . char ' '
                      . sexprS var . char ')'
 
-sexprS (Derivate f var) =
+sexprS (Derivate _ f var) =
     str "(derivate " . sexprS f . char ' '
                      . sexprS var . char ')'
 
-sexprS (App func args) = 
+sexprS (App _ func args) = 
     str "(apply " . sexprS func . char ' '
                   . interspereseS (' ':) (map sexprS args)
                   . char ')'
 
-sexprS (Matrix n m lsts) =
+sexprS (Matrix _ n m lsts) =
     str "(matrix " . shows n . char ' ' . shows m
                    . concatS [concatMapS sexprS lst | lst <- lsts]
                    . char ')'

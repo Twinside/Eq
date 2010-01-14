@@ -30,6 +30,6 @@ fromEmptyMonad :: EmptyMonad a -> a
 fromEmptyMonad (EmptyMonad a) = a
 
 -- | Perform a pure computation as a monad
-asAMonad :: (forall m. (Monad m) => (a -> m b) -> a -> m b) -> (a -> b) -> a -> b
+asAMonad :: (forall m. (Applicative m, Monad m) => (a -> m b) -> a -> m b) -> (a -> b) -> a -> b
 asAMonad f a = fromEmptyMonad . f (EmptyMonad . a)
 

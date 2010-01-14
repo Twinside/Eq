@@ -143,7 +143,7 @@ cOut _ (Block _ _ _) = outFail Err.c_out_block
 cOut _ (Complex _) = outFail Err.c_out_complex
 
 iteration :: String -> FormulaPrim -> FormulaPrim -> FormulaPrim -> OutContext ShowS
-iteration op (BinOp OpEq [Variable v, iniExpr]) exprEnd what = do
+iteration op (BinOp _ OpEq [Variable v, iniExpr]) exprEnd what = do
     tokenVar <- genName
     let tmpVar = "temp_" ++ show tokenVar
     initExpr <- cNo iniExpr

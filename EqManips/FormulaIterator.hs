@@ -6,6 +6,7 @@ module EqManips.FormulaIterator( depthFirstFormula
                                , topDownTraversal 
                                ) where
 
+import Control.Applicative
 import EqManips.Types
 import Data.Maybe( fromMaybe )
 import Control.Monad( mapM )
@@ -14,11 +15,11 @@ import Control.Monad( mapM )
 -- the function is applied to each subformula when
 -- the traversal is coming back to the top of the
 -- formula tree.
-depthFirstFormula :: (Monad m) 
+depthFirstFormula :: (Applicative m, Monad m) 
                   => (Formula a -> m (Formula b)) -> Formula a -> m (Formula b)
 depthFirstFormula = depthFormulaTraversal . const $ return ()
 
-depthFormulaTraversal :: (Monad m) 
+depthFormulaTraversal :: (Applicative m, Monad m)
                       => (Formula a -> m ())
                       -> (Formula a -> m (Formula b))
                       -> Formula a -> m (Formula b)
@@ -33,7 +34,7 @@ depthFormulaTraversal pre f formula = do
     return $ Formula prim
 
 
-depthFormulaPrimTraversal :: (Monad m)
+depthFormulaPrimTraversal :: (Applicative m, Monad m)
                           => (FormulaPrim -> m FormulaPrim)
                           -> FormulaPrim
                           -> m FormulaPrim
@@ -43,61 +44,61 @@ depthFormulaPrimTraversal = depthPrimTraversal (const $ return ())
 topDownTraversal :: (FormulaPrim -> Maybe FormulaPrim)
                  -> FormulaPrim
                  -> FormulaPrim
-topDownTraversal f p@(Poly _) = fromMaybe p $ f p
+topDownTraversal f p@(Poly _ _) = fromMaybe p $ f p
 topDownTraversal f v@(Variable _) = fromMaybe v $ f v
 topDownTraversal f i@(CInteger _) = fromMaybe i $ f i
 topDownTraversal f i@(Fraction _) = fromMaybe i $ f i
-topDownTraversal f i@(Complex _) = fromMaybe i $ f i
+topDownTraversal f i@(Complex _ _) = fromMaybe i $ f i
 topDownTraversal f d@(CFloat _) = fromMaybe d $ f d
 topDownTraversal f e@(NumEntity _) = fromMaybe e $ f e
 topDownTraversal f t@(Truth _) = fromMaybe t $ f t
-topDownTraversal f l@(Lambda eqs) = 
-    fromMaybe (Lambda lambda') $ f l
+topDownTraversal f l@(Lambda _ eqs) = 
+    fromMaybe (lambda lambda') $ f l
         where lambda' =
                   [ ( map (topDownTraversal f) args
                     , topDownTraversal f body) | (args, body) <- eqs]
 
-topDownTraversal f meta@(Meta op form) =
-    fromMaybe (Meta op $ topDownTraversal f form) $ f meta
+topDownTraversal f met@(Meta _ op form) =
+    fromMaybe (meta op $ topDownTraversal f form) $ f met
 
-topDownTraversal f formula@(App func args) =
-    fromMaybe (App mayFunc mayArgs) $ f formula
+topDownTraversal f formula@(App _ func args) =
+    fromMaybe (app mayFunc mayArgs) $ f formula
         where mayFunc = topDownTraversal f func
               mayArgs = map (topDownTraversal f) args
 
-topDownTraversal f formula@(Sum ini end what) =
-    fromMaybe (Sum mayIni mayEnd mayWhat) $ f formula
+topDownTraversal f formula@(Sum _ ini end what) =
+    fromMaybe (summ mayIni mayEnd mayWhat) $ f formula
         where mayIni = topDownTraversal f ini
               mayEnd = topDownTraversal f end
               mayWhat = topDownTraversal f what
 
-topDownTraversal f formula@(Product ini end what) =
-    fromMaybe (Product mayIni mayEnd mayWhat) $ f formula
+topDownTraversal f formula@(Product _ ini end what) =
+    fromMaybe (productt mayIni mayEnd mayWhat) $ f formula
         where mayIni = topDownTraversal f ini
               mayEnd = topDownTraversal f end
               mayWhat = topDownTraversal f what
 
-topDownTraversal f formula@(Derivate what var) =
-    fromMaybe (Derivate mayWhat mayVar ) $ f formula
+topDownTraversal f formula@(Derivate _ what var) =
+    fromMaybe (derivate mayWhat mayVar ) $ f formula
         where mayVar = topDownTraversal f var
               mayWhat = topDownTraversal f what
 
-topDownTraversal f formula@(Integrate ini end what var) =
-    fromMaybe (Integrate mayIni mayEnd mayWhat mayVar) $ f formula
+topDownTraversal f formula@(Integrate _ ini end what var) =
+    fromMaybe (integrate mayIni mayEnd mayWhat mayVar) $ f formula
         where mayIni = topDownTraversal f ini
               mayEnd = topDownTraversal f end
               mayWhat = topDownTraversal f what
               mayVar = topDownTraversal f var
 
-topDownTraversal f formula@(Matrix n m cells) =
-    fromMaybe (Matrix n m [[topDownTraversal f cell | cell <- line] | line <- cells])
+topDownTraversal f formula@(Matrix _ n m cells) =
+    fromMaybe (matrix n m [[topDownTraversal f cell | cell <- line] | line <- cells])
             $ f formula
 
-topDownTraversal f formula@(UnOp op sub) =
-    fromMaybe (UnOp op $ topDownTraversal f sub) $ f formula
+topDownTraversal f formula@(UnOp _ op sub) =
+    fromMaybe (unOp op $ topDownTraversal f sub) $ f formula
 
-topDownTraversal f formula@(BinOp op fs) =
-    fromMaybe (BinOp op $ map (topDownTraversal f) fs) $ f formula
+topDownTraversal f formula@(BinOp _ op fs) =
+    fromMaybe (binOp op $ map (topDownTraversal f) fs) $ f formula
 
 -- Hmm, it's a debug for renderer, we dont really care
 topDownTraversal _ b@(Block _ _ _) = b
@@ -111,81 +112,79 @@ topDownTraversal _ b@(Block _ _ _) = b
 --   reached when the traversal go up.
 -- Note : the leaf don't have a pre event, just a
 --        post.
-depthPrimTraversal :: (Monad m) 
+depthPrimTraversal :: (Applicative m, Monad m) 
                    => (FormulaPrim -> m ()) 
                    -> (FormulaPrim -> m FormulaPrim)
                    -> FormulaPrim
                    -> m FormulaPrim
-depthPrimTraversal _ f p@(Poly _) = f p
+depthPrimTraversal _ f p@(Poly _ _) = f p
 depthPrimTraversal _ f v@(Variable _) = f v
 depthPrimTraversal _ f i@(CInteger _) = f i
 depthPrimTraversal _ f i@(Fraction _) = f i
-depthPrimTraversal _ f i@(Complex _) = f i
 depthPrimTraversal _ f d@(CFloat _) = f d
 depthPrimTraversal _ f e@(NumEntity _) = f e
 depthPrimTraversal _ f t@(Truth _) = f t
-depthPrimTraversal pre f l@(Lambda eqs) = do
+
+depthPrimTraversal pre f c@(Complex _ (r, i)) = do
+    pre c
+    r' <- depthPrimTraversal pre f r
+    i' <- depthPrimTraversal pre f i
+    f $ complex (r', i')
+
+depthPrimTraversal pre f l@(Lambda _ eqs) = do
 	pre l
-	eqs' <- mapM traverser eqs
-	f $ Lambda eqs'
+	f =<< lambda <$> mapM traverser eqs
 		where traverser (args, body) = do
 				body' <- depthPrimTraversal pre f body
 				return (args, body')
 
-depthPrimTraversal pre post meta@(Meta op f) = do
-    pre meta
-    f' <- depthPrimTraversal pre post f
-    post $ Meta op f'
+depthPrimTraversal pre post met@(Meta _ op f) = do
+    pre met
+    post =<< meta op <$> depthPrimTraversal pre post f
 
-depthPrimTraversal pre post formula@(App func args) = do
+depthPrimTraversal pre post formula@(App _ func args) = do
     pre formula
-    fs <- depthPrimTraversal pre post func
-    argss <- mapM (depthPrimTraversal pre post) args
-    post $ App fs argss
+    post =<< app <$> depthPrimTraversal pre post func
+                 <*> mapM (depthPrimTraversal pre post) args
 
-depthPrimTraversal pre post formula@(Sum ini end what) = do
+depthPrimTraversal pre post formula@(Sum _ ini end what) = do
     pre formula
-    inis <- depthPrimTraversal pre post ini
-    ends <- depthPrimTraversal pre post end
-    whats <- depthPrimTraversal pre post what
-    post $ Sum inis ends whats
+    post =<< summ <$> depthPrimTraversal pre post ini
+                  <*> depthPrimTraversal pre post end
+                  <*> depthPrimTraversal pre post what
 
-depthPrimTraversal pre post formula@(Product ini end what) = do
+depthPrimTraversal pre post formula@(Product _ ini end what) = do
     pre formula
-    inis <- depthPrimTraversal pre post ini
-    ends <- depthPrimTraversal pre post end
-    whats <- depthPrimTraversal pre post what
-    post $ Product inis ends whats
+    post =<< productt <$> depthPrimTraversal pre post ini
+                      <*> depthPrimTraversal pre post end
+                      <*> depthPrimTraversal pre post what
 
-depthPrimTraversal pre post formula@(Derivate what var) = do
+depthPrimTraversal pre post formula@(Derivate _ what var) = do
     pre formula
-    whats <- depthPrimTraversal pre post what
-    vars <- depthPrimTraversal pre post var
-    post $ Derivate whats vars
+    post =<< derivate <$> depthPrimTraversal pre post what
+                      <*> depthPrimTraversal pre post var
 
-depthPrimTraversal pre post formula@(Integrate ini end what var) = do
+depthPrimTraversal pre post formula@(Integrate _ ini end what var) = do
     pre formula
-    inis <- depthPrimTraversal pre post ini
-    ends <- depthPrimTraversal pre post end
-    whats <- depthPrimTraversal pre post what
-    vars <- depthPrimTraversal pre post var
-    post $ Integrate inis ends whats vars
+    post =<< integrate 
+        <$> depthPrimTraversal pre post ini
+        <*> depthPrimTraversal pre post end
+        <*> depthPrimTraversal pre post what
+        <*> depthPrimTraversal pre post var
 
-depthPrimTraversal pre post formula@(Matrix n m cells) = do
+depthPrimTraversal pre post formula@(Matrix _ n m cells) = do
     pre formula
-    cellss <- sequence [ mapM (depthPrimTraversal pre post) matrixLine
+    post =<< matrix n m
+         <$> sequence [ mapM (depthPrimTraversal pre post) matrixLine
                             | matrixLine <- cells]
-    post $ Matrix n m cellss
 
-depthPrimTraversal pre post formula@(UnOp op sub) = do
+depthPrimTraversal pre post formula@(UnOp _ op sub) = do
     pre formula
-    subs <- depthPrimTraversal pre post sub
-    post $ UnOp op subs
+    post =<< unOp op <$> depthPrimTraversal pre post sub
 
-depthPrimTraversal pre post formula@(BinOp op fs) = do
+depthPrimTraversal pre post formula@(BinOp _ op fs) = do
     pre formula
-    fs' <- mapM (depthPrimTraversal pre post) fs
-    post $ BinOp op fs'
+    post =<< binOp op <$> mapM (depthPrimTraversal pre post) fs
 
 -- Hmm, it's a debug for renderer, we dont really care
 depthPrimTraversal _ _ b@(Block _ _ _) = return b

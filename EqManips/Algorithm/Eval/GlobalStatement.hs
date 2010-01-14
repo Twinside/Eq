@@ -13,13 +13,13 @@ addLambda varName args body = do
     symb <- symbolLookup varName
     case symb of
       Nothing -> addSymbol varName . Formula
-                    $ Lambda [(map unTagFormula args, unTagFormula body)]
-      Just (Formula (Lambda clauses@((prevArg,_):_))) ->
+                    $ lambda [(map unTagFormula args, unTagFormula body)]
+      Just (Formula (Lambda _ clauses@((prevArg,_):_))) ->
           if length prevArg /= length args
             then do
              eqFail (Formula $ Variable varName) Err.def_diff_argcount
              return ()
-            else updateSymbol varName . Formula . Lambda 
+            else updateSymbol varName . Formula . lambda 
                             $ clauses ++ [(map unTagFormula args
                                           , unTagFormula body)]
           
@@ -39,29 +39,29 @@ addVar varName body = do
 
 -- | Evaluate top level declarations
 evalGlobalStatement :: EvalFun -> Formula ListForm -> EqContext (Formula ListForm)
-evalGlobalStatement evaluator (Formula (BinOp OpAttrib [ (App (Variable funName) argList)
-                                                       , body ])) = do
+evalGlobalStatement evaluator (Formula (BinOp _ OpAttrib [ (App _ (Variable funName) argList)
+                                                         , body ])) = do
     pushContext
     body' <- evaluator body
     popContext
     addLambda funName (map Formula argList) (Formula body')
-    return $ Formula (BinOp OpAttrib [(App (Variable funName) argList), body])
+    return $ Formula (binOp OpAttrib [(app (Variable funName) argList), body])
 
-evalGlobalStatement _ (Formula (BinOp OpLazyAttrib [ (App (Variable funName) argList)
-                                                   , body ])) = do
+evalGlobalStatement _ (Formula (BinOp _ OpLazyAttrib [ (App _ (Variable funName) argList)
+                                                     , body ])) = do
     addLambda funName (map Formula argList) (Formula body)
-    return $ Formula (BinOp OpLazyAttrib [(App (Variable funName) argList), body])
+    return $ Formula (binOp OpLazyAttrib [(app (Variable funName) argList), body])
 
-evalGlobalStatement evaluator (Formula (BinOp OpAttrib [(Variable varName), body])) = do
+evalGlobalStatement evaluator (Formula (BinOp _ OpAttrib [(Variable varName), body])) = do
     pushContext
     body' <- evaluator body
     popContext
     addVar varName (Formula body')
-    return $ Formula (BinOp OpAttrib [(Variable varName), body'])
+    return $ Formula (binOp OpAttrib [(Variable varName), body'])
 
-evalGlobalStatement _ (Formula (BinOp OpLazyAttrib [(Variable varName), body])) = do
+evalGlobalStatement _ (Formula (BinOp _ OpLazyAttrib [(Variable varName), body])) = do
     addVar varName (Formula body)
-    return $ Formula (BinOp OpLazyAttrib [(Variable varName), body])
+    return $ Formula (binOp OpLazyAttrib [(Variable varName), body])
 
 evalGlobalStatement evaluator (Formula e) = do
     pushContext
