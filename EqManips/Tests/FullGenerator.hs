@@ -35,12 +35,12 @@ instance Arbitrary UnOperator where
 instance Arbitrary FormulaPrim where
     arbitrary = formulaGen 1
 
-    shrink (Poly p) = map Poly $ shrink p
-    shrink (BinOp op lst)
+    shrink (Poly _ p) = map poly $ shrink p
+    shrink (BinOp _ op lst)
         | length lst > 2 =
-            map (BinOp op) . filter (\a -> length a >= 2) $ shrink lst
+            map (binOp op) . filter (\a -> length a >= 2) $ shrink lst
 
-    shrink (UnOp op f) = map (UnOp op) $ shrink f
+    shrink (UnOp _ op f) = map (unOp op) $ shrink f
     shrink (CInteger i) = map CInteger $ shrink i
     shrink (CFloat f) = map CFloat $ shrink f
     shrink (Fraction r) = map Fraction $ shrink r
@@ -85,15 +85,15 @@ formulaGen :: Int -> Gen FormulaPrim
 formulaGen n  
     | n <= 0 = oneof leafs
     | otherwise = oneof $
-        leafs ++ [ BinOp <$> arbitrary <*> formulist
-                 , UnOp <$> arbitrary <*> subFormul
-                 , Sum <$> subFormul <*> subFormul <*> subFormul
-                 , Product <$> subFormul <*> subFormul <*> subFormul
-                 , Derivate <$> subFormul <*> subFormul
-                 , Integrate <$> subFormul <*> subFormul 
+        leafs ++ [ binOp <$> arbitrary <*> formulist
+                 , unOp <$> arbitrary <*> subFormul
+                 , summ <$> subFormul <*> subFormul <*> subFormul
+                 , productt <$> subFormul <*> subFormul <*> subFormul
+                 , derivate <$> subFormul <*> subFormul
+                 , integrate <$> subFormul <*> subFormul 
                              <*> subFormul <*> subFormul
-                 , App <$> subFormul <*> formulist
-                 , Poly <$> polynomeGenerator (n-1)
+                 , app <$> subFormul <*> formulist
+                 , poly <$> polynomeGenerator (n-1)
                  , matrixGenerator (n-1)
                  ]
           where subFormul = formulaGen (n-1)
@@ -118,5 +118,5 @@ matrixGenerator deep = do
     m <- choose (1, 5)
     let subf = formulaGen $ deep - 1
     eqs <- replicateM m $ replicateM n subf
-    return $ Matrix n m eqs
+    return $ matrix n m eqs
 

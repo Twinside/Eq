@@ -86,15 +86,15 @@ sizeTreeOfFormula conf dim (Formula a) = sizeOfFormula conf dim False maxPrio a
 -- This size-tree can be used for a following render
 sizeOfFormula :: Conf -> Dimensioner -> Bool -> OpPriority -> FormulaPrim -> SizeTree
 -- INVISIBLE META NINJA
-sizeOfFormula conf sizer a b (Meta _ f) = sizeOfFormula conf sizer a b f
+sizeOfFormula conf sizer a b (Meta _ _ f) = sizeOfFormula conf sizer a b f
 -- Automatic conversion POLY NINJA
 sizeOfFormula conf sizer a b (Fraction f) = 
     sizeOfFormula conf sizer a b
     $ (CInteger $ numerator f) / (CInteger $ denominator f)
 
-sizeOfFormula conf sizer a b (Complex c) = 
+sizeOfFormula conf sizer a b (Complex _ c) = 
     sizeOfFormula conf sizer a b $ complexTranslate c
-sizeOfFormula conf sizer a b (Poly p) =
+sizeOfFormula conf sizer a b (Poly _ p) =
     sizeOfFormula conf sizer a b . unTagFormula . treeIfyFormula $ convertToFormula p
 -- Simply the size of rendered text
 sizeOfFormula conf sizer _ _ (Variable v) = EndNode $ varSize sizer conf v
@@ -106,21 +106,21 @@ sizeOfFormula conf sizer _ _ (Block i1 i2 i3) =
     EndNode $ blockSize sizer conf (i1, i2, i3)
 
 -- Simply put a minus in front of the rest of the formula
-sizeOfFormula conf sizer _ _ (UnOp op f) =
+sizeOfFormula conf sizer _ _ (UnOp _ op f) =
     MonoSizeNode False sizeDim subFormula
         where prio = op `obtainProp` Priority
               subFormula = sizeOfFormula conf sizer True prio f
               sizeDim = unaryDim sizer conf op (sizeExtract subFormula)
 
-sizeOfFormula _ _ _ _ (BinOp _ [_]) = error $ Err.single_binop "sizeOfFormula conf - "
-sizeOfFormula _ _ _ _ (BinOp _ []) = error $ Err.empty_binop "sizeOfFormula conf - "
+sizeOfFormula _ _ _ _ (BinOp _ _ [_]) = error $ Err.single_binop "sizeOfFormula conf - "
+sizeOfFormula _ _ _ _ (BinOp _ _ []) = error $ Err.empty_binop "sizeOfFormula conf - "
 
 -- do something like that :
 --      ####
 --     ------
 --       #
 --       #
-sizeOfFormula conf sizer _ _ (BinOp OpDiv [f1,f2]) = 
+sizeOfFormula conf sizer _ _ (BinOp _ OpDiv [f1,f2]) = 
   BiSizeNode False sizeDim nodeLeft nodeRight
     where nodeLeft = sizeOfFormula conf sizer False maxPrio f1
           nodeRight = sizeOfFormula conf sizer True maxPrio f2
@@ -131,7 +131,7 @@ sizeOfFormula conf sizer _ _ (BinOp OpDiv [f1,f2]) =
 --         %%%%%%%
 --  #### ^ 
 --  ####
-sizeOfFormula conf sizer _isRight _prevPrio (BinOp OpPow [f1,f2]) =
+sizeOfFormula conf sizer _isRight _prevPrio (BinOp _ OpPow [f1,f2]) =
   BiSizeNode False sizeDim nodeLeft nodeRight
     where nodeLeft = sizeOfFormula conf sizer False prioOfPow f1
           nodeRight = sizeOfFormula conf sizer True prioOfPow f2
@@ -140,7 +140,7 @@ sizeOfFormula conf sizer _isRight _prevPrio (BinOp OpPow [f1,f2]) =
 
 -- add 3 char : ###### ! #######
 -- we add spaces around operators
-sizeOfFormula conf sizer isRight prevPrio (BinOp op [formula1, formula2]) =
+sizeOfFormula conf sizer isRight prevPrio (BinOp _ op [formula1, formula2]) =
   BiSizeNode needParenthes sizeDim nodeLeft nodeRight
     where prio = op `obtainProp` Priority
           needParenthes = needParenthesisPrio isRight prevPrio op
@@ -154,17 +154,17 @@ sizeOfFormula conf sizer isRight prevPrio (BinOp op [formula1, formula2]) =
                 then (base, addParens sizer conf s)
                 else (base, s)
 
-sizeOfFormula conf sizer r p f@(BinOp _ _) = 
+sizeOfFormula conf sizer r p f@(BinOp _ _ _) = 
     sizeOfFormula conf sizer r p $ treeIfyBinOp f
 
-sizeOfFormula conf sizer _isRight _prevPrio (Integrate inite end what dx) =
+sizeOfFormula conf sizer _isRight _prevPrio (Integrate _ inite end what dx) =
     SizeNodeList False sizeDim 0 trees
         where sof = sizeOfFormula conf sizer False maxPrio
               trees = map sof [inite, end, what, dx]
               [iniDim, endDim, whatDim, dxDim] = map sizeExtract trees
               sizeDim = integralSize sizer conf iniDim endDim whatDim dxDim
 
-sizeOfFormula conf sizer _ _ (Matrix _ _ exprs) =
+sizeOfFormula conf sizer _ _ (Matrix _ _ _ exprs) =
     SizeNodeArray False sizeDim mixedMatrix
         where lineMapper = map (sizeOfFormula conf sizer False maxPrio)
               sizeMatrix = map lineMapper exprs
@@ -194,7 +194,7 @@ sizeOfFormula conf sizer _ _ (Matrix _ _ exprs) =
                   [ zip dims sizes
                     | (dims, sizes) <- zip dimensionMatrix sizeMatrix]
 
-sizeOfFormula conf sizer _isRight _prevPrio (Product inite end what) =
+sizeOfFormula conf sizer _isRight _prevPrio (Product _ inite end what) =
     SizeNodeList False sizeDim 0 trees
         where sof = sizeOfFormula conf sizer False maxPrio
               trees = map sof [inite, end, what]
@@ -202,14 +202,14 @@ sizeOfFormula conf sizer _isRight _prevPrio (Product inite end what) =
               sizeDim = productSize sizer conf iniDim endDim whatDim
 
 
-sizeOfFormula conf sizer _isRight _prevPrio (Derivate what vard) =
+sizeOfFormula conf sizer _isRight _prevPrio (Derivate _ what vard) =
     BiSizeNode False sizeDim whatDim vardDim
         where whatDim = sizeOfFormula conf sizer False maxPrio what
               vardDim = sizeOfFormula conf sizer False maxPrio vard
               sizeDim = derivateSize sizer conf (sizeExtract whatDim)
                                            (sizeExtract vardDim)
 
-sizeOfFormula conf sizer _isRight _prevPrio (Sum inite end what) =
+sizeOfFormula conf sizer _isRight _prevPrio (Sum _ inite end what) =
     SizeNodeList False sizeDim 0 trees
         where sof = sizeOfFormula conf sizer False maxPrio
               trees = map sof [inite, end, what]
@@ -222,7 +222,7 @@ sizeOfFormula conf sizer _isRight _prevPrio (Sum inite end what) =
 -- %%%% #######
 -- %%%% #######
 --      #######
-sizeOfFormula conf sizer _ _ (App f1 f2) =
+sizeOfFormula conf sizer _ _ (App _ f1 f2) =
     SizeNodeList False sizeDim argsBase (funcSize : trees)
         where subSize = sizeOfFormula conf sizer False maxPrio
               trees = map subSize f2
@@ -232,7 +232,7 @@ sizeOfFormula conf sizer _ _ (App f1 f2) =
               sizeDim = appSize sizer conf accumulated (sizeExtract funcSize)
               (_, argsBase, _) = accumulated
 
-sizeOfFormula conf sizer _ _ (Lambda clauses) = SizeNodeClause False nodeSize finalTree
+sizeOfFormula conf sizer _ _ (Lambda _ clauses) = SizeNodeClause False nodeSize finalTree
     where subSize = sizeOfFormula conf sizer False maxPrio 
           subTrees = [ (map subSize args, subSize body) | (args, body) <- clauses ]
           subPlacement = [(argSizes sizer conf args, sizeExtract body) | (args, body) <- subTrees]

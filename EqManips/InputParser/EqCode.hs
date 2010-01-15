@@ -90,8 +90,8 @@ expr = whiteSpace >> buildExpressionParser operatorDefs funCall
 
 operatorDefs :: OperatorTable String st Identity FormulaPrim
 operatorDefs = 
-    [ [postfix "!" (UnOp OpFactorial)]
-    , [prefix "-" (UnOp OpNegate) ]
+    [ [postfix "!" (unOp OpFactorial)]
+    , [prefix "-" (unOp OpNegate) ]
     , [binary "^" (binop OpPow) AssocLeft]
     , [binary "/" (binop OpDiv) AssocLeft, binary "*" (binop OpMul) AssocLeft]
     , [binary "+" (binop OpAdd) AssocLeft, binary "-" (binop OpSub) AssocLeft]
@@ -105,7 +105,7 @@ operatorDefs =
 funCall :: Parsed st FormulaPrim
 funCall =  do
     caller <- term
-    (App caller <$> argList) <|> return caller
+    (app caller <$> argList) <|> return caller
         where argSeparator = whiteSpace >> char ',' >> whiteSpace
               exprList = sepBy expr argSeparator
               argList = parens (whiteSpace >> (exprList <* whiteSpace))
@@ -142,5 +142,5 @@ postfix :: String -> (a -> a) -> Operator String st Identity a
 postfix name fun = Postfix (do{ reservedOp name; return fun })
 
 binop :: BinOperator -> FormulaPrim -> FormulaPrim -> FormulaPrim
-binop op left right = BinOp op [left, right]
+binop op left right = binOp op [left, right]
 

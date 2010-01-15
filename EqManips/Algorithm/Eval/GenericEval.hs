@@ -27,14 +27,14 @@ add :: EvalFun -> EvalOp
 add _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 + i2
 -- Handle negation, as we may not know which cleaning has been performed
 -- on the formula.
-add _ (CInteger i1) (UnOp OpNegate (CInteger i2)) = left . CInteger $ i1 + (negate i2)
-add _ (UnOp OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) + i2
-add evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
+add _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 + (negate i2)
+add _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) + i2
+add evaluator f1@(Matrix _ _ _ _) f2@(Matrix _ _ _ _) =
     matrixMatrixSimple evaluator (+) f1 f2
-add _ f1@(Matrix _ _ _) f2 = do
+add _ f1@(Matrix _ _ _ _) f2 = do
     eqPrimFail (f1+f2) Err.add_matrix
     right (f1, f2)
-add _ f1 f2@(Matrix _ _ _) = do
+add _ f1 f2@(Matrix _ _ _ _) = do
     eqPrimFail (f1+f2) Err.add_matrix
     right (f1, f2)
 add _ e e' = right (e, e')
@@ -44,14 +44,14 @@ add _ e e' = right (e, e')
 -----------------------------------------------
 sub :: EvalFun -> EvalOp
 sub _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 - i2
-sub _ (CInteger i1) (UnOp OpNegate (CInteger i2)) = left . CInteger $ i1 - (negate i2)
-sub _ (UnOp OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) - i2
-sub evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) =
+sub _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 - (negate i2)
+sub _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) - i2
+sub evaluator f1@(Matrix _ _ _ _) f2@(Matrix _ _ _ _) =
     matrixMatrixSimple evaluator (-) f1 f2
-sub _ f1@(Matrix _ _ _) f2 = do
+sub _ f1@(Matrix _ _ _ _) f2 = do
     eqPrimFail (f1-f2) Err.sub_matrix
     right (f1, f2)
-sub _ f1 f2@(Matrix _ _ _) = do
+sub _ f1 f2@(Matrix _ _ _ _) = do
     eqPrimFail (f1-f2) Err.sub_matrix
     right (f1, f2)
 sub _ e e' = right (e,e')
@@ -61,11 +61,11 @@ sub _ e e' = right (e,e')
 -----------------------------------------------
 mul :: EvalFun -> EvalOp
 mul _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 * i2
-mul _ (CInteger i1) (UnOp OpNegate (CInteger i2)) = left . CInteger $ i1 * (negate i2)
-mul _ (UnOp OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) * i2
-mul evaluator f1@(Matrix _ _ _) f2@(Matrix _ _ _) = matrixMatrixMul evaluator f1 f2
-mul evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (*) m s >>= left
-mul evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (*) m s >>= left
+mul _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 * (negate i2)
+mul _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) * i2
+mul evaluator f1@(Matrix _ _ _ _) f2@(Matrix _ _ _ _) = matrixMatrixMul evaluator f1 f2
+mul evaluator m@(Matrix _ _ _ _) s = matrixScalar evaluator (*) m s >>= left
+mul evaluator s m@(Matrix _ _ _ _) = matrixScalar evaluator (*) m s >>= left
 mul _ e e' = right (e, e')
 
 -----------------------------------------------
@@ -74,7 +74,7 @@ mul _ e e' = right (e, e')
 -- | Handle the division operator. Nicely handle the case
 -- of division by 0.
 division :: EvalFun -> EvalOp
-division _ l@(Matrix _ _ _) r@(Matrix _ _ _) = do
+division _ l@(Matrix _ _ _ _) r@(Matrix _ _ _ _) = do
     eqPrimFail (l / r) Err.div_undefined_matrixes
     left $ Block 1 1 1
 
@@ -89,8 +89,8 @@ division _ f1 f2@(CFloat 0) = do
 division _ (CInteger i1) (CInteger i2)
     | i1 `mod` i2 == 0 = left . CInteger $ i1 `div` i2
 
-division evaluator m@(Matrix _ _ _) s = matrixScalar evaluator (/) m s >>= left
-division evaluator s m@(Matrix _ _ _) = matrixScalar evaluator (/) m s >>= left
+division evaluator m@(Matrix _ _ _ _) s = matrixScalar evaluator (/) m s >>= left
+division evaluator s m@(Matrix _ _ _ _) = matrixScalar evaluator (/) m s >>= left
 division _ f1 f2 = right (f1, f2)
 
 -----------------------------------------------
@@ -110,36 +110,36 @@ factorial f@(CFloat _) = eqPrimFail f Err.factorial_on_real
 factorial (CInteger 0) = return $ CInteger 1
 factorial f@(CInteger i) | i > 0 = return . CInteger $ product [1 .. i]
                          | otherwise = eqPrimFail f Err.factorial_negative
-factorial f@(Matrix _ _ _) = eqPrimFail f Err.factorial_matrix
-factorial a = return $ UnOp OpFactorial a
+factorial f@(Matrix _ _ _ _) = eqPrimFail f Err.factorial_matrix
+factorial a = return $ unOp OpFactorial a
 
 -----------------------------------------------
 ----        'floor'
 -----------------------------------------------
 floorEval :: EvalFun
 floorEval i@(CInteger _) = return i
-floorEval f = return $ UnOp OpFloor f
+floorEval f = return $ unOp OpFloor f
 
 -----------------------------------------------
 ----        'frac'
 -----------------------------------------------
 fracEval :: EvalFun
 fracEval (CInteger _) = return $ CInteger 0
-fracEval f = return $ UnOp OpFrac f
+fracEval f = return $ unOp OpFrac f
 
 -----------------------------------------------
 ----        'Ceil'
 -----------------------------------------------
 ceilEval :: EvalFun
 ceilEval i@(CInteger _) = return i
-ceilEval f = return $ UnOp OpCeil f
+ceilEval f = return $ unOp OpCeil f
 
 -----------------------------------------------
 ----        'negate'
 -----------------------------------------------
 fNegate :: EvalFun
 fNegate (CInteger i) = return . CInteger $ negate i
-fNegate (UnOp OpNegate f) = return f
+fNegate (UnOp _ OpNegate f) = return f
 fNegate f = return $ negate f
 
 -----------------------------------------------
@@ -147,7 +147,7 @@ fNegate f = return $ negate f
 -----------------------------------------------
 fAbs :: EvalFun
 fAbs (CInteger i) = return . CInteger $ abs i
-fAbs (UnOp OpNegate (CInteger i)) = return . CInteger $ abs i
+fAbs (UnOp _ OpNegate (CInteger i)) = return . CInteger $ abs i
 fAbs f = return $ abs f
 
 -----------------------------------------------
@@ -169,7 +169,7 @@ predicateList op f (x:y:xs) = lastRez
 
           lastRez ([],_,_) = return $ Truth True
           lastRez ([e],_,_) = return e
-          lastRez (lst,_,_) = return $ BinOp op lst
+          lastRez (lst,_,_) = return $ binOp op lst
 
 
 equality, inequality :: [FormulaPrim] -> EqContext FormulaPrim
@@ -182,7 +182,7 @@ eqApplying _ _ [] = return $ Block 1 1 1
 eqApplying f op (x:xs) = return . reOp . fst $ foldr applyer (Just [x], x) xs
     where reOp Nothing = Truth False
           reOp (Just [_]) = Truth True
-          reOp (Just a) = BinOp op a
+          reOp (Just a) = binOp op a
 
           applyer val (Nothing, _) = (Nothing, val)
           applyer val (Just acc, prev) = case equalityOperator f prev val of
@@ -210,11 +210,11 @@ equalityOperator f (CInteger a) b@(CFloat _) =
     equalityOperator f (CFloat $ fromIntegral a) b
 
 -- Complex/Other
-equalityOperator f (Complex (r1, i1)) (Complex (r2, i2)) =
+equalityOperator f (Complex _ (r1, i1)) (Complex _ (r2, i2)) =
     (&&) <$> equalityOperator f r1 r2
          <*> equalityOperator f i1 i2
 
-equalityOperator f number a@(Complex (r, i)) 
+equalityOperator f number a@(Complex _ (r, i)) 
     | isFormulaScalar a = (&&) <$> equalityOperator f number r
                                <*> equalityOperator f (CInteger 0) i
 equalityOperator _ _ _ = Nothing
@@ -269,30 +269,30 @@ metaEvaluation evaluator m f = unTagFormula
 -----------------------------------------------
 -- | General evaluation/reduction function
 eval :: EvalFun -> EvalFun
-eval evaluator (Meta m f) = metaEvaluation evaluator m f
+eval evaluator (Meta _ m f) = metaEvaluation evaluator m f
 eval _ (NumEntity Pi) = return $ CFloat pi
-eval evaluator (Matrix n m mlines) = do
+eval evaluator (Matrix _ n m mlines) = do
     cells <- sequence [mapM evaluator line | line <- mlines]
-    return $ Matrix n m cells
+    return $ matrix n m cells
 
-eval _ func@(Lambda _) = unTagFormula <$> inject (Formula func)
+eval _ func@(Lambda _ _) = unTagFormula <$> inject (Formula func)
 eval _ (Variable v) = do
     symbol <- symbolLookup v
     case symbol of
          Nothing -> return $ Variable v
          Just (Formula (f)) -> return f
 
-eval evaluator (App def var) = do
+eval evaluator (App _ def var) = do
     redDef <- evaluator def
     redVar <- mapM evaluator var
 #ifdef _DEBUG
-    addTrace ("Appbegin |", treeIfyFormula . Formula $ App redDef redVar)
+    addTrace ("Appbegin |", treeIfyFormula . Formula $ app redDef redVar)
 #endif
     needApply redDef redVar
    where needApply :: FormulaPrim -> [FormulaPrim] -> EqContext FormulaPrim
-         needApply (Lambda funArgs) args' =
+         needApply (Lambda _ funArgs) args' =
            case getFirstUnifying funArgs args' of
-                Nothing -> eqPrimFail (App def var) Err.app_no_applygindef
+                Nothing -> eqPrimFail (app def var) Err.app_no_applygindef
                 Just (body, subst) -> do
                     pushContext
                     addSymbols [ (name, Formula formula) 
@@ -308,81 +308,81 @@ eval evaluator (App def var) = do
                     popContext
                     return body'
          needApply def' args =
-             return $ App def' args
+             return $ app def' args
 
-eval evaluator (BinOp OpAdd fs) =
+eval evaluator (BinOp _ OpAdd fs) =
     binEval OpAdd (add evaluator) (add evaluator) =<< mapM evaluator fs
-eval evaluator (BinOp OpSub fs) =
+eval evaluator (BinOp _ OpSub fs) =
     binEval OpSub (sub evaluator) (add evaluator) =<< mapM evaluator fs
-eval evaluator (BinOp OpMul fs) =
+eval evaluator (BinOp _ OpMul fs) =
     binEval OpMul (mul evaluator) (mul evaluator) =<< mapM evaluator fs
 
 -- | Todo fix this, it's incorrect
-eval evaluator (BinOp OpPow fs) = binEval OpPow power power =<< mapM evaluator fs
-eval evaluator (BinOp OpDiv fs) =
+eval evaluator (BinOp _ OpPow fs) = binEval OpPow power power =<< mapM evaluator fs
+eval evaluator (BinOp _ OpDiv fs) =
     binEval OpDiv (division evaluator) (mul evaluator) =<< mapM evaluator fs
 
 -- comparisons operators
-eval evaluator (BinOp OpLt fs) = predicateList OpLt (compOperator (<)) =<< mapM evaluator fs
-eval evaluator (BinOp OpGt fs) = predicateList OpGt (compOperator (>)) =<< mapM evaluator fs
-eval evaluator (BinOp OpLe fs) = predicateList OpLe (compOperator (<=)) =<< mapM evaluator fs
-eval evaluator (BinOp OpGe fs) = predicateList OpGe (compOperator (>=)) =<< mapM evaluator fs
+eval evaluator (BinOp _ OpLt fs) = predicateList OpLt (compOperator (<)) =<< mapM evaluator fs
+eval evaluator (BinOp _ OpGt fs) = predicateList OpGt (compOperator (>)) =<< mapM evaluator fs
+eval evaluator (BinOp _ OpLe fs) = predicateList OpLe (compOperator (<=)) =<< mapM evaluator fs
+eval evaluator (BinOp _ OpGe fs) = predicateList OpGe (compOperator (>=)) =<< mapM evaluator fs
 
-eval evaluator (BinOp OpNe fs) = mapM evaluator fs >>= inequality
-eval evaluator (BinOp OpEq lst) = mapM evaluator lst >>= equality
+eval evaluator (BinOp _ OpNe fs) = mapM evaluator fs >>= inequality
+eval evaluator (BinOp _ OpEq lst) = mapM evaluator lst >>= equality
 
-eval evaluator (BinOp OpAnd fs) = binEval OpAnd binand binand =<< mapM evaluator fs
-eval evaluator (BinOp OpOr fs) = binEval OpOr binor binor =<< mapM evaluator fs
+eval evaluator (BinOp _ OpAnd fs) = binEval OpAnd binand binand =<< mapM evaluator fs
+eval evaluator (BinOp _ OpOr fs) = binEval OpOr binor binor =<< mapM evaluator fs
 
 -- | Special case for programs, don't evaluate left :]
-eval evaluator (BinOp OpAttrib [a,b]) =
-    BinOp OpAttrib . (a:) . (:[]) <$> evaluator b
+eval evaluator (BinOp _ OpAttrib [a,b]) =
+    binOp OpAttrib . (a:) . (:[]) <$> evaluator b
 
-eval _ f@(BinOp OpAttrib _) = eqPrimFail f Err.attrib_in_expr 
+eval _ f@(BinOp _ OpAttrib _) = eqPrimFail f Err.attrib_in_expr 
 
-eval evaluator (UnOp OpFactorial f) = factorial =<< evaluator f
-eval evaluator (UnOp OpFloor f) = floorEval =<< evaluator f
-eval evaluator (UnOp OpCeil f) = ceilEval =<< evaluator f
-eval evaluator (UnOp OpFrac f) = fracEval =<< evaluator f
+eval evaluator (UnOp _ OpFactorial f) = factorial =<< evaluator f
+eval evaluator (UnOp _ OpFloor f) = floorEval =<< evaluator f
+eval evaluator (UnOp _ OpCeil f) = ceilEval =<< evaluator f
+eval evaluator (UnOp _ OpFrac f) = fracEval =<< evaluator f
 
-eval evaluator (UnOp OpNegate f) = fNegate =<< evaluator f
-eval evaluator (UnOp OpAbs f) = fAbs =<< evaluator f
+eval evaluator (UnOp _ OpNegate f) = fNegate =<< evaluator f
+eval evaluator (UnOp _ OpAbs f) = fAbs =<< evaluator f
 
-eval evaluator (UnOp op f) = return . UnOp op =<< evaluator f
+eval evaluator (UnOp _ op f) = return . unOp op =<< evaluator f
 
-eval evaluator (Derivate what (Meta op var)) =
-    metaEvaluation evaluator op var >>= eval evaluator . Derivate what
+eval evaluator (Derivate _ what (Meta _ op var)) =
+    metaEvaluation evaluator op var >>= eval evaluator . derivate what
 
-eval evaluator (Derivate what (Variable s)) = do
+eval evaluator (Derivate _ what (Variable s)) = do
 #ifdef _DEBUG
     addTrace ("Derivation on " ++ s, treeIfyFormula . Formula $ what)
 #endif
-    derived <- derivate (taggedEvaluator evaluator) s (treeIfyFormula $ Formula what)
+    derived <- derivateFormula (taggedEvaluator evaluator) s (treeIfyFormula $ Formula what)
     return . unTagFormula $ cleanup derived
 
-eval _ f@(Derivate _ _) =
+eval _ f@(Derivate _ _ _) =
     eqPrimFail f Err.deriv_bad_var_spec 
 
-eval evaluator formu@(Sum (BinOp OpEq [Variable v, inexpr]) endexpr f) = do
+eval evaluator formu@(Sum _ (BinOp _ OpEq [Variable v, inexpr]) endexpr f) = do
     inexpr' <- evaluator inexpr
     endexpr' <- evaluator endexpr
     sumEval inexpr' endexpr'
      where sumEval (CInteger initi) (CInteger endi)
-            | initi <= endi = iterateFormula evaluator (BinOp OpAdd) v initi endi f
+            | initi <= endi = iterateFormula evaluator (binOp OpAdd) v initi endi f
             | otherwise = eqPrimFail formu Err.sum_wrong_bounds
-           sumEval ini end = return $ Sum (BinOp OpEq [Variable v, ini]) end f
+           sumEval ini end = return $ summ (binOp OpEq [Variable v, ini]) end f
     
 
-eval evaluator formu@(Product (BinOp OpEq [Variable v, inexpr]) endexpr f) = do
+eval evaluator formu@(Product _ (BinOp _ OpEq [Variable v, inexpr]) endexpr f) = do
     inexpr' <- evaluator inexpr
     endexpr' <- evaluator endexpr
     prodEval inexpr' endexpr'
      where prodEval (CInteger initi) (CInteger endi)
-            | initi <= endi = iterateFormula evaluator (BinOp OpMul) v initi endi f
+            | initi <= endi = iterateFormula evaluator (binOp OpMul) v initi endi f
             | otherwise = eqPrimFail formu Err.sum_wrong_bounds
-           prodEval ini end = return $ Product (BinOp OpEq [Variable v, ini]) end f
+           prodEval ini end = return $ productt (binOp OpEq [Variable v, ini]) end f
     
-eval _ f@(Integrate _ _ _ _) =
+eval _ f@(Integrate _ _ _ _ _) =
     eqPrimFail f Err.integration_no_eval
 
 eval _ f@(Block _ _ _) = eqPrimFail f Err.block_eval
@@ -413,18 +413,18 @@ matrixScalar :: EvalFun
              -> FormulOperator
              -> FormulaPrim -> FormulaPrim
              -> EqContext FormulaPrim
-matrixScalar evaluator op s m@(Matrix _ _ _) = matrixScalar evaluator op m s
-matrixScalar evaluator op (Matrix n m mlines) s = Matrix n m <$> cell
+matrixScalar evaluator op s m@(Matrix _ _ _ _) = matrixScalar evaluator op m s
+matrixScalar evaluator op (Matrix _ n m mlines) s = matrix n m <$> cell
     where cell = sequence
             [ mapM (evaluator . (`op` s)) line | line <- mlines]
 matrixScalar _ _ _ _ = error Err.matrixScalar_badop
 
 -- | Multiplication between two matrix. Check for matrix sizes.
 matrixMatrixMul :: EvalFun -> EvalOp
-matrixMatrixMul evaluator m1@(Matrix n _ mlines) m2@(Matrix n' m' mlines')
-    | n /= m' = do eqFail (Formula $ BinOp OpMul [m1, m2]) Err.matrix_mul_bad_size
+matrixMatrixMul evaluator m1@(Matrix _ n _ mlines) m2@(Matrix _ n' m' mlines')
+    | n /= m' = do eqFail (Formula $ binOp OpMul [m1, m2]) Err.matrix_mul_bad_size
                    right (m1, m2)
-    | otherwise = cellLine >>= left . Matrix n n'
+    | otherwise = cellLine >>= left . matrix n n'
         where cellLine = sequence
                     [ sequence [multCell $ zip line row | row <- transpose mlines' ]
                                                         | line <- mlines]
@@ -442,11 +442,11 @@ matrixMatrixSimple :: EvalFun
                    -> FormulOperator
                    -> FormulaPrim -> FormulaPrim
                    -> EqContext (Either FormulaPrim (FormulaPrim,FormulaPrim))
-matrixMatrixSimple evaluator op m1@(Matrix n m mlines) m2@(Matrix n' m' mlines')
+matrixMatrixSimple evaluator op m1@(Matrix _ n m mlines) m2@(Matrix _ n' m' mlines')
     | n /= n' || m /= m' = do
         eqFail (Formula $ m1 `op` m2) Err.matrix_diff_size
         return $ Right (m1, m2)
-    | otherwise = Left . Matrix n m <$> newCells
+    | otherwise = Left . matrix n m <$> newCells
         where dop (e1, e2) = evaluator $ e1 `op`e2
               newCells = sequence [ mapM dop $ zip line1 line2
                                      | (line1, line2) <- zip mlines mlines']

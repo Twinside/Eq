@@ -1,7 +1,7 @@
 {-# LANGUAGE NewQualifiedOperators #-}
 module EqManips.Renderer.Mathml( mathmlRender ) where
 
-import EqManips.Types
+import EqManips.Types hiding ( matrix )
 import EqManips.Algorithm.Utils
 import EqManips.Propreties
 
@@ -78,22 +78,22 @@ presentation _ _ (NumEntity e) = mn $ str $ mathMlOfEntity e
 presentation _ _ (Truth t) = mn $ shows t
 presentation _ _ (CInteger i) = mn $ shows i
 presentation _ _ (CFloat d) = mn $ shows d
-presentation conf inf (Meta _ f) = presentation conf inf f
-presentation _ _ (Lambda _clauses) = id
+presentation conf inf (Meta _ _ f) = presentation conf inf f
+presentation _ _ (Lambda _ _clauses) = id
 
-presentation conf _ (BinOp OpPow [a,b]) =
+presentation conf _ (BinOp _ OpPow [a,b]) =
     msup $ mrow (presentation conf (Just (OpPow, False)) a)
          . mrow (presentation conf (Just (OpPow, True)) b)
 
-presentation conf _ (BinOp OpDiv [a,b]) =
+presentation conf _ (BinOp _ OpDiv [a,b]) =
     mfrac $ mrow (prez conf a)
           . mrow (prez conf b)
 
-presentation conf (Just (pop,isRight)) f@(BinOp op _)
+presentation conf (Just (pop,isRight)) f@(BinOp _ op _)
     | needParenthesis isRight pop op = parens $ prez conf f
     | otherwise = prez conf f
 
-presentation conf Nothing (BinOp OpMul [a,b])
+presentation conf Nothing (BinOp _ OpMul [a,b])
     | mulAsDot conf = presentation conf (Just (OpMul, False)) a
                     . mo (str "&centerdot;")
                     . presentation conf (Just (OpMul, True)) b
@@ -102,55 +102,55 @@ presentation conf Nothing (BinOp OpMul [a,b])
                 . mo (str "&times;")
                 . presentation conf (Just (OpMul, True)) b
 
-presentation conf Nothing (BinOp op [a,b]) =
+presentation conf Nothing (BinOp _ op [a,b]) =
     presentation conf (Just (op, False)) a
     . mo (str . cleanify $ binopString op)
     . presentation conf (Just (op, True)) b
 
 -- Unary operators
-presentation conf _ (UnOp OpCeil f) = str "<mo>&lceil;</mo>"
-                                    . prez conf f 
-                                    . str "<mo>&rceil;</mo>"
-presentation conf _ (UnOp OpFloor f) = str "<mo>&lfloor;</mo>"
-                                     . prez conf f 
-                                     . str "<mo>&rfloor;</mo>"
-presentation conf _ (UnOp OpFrac f) = enclose '{' '}' $ prez conf f
-presentation conf _ (UnOp OpAbs f) = enclose '|' '|' $ prez conf f
-presentation conf _ (UnOp OpSqrt f) = msqrt $ prez conf f
-presentation conf _ (UnOp OpFactorial f)
+presentation conf _ (UnOp _ OpCeil f) = str "<mo>&lceil;</mo>"
+                                      . prez conf f 
+                                      . str "<mo>&rceil;</mo>"
+presentation conf _ (UnOp _ OpFloor f) = str "<mo>&lfloor;</mo>"
+                                       . prez conf f 
+                                       . str "<mo>&rfloor;</mo>"
+presentation conf _ (UnOp _ OpFrac f) = enclose '{' '}' $ prez conf f
+presentation conf _ (UnOp _ OpAbs f) = enclose '|' '|' $ prez conf f
+presentation conf _ (UnOp _ OpSqrt f) = msqrt $ prez conf f
+presentation conf _ (UnOp _ OpFactorial f)
   | f `hasProp` LeafNode = prez conf f . mo (char '!')
   | otherwise = parens (prez conf f) . mo (char '!')
-presentation conf _ (UnOp OpNegate f)
+presentation conf _ (UnOp _ OpNegate f)
   | f `hasProp` LeafNode = mo (char '-') . prez conf f
   | otherwise = mo (char '-') . parens (prez conf f)
-presentation conf _ (UnOp op f)
+presentation conf _ (UnOp _ op f)
   | f `hasProp` LeafNode = mo (str $ unopString op) . prez conf f
   | otherwise = mo (str $ unopString op) . parens (prez conf f)
 
-presentation conf _ (Sum begin end what) =
+presentation conf _ (Sum _ begin end what) =
      msubsup ( mo (str "&sum;")
              . mrow (prez conf begin)
              . mrow (prez conf end)) . mrow (prez conf what)
 
-presentation conf _ (Product begin end what) =
+presentation conf _ (Product _ begin end what) =
      msubsup ( mo (str "&prod;")
              . mrow (prez conf begin)
              . mrow (prez conf end)) . mrow (prez conf what)
 
-presentation conf _ (Integrate begin end what var) =
+presentation conf _ (Integrate _ begin end what var) =
      msubsup ( mo (str "&int;")
              . mrow (prez conf begin)
              . mrow (prez conf end))
              . mrow (prez conf what . mi (str "d") . prez conf var)
 
-presentation conf _ (Derivate f var) =
+presentation conf _ (Derivate _ f var) =
      mfrac ( mi (char 'd')
            . mrow (mi (char 'd') . prez conf var)) . prez conf f
 
-presentation conf _ (App func args) =
+presentation conf _ (App _ func args) =
     prez conf func . parens (interspereseS (mo $ char ',') $ map (prez conf) args)
 
-presentation conf _ (Matrix _ _ lsts) =
+presentation conf _ (Matrix _ _ _ lsts) =
     mfenced $ mtable $ concatS [mtr $ concatS [ mtd $ prez conf cell | cell <- row] | row <- lsts ]
 presentation _ _ f = error $ "\n\nWrong MathML presentation rendering : " ++ unparse f ++ "\n" ++ show f
 
@@ -231,39 +231,39 @@ content (Truth True) = str "<true/>"
 content (Truth False) = str "<false/>"
 content (CInteger i) = cn $ shows i
 content (CFloat d) = cn $ shows d
-content (Meta _ f) = content f
-content (Lambda _clauses) = id
+content (Meta _ _ f) = content f
+content (Lambda _ _clauses) = id
 
-content (UnOp op f) =
+content (UnOp _ op f) =
     apply $ str (stringOfUnOp op)
           . content f
 
-content (BinOp op lst) =
+content (BinOp _ op lst) =
     apply $ str (stringOfBinOp op)
           . concatMapS content lst
 
-content (Product (BinOp OpEq [Variable v, def]) end what) =
+content (Product _ (BinOp _ OpEq [Variable v, def]) end what) =
     bigOperator "<product/>" v def end what
 
-content (Sum (BinOp OpEq [Variable v, def]) end what) =
+content (Sum _ (BinOp _ OpEq [Variable v, def]) end what) =
     bigOperator "<sum/>" v def end what
 
-content (Matrix _ _ lsts) =
+content (Matrix _ _ _ lsts) =
     matrix $ concatS [matrixrow $ concatMapS content row | row <- lsts]
 
-content (Integrate begin end what var) =
+content (Integrate _ begin end what var) =
     apply $ str "<int/>"
           . bvar (content var)
           . lowlimit (content begin)
           . uplimit (content end)
           . content what
 
-content (Derivate f var) =
+content (Derivate _ f var) =
     apply $ str "<diff/>"
           . bvar (content var)
           . content f
 
-content (App func args) = 
+content (App _ func args) = 
     apply $ content func
           . concatMapS content args
 content _ = id

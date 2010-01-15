@@ -76,7 +76,7 @@ prop_treelistify f = listOnce == treeList
 
 prop_treefi2 :: FormulaPrim -> Bool
 prop_treefi2 f = mustVerify size2 . unTagFormula . treeIfyFormula $ Formula f
-    where size2 (BinOp _op lst) = length lst == 2
+    where size2 (BinOp _ _op lst) = length lst == 2
           size2 _ = True
 
 -----------------------------------------------

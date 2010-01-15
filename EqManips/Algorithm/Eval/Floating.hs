@@ -41,14 +41,14 @@ power = floatCastingOperator (**)
 -----------------------------------------------
 floorEval :: EvalFun
 floorEval (CFloat f) = return . CInteger $ floor f
-floorEval f = return $ UnOp OpFloor f
+floorEval f = return $ unOp OpFloor f
 
 -----------------------------------------------
 ----        'frac'
 -----------------------------------------------
 fracEval :: EvalFun
 fracEval (CFloat f) = return . CFloat . snd $ (properFraction f :: (Int,Double))
-fracEval f = return $ UnOp OpFrac f
+fracEval f = return $ unOp OpFrac f
 
 -----------------------------------------------
 ----        'Ceil'
@@ -56,7 +56,7 @@ fracEval f = return $ UnOp OpFrac f
 ceilEval :: EvalFun
 ceilEval i@(CInteger _) = return i
 ceilEval (CFloat f) = return . CInteger $ ceiling f
-ceilEval f = return $ UnOp OpCeil f
+ceilEval f = return $ unOp OpCeil f
 
 -----------------------------------------------
 ----        'negate'
@@ -78,21 +78,21 @@ fAbs f = return $ abs f
 -- | All the rules for floats
 floatEvalRules :: EvalFun
 floatEvalRules (NumEntity Pi) = return $ CFloat pi
-floatEvalRules (BinOp OpAdd fs) = binEval OpAdd add add fs
-floatEvalRules (BinOp OpSub fs) = binEval OpSub sub add fs
-floatEvalRules (BinOp OpMul fs) = binEval OpMul mul mul fs
+floatEvalRules (BinOp _ OpAdd fs) = binEval OpAdd add add fs
+floatEvalRules (BinOp _ OpSub fs) = binEval OpSub sub add fs
+floatEvalRules (BinOp _ OpMul fs) = binEval OpMul mul mul fs
 -- | Todo fix this, it's incorrect
-floatEvalRules (BinOp OpPow fs) = binEval OpPow power power fs
-floatEvalRules (BinOp OpDiv fs) = binEval OpDiv division mul fs
+floatEvalRules (BinOp _ OpPow fs) = binEval OpPow power power fs
+floatEvalRules (BinOp _ OpDiv fs) = binEval OpDiv division mul fs
 
-floatEvalRules (UnOp OpFloor f) = floorEval f
-floatEvalRules (UnOp OpCeil f) = ceilEval f
-floatEvalRules (UnOp OpFrac f) = fracEval f
+floatEvalRules (UnOp _ OpFloor f) = floorEval f
+floatEvalRules (UnOp _ OpCeil f) = ceilEval f
+floatEvalRules (UnOp _ OpFrac f) = fracEval f
 
-floatEvalRules (UnOp OpNegate f) = fNegate f
-floatEvalRules (UnOp OpAbs f) = fAbs f
+floatEvalRules (UnOp _ OpNegate f) = fNegate f
+floatEvalRules (UnOp _ OpAbs f) = fAbs f
 
-floatEvalRules formula@(UnOp op f) =
+floatEvalRules formula@(UnOp _ op f) =
   return . fromMaybe formula $ unOpReduce (funOf op) f
     where funOf OpSqrt = sqrt
           funOf OpSin = sin

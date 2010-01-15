@@ -92,7 +92,7 @@ unOpEr OpACosh = ""
 unOpEr OpATanh = ""
 
 cOut :: Maybe (BinOperator, Bool) -> FormulaPrim -> OutContext ShowS
-cOut ctxt (Poly p) = cOut ctxt (unTagFormula . treeIfyFormula $ convertToFormula p)
+cOut ctxt (Poly _ p) = cOut ctxt (unTagFormula . treeIfyFormula $ convertToFormula p)
 cOut _ (CInteger i) = return $ shows i
 cOut _ (CFloat i) = return $ shows i
 cOut _ (Variable v) = return $ str v
@@ -104,43 +104,43 @@ cOut _ (NumEntity _) = return $ str ""
 cOut _ (Fraction f) = return $ char '(' . shows (numerator f) 
                              . str " / " . shows (denominator f)
                              . char ')'
-cOut _ (App func args) =
+cOut _ (App _ func args) =
     (\fun args' -> fun . char '(' . interspereseS (str ", ") args' . char ')')
     <$> cNo func 
     <*> mapM cNo args
 
-cOut _ (UnOp op f) =
+cOut _ (UnOp _ op f) =
     (\sub -> str (unOpEr op) . char '(' . sub . char ')') <$> cNo f
 
-cOut _ (BinOp OpAttrib [a,b]) =
+cOut _ (BinOp _ OpAttrib [a,b]) =
     (\left right -> left . str " = " . right . str ";\n") <$> cNo a <*> cNo b
 
-cOut _ (BinOp OpPow [a,b]) =
+cOut _ (BinOp _ OpPow [a,b]) =
     (\left right -> str "pow( " . left . str ", " . right . str " ) ") <$> cNo a <*> cNo b
 
-cOut Nothing (BinOp op [a,b]) = 
+cOut Nothing (BinOp _ op [a,b]) = 
     (\left right -> left . cppBinOps op . right) <$> cOut (Just (op, False)) a 
                                        <*> cOut (Just (op, True)) b
 
-cOut (Just (parent, right)) f@(BinOp op _)
+cOut (Just (parent, right)) f@(BinOp _ op _)
     | needParenthesis right parent op = 
         (\sub -> char '(' . sub . char ')') <$> cNo f
     | otherwise = cOut Nothing f
 
-cOut _ (BinOp _ []) = outFail $ Err.empty_binop "C output - "
-cOut _ (BinOp _ [_]) = outFail $ Err.single_binop "C output - "
-cOut _ (BinOp _ _) = outFail Err.c_out_bad_binop
+cOut _ (BinOp _ _ []) = outFail $ Err.empty_binop "C output - "
+cOut _ (BinOp _ _ [_]) = outFail $ Err.single_binop "C output - "
+cOut _ (BinOp _ _ _) = outFail Err.c_out_bad_binop
 
-cOut st (Meta _ f) = cOut st f
-cOut _ (Sum begin ende what) = iteration "+" begin ende what
-cOut _ (Product begin ende what) = iteration "*" begin ende what
+cOut st (Meta _ _ f) = cOut st f
+cOut _ (Sum _ begin ende what) = iteration "+" begin ende what
+cOut _ (Product _ begin ende what) = iteration "*" begin ende what
 
-cOut _ (Matrix _ _ _) = outFail Err.c_out_matrix
-cOut _ (Derivate _ _) = outFail Err.c_out_derivate
-cOut _ (Integrate _ _ _ _) = outFail Err.c_out_integrate
-cOut _ (Lambda _) = outFail Err.c_out_lambda 
+cOut _ (Matrix _ _ _ _) = outFail Err.c_out_matrix
+cOut _ (Derivate _ _ _) = outFail Err.c_out_derivate
+cOut _ (Integrate _ _ _ _ _) = outFail Err.c_out_integrate
+cOut _ (Lambda _ _) = outFail Err.c_out_lambda 
 cOut _ (Block _ _ _) = outFail Err.c_out_block
-cOut _ (Complex _) = outFail Err.c_out_complex
+cOut _ (Complex _ _) = outFail Err.c_out_complex
 
 iteration :: String -> FormulaPrim -> FormulaPrim -> FormulaPrim -> OutContext ShowS
 iteration op (BinOp _ OpEq [Variable v, iniExpr]) exprEnd what = do
