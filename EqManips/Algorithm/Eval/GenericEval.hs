@@ -27,8 +27,8 @@ add :: EvalFun -> EvalOp
 add _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 + i2
 -- Handle negation, as we may not know which cleaning has been performed
 -- on the formula.
-add _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 + (negate i2)
-add _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) + i2
+add _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 - i2
+add _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ negate i1 + i2
 add evaluator f1@(Matrix _ _ _ _) f2@(Matrix _ _ _ _) =
     matrixMatrixSimple evaluator (+) f1 f2
 add _ f1@(Matrix _ _ _ _) f2 = do
@@ -44,8 +44,8 @@ add _ e e' = right (e, e')
 -----------------------------------------------
 sub :: EvalFun -> EvalOp
 sub _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 - i2
-sub _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 - (negate i2)
-sub _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) - i2
+sub _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 - negate i2
+sub _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ negate i1 - i2
 sub evaluator f1@(Matrix _ _ _ _) f2@(Matrix _ _ _ _) =
     matrixMatrixSimple evaluator (-) f1 f2
 sub _ f1@(Matrix _ _ _ _) f2 = do
@@ -61,8 +61,8 @@ sub _ e e' = right (e,e')
 -----------------------------------------------
 mul :: EvalFun -> EvalOp
 mul _ (CInteger i1) (CInteger i2) = left . CInteger $ i1 * i2
-mul _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 * (negate i2)
-mul _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ (negate i1) * i2
+mul _ (CInteger i1) (UnOp _ OpNegate (CInteger i2)) = left . CInteger $ i1 * negate i2
+mul _ (UnOp _ OpNegate (CInteger i1)) (CInteger i2) = left . CInteger $ negate i1 * i2
 mul evaluator f1@(Matrix _ _ _ _) f2@(Matrix _ _ _ _) = matrixMatrixMul evaluator f1 f2
 mul evaluator m@(Matrix _ _ _ _) s = matrixScalar evaluator (*) m s >>= left
 mul evaluator s m@(Matrix _ _ _ _) = matrixScalar evaluator (*) m s >>= left
