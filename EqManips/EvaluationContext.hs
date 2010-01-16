@@ -11,6 +11,7 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , eqFail, eqPrimFail 
                                  , symbolLookup
                                  , pushContext, popContext, setContext 
+                                 , contextStackSize 
 #ifdef _DEBUG
                                  , addTrace
                                  , printTrace
@@ -221,6 +222,10 @@ addSymbol :: String -> Formula ListForm -> EqContext ()
 addSymbol varName def = EqContext $ \eqCtxt ->
     let prevSymbol = context eqCtxt
     in ( eqCtxt{ context = Map.insert varName def prevSymbol }, ())
+
+contextStackSize :: EqContext Int
+contextStackSize = EqContext $ \eqCtxt ->
+    (eqCtxt, contextDepth eqCtxt)
 
 -- | Check if a symbol is present, and if so, return it's
 -- definition

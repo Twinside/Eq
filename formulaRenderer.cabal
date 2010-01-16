@@ -46,4 +46,5 @@ Executable iotest
                  , filepath
                  , containers
                  , QuickCheck >= 2.1
+                 , HUnit >= 1.2.2.1
 

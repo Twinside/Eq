@@ -7,6 +7,7 @@ import Data.Ratio
 import qualified EqManips.ErrorMessages as Err
 import Control.Applicative
 import EqManips.Types
+import EqManips.Conf
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Cleanup
 import EqManips.Algorithm.Inject
@@ -282,7 +283,7 @@ eval _ (Variable v) = do
          Nothing -> return $ Variable v
          Just (Formula (f)) -> return f
 
-eval evaluator (App _ def var) = do
+eval evaluator fullApp@(App _ def var) = do
     redDef <- evaluator def
     redVar <- mapM evaluator var
 #ifdef _DEBUG
@@ -301,12 +302,17 @@ eval evaluator (App _ def var) = do
                     {-traceContext-}
                     addTrace ("subst | " ++ show subst, treeIfyFormula $ Formula body)
 #endif
-                    body' <- evaluator body
+                    depth <- contextStackSize
+                    if depth > maxRecursiveDepth
+                        then eqFail (treeIfyFormula $ Formula fullApp) Err.max_recursion 
+                          >>= return . unTagFormula
+                        else do
+                          body' <- evaluator body
 #ifdef _DEBUG
-                    addTrace ("body' | " ++ show body', treeIfyFormula $ Formula body')
+                          addTrace ("body' | " ++ show body', treeIfyFormula $ Formula body')
 #endif
-                    popContext
-                    return body'
+                          popContext
+                          return body'
          needApply def' args =
              return $ app def' args
 

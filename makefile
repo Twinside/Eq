@@ -28,7 +28,7 @@ debug:
 	runhaskell EqManips/Tests/polyTest.hs
 
 run:
-	./eq exacteval -o out.txt "taylor( exp(x), x, 0, 5)"
+	./deq eval -o out.txt -f tests/programm/valid/metaTest.txt
 
 help:
 	dist/build/eq/eq.exe help

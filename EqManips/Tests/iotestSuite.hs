@@ -2,6 +2,8 @@ import System.Environment
 import Text.Printf
 import Data.Monoid( All( .. ), mempty, mappend )
 
+import Control.Monad
+
 import EqManips.Types
 import EqManips.Linker
 import EqManips.Propreties
@@ -21,6 +23,7 @@ import Test.QuickCheck
 {-import Test.QuickCheck.Batch-}
 
 import Text.ParserCombinators.Parsec.Prim( runParser )
+import EqManips.Tests.UnitTest
 
 cleanup :: FormulaPrim -> FormulaPrim
 cleanup = unTagFormula . Cleanup.cleanup . Formula
@@ -136,5 +139,8 @@ runTestList tests = do
     mapM_ (\(s,a) -> printf "%-25s: " s >> a verbose s n) tests
 
 main :: IO ()
-main = runTestList globalTests
+main = do
+    valid <- runEqTests
+    when valid $ runTestList globalTests
+
 

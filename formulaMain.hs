@@ -192,12 +192,14 @@ transformParseFormula operation args = do
     let formulaList = parseProgramm formulaText
     either (parseErrorPrint finalFile)
            (\formulal -> do
-               let rez = performLastTransformationWithContext defaultSymbolTable
-                       $ mapM operation formulal
 #ifdef _DEBUG
                mapM_ (\a-> do hPutStr finalFile $ sexprRender a
                               hPutStr finalFile "\n") formulal
-               
+               hFlush finalFile
+#endif
+               let rez = performLastTransformationWithContext defaultSymbolTable
+                       $ mapM operation formulal
+#ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"

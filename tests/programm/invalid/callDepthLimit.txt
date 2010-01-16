@@ -1,0 +1,5 @@
+recurse( 0 ) :> 0;
+recurse( n ) :> recurse( n - 1 );
+
+recurse( 1024 )
+
