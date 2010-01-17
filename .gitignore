@@ -8,6 +8,7 @@
 *.exe
 *.tix
 .hpc
+coverageReport
 Debug
 Release
 Build

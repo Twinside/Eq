@@ -1,16 +1,36 @@
-SHELL=cmd
+
+ifneq ($(shell uname),Linux)
+
+SHELL:=cmd
+EXEEXT:=.exe
+FIND := unixfind
+
+else
+
+EXEEXT:=
+FIND := find
+
+endif
+
 
 build: EqManips/BaseLibrary.hs
 	runhaskell Setup.hs build
-	cp dist/build/eq/eq.exe .
-	cp dist/build/deq/deq.exe .
-	cp dist/build/iotest/iotest.exe .
+	cp dist/build/eq/eq$(EXEEXT) .
+	cp dist/build/deq/deq$(EXEEXT) .
+	cp dist/build/iotest/iotest$(EXEEXT) .
 
 clean:
 	runhaskell Setup.hs clean
 
+# only way to get this shit working on unix...
 EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.txt
-	runhaskell -cpp EqManips/libMaker.hs
+	ghc -package 'parsec-3.0.0' -cpp -o libMaker EqManips/libMaker.hs
+	./libMaker
+	$(FIND) EqManips -name '*.o' | xargs rm
+	$(FIND) EqManips -name '*.hi' | xargs rm
+	$(FIND) EqManips -name '*.o-boot' | xargs rm
+	$(FIND) EqManips -name '*.hi-boot' | xargs rm
+	rm libMaker
 
 showdoc:
 	echo dist\doc\html\FormulaRenderer\eq\index.html
@@ -18,7 +38,7 @@ showdoc:
 doc:
 	runhaskell Setup.hs haddock --executables
 
-conf: EqManips/BaseLibrary.hs
+conf:
 	runhaskell Setup.hs configure
 
 test:
@@ -32,11 +52,11 @@ run:
 	./deq eval -o out.txt -f tests/programm/valid/metaTest.txt
 
 help:
-	dist/build/eq/eq.exe help
+	dist/build/eq/eq$(EXEEXT) help
 
 hlint:
-	unixfind . -name *.hs | grep -v dist | grep -v ErrorMessages | xargs hlint
+	$(FIND) . -name *.hs | grep -v dist | grep -v ErrorMessages | xargs hlint
 
 coverage:
-	hpc markup iotest.exe
+	hpc markup --destdir coverageReport iotest
 
