@@ -7,6 +7,10 @@ import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Eval.Utils
 import EqManips.Algorithm.Eval.Types
 
+#ifdef _DEBUG
+import EqManips.EvaluationContext
+#endif
+
 reshape :: FormulaPrim -> FormulaPrim
 reshape = unTagFormula . listifyFormula . Formula
 

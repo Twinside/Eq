@@ -30,8 +30,6 @@ import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
---import System.IO.Unsafe
-
 -- | will pack/simplify internal representation of a polynome.
 -- If there is only one null coefficient only subPoly will be present
 simplifyPolynome :: Polynome -> Polynome
@@ -420,11 +418,13 @@ polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
     | otherwise = 
         Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1) : as
 
-polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
+polySimpleOp op (Polynome v1 as@((c, d1):rest)) right@(Polynome v2 bs)
     | v1 > v2 = polySimpleOp (flip op) (Polynome v2 bs) (Polynome v1 as)
     | v1 == v2 = Polynome v1 $ lockStep op as bs
-    | isCoeffNull c = Polynome v1 $ (c, d1 `op` left) : map (coeffPropagator op) rest
-    | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest (CoeffInt 0) `op` left) : map (coeffPropagator op) as
+    | isCoeffNull c = 
+        Polynome v1 $ (c, polySimpleOp op d1 right) : map (coeffPropagator $ flip op) rest
+    | otherwise = 
+        Polynome v1 $ (CoeffInt 0, polySimpleOp op (PolyRest $ CoeffInt 0) right) : map (coeffPropagator $ flip op) as
 
 
 -- | Multiply two polynomials between them using the brute force

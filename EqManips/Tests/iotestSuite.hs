@@ -5,7 +5,7 @@ import Data.Monoid( All( .. ), mempty, mappend )
 import Control.Monad
 
 import EqManips.Types
-import EqManips.Linker
+--import EqManips.Linker
 import EqManips.Propreties
 import EqManips.FormulaIterator
 import EqManips.EvaluationContext
@@ -14,15 +14,15 @@ import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Expand
 import EqManips.Algorithm.Eval
 import EqManips.Algorithm.EmptyMonad
-import EqManips.InputParser.EqCode
-import EqManips.Renderer.EqCode
+--import EqManips.InputParser.EqCode
+--import EqManips.Renderer.EqCode
 import EqManips.Tests.FullGenerator()
 import EqManips.Tests.ContinuousGenerator()
 
 import Test.QuickCheck
 {-import Test.QuickCheck.Batch-}
 
-import Text.ParserCombinators.Parsec.Prim( runParser )
+--import Text.ParserCombinators.Parsec.Prim( runParser )
 import EqManips.Tests.UnitTest
 
 cleanup :: FormulaPrim -> FormulaPrim
@@ -54,14 +54,14 @@ mustVerify f = getAll . foldf combiner mempty
 -----------------------------------------------
 ----        Propreties
 -----------------------------------------------
-prop_showBack :: FormulaPrim -> Bool
-prop_showBack formula = case eitherformula of
-             Left _ -> False
-             Right f -> 
-                (Cleanup.cleanup . linkFormula $ Formula f) ==
-                    (Cleanup.cleanup . listifyFormula $ Formula formula)
-    where text = unparse formula
-          eitherformula = runParser expr () "FromFile" text
+{-prop_showBack :: FormulaPrim -> Bool-}
+{-prop_showBack formula = case eitherformula of-}
+             {-Left _ -> False-}
+             {-Right f -> -}
+                {-(Cleanup.cleanup . linkFormula $ Formula f) ==-}
+                    {-(Cleanup.cleanup . listifyFormula $ Formula formula)-}
+    {-where text = unparse formula-}
+          {-eitherformula = runParser expr () "FromFile" text-}
 
 prop_ordering :: FormulaPrim -> Bool
 prop_ordering f = f <= f
@@ -143,7 +143,7 @@ runTestList tests = do
 main :: IO ()
 main = do
     valid <- runEqTests
-    --when valid $ runTestList globalTests
-    runTestList globalTests
+    when valid $ runTestList globalTests
+    --runTestList globalTests
 
 
