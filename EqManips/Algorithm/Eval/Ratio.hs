@@ -25,7 +25,7 @@ sub a b = right (a,b)
 ----            '*'
 -----------------------------------------------
 mul :: EvalOp
-mul (Fraction r1) (Fraction r2) = left . Fraction $ r1 + r2
+mul (Fraction r1) (Fraction r2) = left . Fraction $ r1 * r2
 mul a b = right (a,b)
 
 -----------------------------------------------

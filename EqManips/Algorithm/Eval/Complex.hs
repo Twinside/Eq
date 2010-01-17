@@ -6,6 +6,7 @@ import EqManips.Types
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Eval.Utils
 import EqManips.Algorithm.Eval.Types
+import EqManips.EvaluationContext
 
 reshape :: FormulaPrim -> FormulaPrim
 reshape = unTagFormula . listifyFormula . Formula
@@ -72,14 +73,27 @@ division eval (Complex _ (a,b)) (Complex _ (c, d)) =
     where realNumerator = a * c + b * d
           imagNumerator = b * c - a * d
           denom = c ** CInteger 2 + d ** CInteger 2
+
 division eval (Complex _ (r1,i1)) rightp | isFormulaScalar rightp =
+#ifdef _DEBUG
+  do real <- eval (reshape $ r1 / rightp)
+     imag <- eval (reshape $ i1 / rightp)
+     addTrace ("MEH", Formula $ reshape $ r1 / rightp)
+     addTrace ("MEH", Formula $ reshape $ i1 / rightp)
+     addTrace ("MEH", Formula $ complex (r1 , i1))
+     addTrace ("MEH", Formula $ complex (real, imag))
+     return $ Left $ complex (real, imag)
+#else
     (\real imag -> Left $ complex (real, imag))
             <$> eval (reshape $ r1 / rightp)
             <*> eval (reshape $ i1 / rightp)
-division eval leftp (Complex _ (r1,i1)) | isFormulaScalar leftp =
-    (\real imag -> Left $ complex (real, imag))
-            <$> eval (reshape $ leftp / r1)
-            <*> eval (reshape $ leftp / i1)
+#endif
+
+-- TODO : WRONG!
+{-division eval leftp (Complex _ (r1,i1)) | isFormulaScalar leftp =-}
+    {-(\real imag -> Left $ complex (real, imag))-}
+            {-<$> eval (reshape $ leftp / r1)-}
+            {-<*> eval (reshape $ leftp / i1)-}
 division _ a b = right (a,b)
 
 -----------------------------------------------

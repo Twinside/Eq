@@ -22,6 +22,7 @@ conf: EqManips/BaseLibrary.hs
 	runhaskell Setup.hs configure
 
 test:
+	rm -f *.tix
 	./iotest
 
 debug:
@@ -35,4 +36,7 @@ help:
 
 hlint:
 	unixfind . -name *.hs | grep -v dist | grep -v ErrorMessages | xargs hlint
+
+coverage:
+	hpc markup iotest.exe
 

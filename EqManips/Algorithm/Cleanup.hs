@@ -190,8 +190,8 @@ rules :: FormulaPrim -> FormulaPrim
 rules (Complex _ (re, CInteger 0)) = re
 rules (Complex _ (re, CFloat 0.0)) = re
 rules (Fraction f)
-    | numerator f == 1 = CInteger $ denominator f
-    | denominator f == 0 = CInteger 0
+    | numerator f == 0 = CInteger 0
+    | denominator f == 1 = CInteger $ numerator f
 
 rules (Poly _ (PolyRest r)) = coefToFormula r
 rules (Poly _ p) = polyclean p
@@ -203,6 +203,9 @@ rules (UnOp _ OpCosh f) = cosinush f
 rules (UnOp _ OpExp f) = exponential f
 rules (BinOp _ OpAdd fs) = reOp OpAdd $ biAssoc add add fs
 rules (BinOp _ OpSub fs) = reOp OpSub $ biAssoc sub add fs
+rules (BinOp _ OpDiv [CInteger a, CInteger b]) = Fraction (a % b)
+rules (BinOp _ OpDiv [UnOp _ OpNegate (CInteger a), CInteger b]) = unOp OpNegate $ Fraction (a % b)
+
 rules (BinOp _ OpDiv fs) = reOp OpDiv $ biAssoc divide mul fs
 rules (BinOp _ OpPow fs) = reOp OpPow $ biAssoc power mul fs
 rules (BinOp _ OpMul fs)

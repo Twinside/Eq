@@ -7,6 +7,7 @@ module EqManips.Renderer.Ascii( renderFormula
 
 import Data.List( foldl' )
 import Data.Array.Unboxed
+import Data.Ratio
 import EqManips.Types
 import EqManips.Renderer.Placer
 import EqManips.Algorithm.Utils
@@ -292,6 +293,8 @@ renderF :: Conf         -- ^ Rendering preferences
         -> Pos          -- ^ Where to render
         -> PoserS       -- ^ Result to be used in accumArray
 
+renderF conf (Fraction f) node pos = renderF conf ( CInteger (numerator f)
+                                                  / CInteger (denominator f)) node pos
 -- INVISIBLE META NINJA
 renderF conf (Meta _ _ f) node pos = renderF conf f node pos
 renderF conf (Complex _ c) node pos =

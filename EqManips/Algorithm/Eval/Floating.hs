@@ -7,6 +7,8 @@ module EqManips.Algorithm.Eval.Floating ( evalFloat, floatEvalRules ) where
 
 import Control.Applicative
 
+import Data.Ratio
+
 import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.EvaluationContext
@@ -23,8 +25,12 @@ evalFloat (Formula f) = Formula <$> floatEvalRules f
 floatCastingOperator :: (Double -> Double -> Double) -> EvalOp
 floatCastingOperator f (CInteger i1) (CFloat f2) =
     left . CFloat $ f (fromIntegral i1) f2
+floatCastingOperator f (UnOp _ OpNegate (CInteger i1)) (CFloat f2) =
+    left . CFloat $ f (fromIntegral $ negate i1) f2
 floatCastingOperator f (CFloat f1) (CInteger i2) =
     left . CFloat $ f f1 (fromIntegral i2)
+floatCastingOperator f (CFloat f1) (UnOp _ OpNegate (CInteger i2)) =
+    left . CFloat $ f f1 (fromIntegral $ negate i2)
 floatCastingOperator f (CFloat f1) (CFloat f2) =
     left . CFloat $ f f1 f2
 floatCastingOperator _ e e' = right (e, e')
@@ -77,6 +83,8 @@ fAbs f = return $ abs f
 -----------------------------------------------
 -- | All the rules for floats
 floatEvalRules :: EvalFun
+{-floatEvalRules (Fraction f) = return . CFloat $ fromInteger (numerator f)-}
+                                              {-/ fromInteger (denominator f)-}
 floatEvalRules (NumEntity Pi) = return $ CFloat pi
 floatEvalRules (BinOp _ OpAdd fs) = binEval OpAdd add add fs
 floatEvalRules (BinOp _ OpSub fs) = binEval OpSub sub add fs
