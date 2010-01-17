@@ -398,28 +398,32 @@ coeffPropagator :: (forall a. (Num a) => a -> a -> a) -> (PolyCoeff, Polynome) -
 coeffPropagator op (degree, PolyRest a) = (degree, PolyRest $ coeffOp op (CoeffInt 0) a)
 coeffPropagator op (degree, Polynome v lst) = (degree, Polynome v $ map (coeffPropagator op) lst)
 
+
 polySimpleOp :: (forall a. (Num a) => a -> a -> a) -> Polynome -> Polynome -> Polynome
 polySimpleOp _ (Polynome _ []) _ = error Err.ill_formed_polynomial
 polySimpleOp _ _ (Polynome _ []) = error Err.ill_formed_polynomial
+
 polySimpleOp op (PolyRest c1) (PolyRest c2) = PolyRest $ coeffOp op c1 c2
--- FUCKING WRONG for '-'
-polySimpleOp op left@(PolyRest _) right@(Polynome _ _) =
-    polySimpleOp (flip op) right left
+
+polySimpleOp op left@(PolyRest c1) (Polynome v1 as@((coeff, def):xs))
+    | isCoeffNull coeff = case def of
+        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op c1 a) : map (coeffPropagator op) xs
+        _          -> Polynome v1 $ (coeff,polySimpleOp op left def) : map (coeffPropagator op) xs
+
+    | otherwise = 
+        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op c1 (CoeffInt 0)) : map (coeffPropagator op) as
+
 polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
     | isCoeffNull coeff = case def of
-        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1) : map (coeffPropagator op) xs
-        _          -> Polynome v1 $ (coeff,polySimpleOp op def right) : map (coeffPropagator op) xs
+        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1) : map (coeffPropagator $ flip op) xs
+        _          -> Polynome v1 $ (coeff,polySimpleOp op def right) : map (coeffPropagator $ flip op) xs
     | otherwise = 
-        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1):as
+        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1) : as
 
 polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
     | v1 > v2 = polySimpleOp (flip op) (Polynome v2 bs) (Polynome v1 as)
     | v1 == v2 = Polynome v1 $ lockStep op as bs
-    | isCoeffNull c = case d1 of 
-          PolyRest a   -> polyMap executor left
-                where executor (c', PolyRest n) = (c', PolyRest $ coeffOp op a n)
-                      executor a' = a'
-          Polynome _ _ -> Polynome v1 $ (CoeffInt 0, polySimpleOp op d1 left) : map (coeffPropagator op) rest
+    | isCoeffNull c = Polynome v1 $ (c, d1 `op` left) : map (coeffPropagator op) rest
     | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest (CoeffInt 0) `op` left) : map (coeffPropagator op) as
 
 

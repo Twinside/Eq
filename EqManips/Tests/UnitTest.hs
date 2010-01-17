@@ -30,7 +30,11 @@ eqUnittests :: Test
 eqUnittests = TestList $
     [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
     . TestCase
-    $ evalResultCheck toEval rez | (toEval, rez) <- arithmeticTest ]
+    $ evalResultCheck toEval rez | (toEval, rez) <- arithmeticTest ++ polynomeTest ]
+
+    ++ [ TestLabel (show expr ++ " = " ++ show rez)
+       . TestCase
+       $ assertEqual "" rez expr | (expr, rez) <- coeffArithmeticTest ]
 
 (==>) :: a -> b -> (a,b)
 (==>) = (,)
@@ -128,6 +132,137 @@ arithmeticTest =
 
     , frac (1,3)   / frac (1, 4) ==> frac (4,3)
     , frac (-1, 4) / frac (2, 4) ==> frac (-1, 2)
+
+    ]
+
+polynomeTest :: [(FormulaPrim, FormulaPrim)]
+polynomeTest = [
+    -- Polynome/Int
+      poly (Polynome "x" [(0, PolyRest 1),(1, PolyRest 2),(3, PolyRest 4)]) * int 2 ==> 
+        poly (Polynome "x" [(0, PolyRest 2),(1, PolyRest 4),(3, PolyRest 8)])
+
+    , int 2 * poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==> 
+        poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest 4) ,(3, PolyRest 8)])
+
+    , poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) + int 2 ==> 
+        poly (Polynome "x" [(0, PolyRest 3) ,(1, PolyRest 2) ,(3, PolyRest 4)])
+
+    , int 2 + poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==> 
+        poly (Polynome "x" [(0, PolyRest 3) ,(1, PolyRest 2) ,(3, PolyRest 4)])
+
+    , poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) - int 2 ==> 
+        poly (Polynome "x" [(0, PolyRest (-1)) ,(1, PolyRest 2) ,(3, PolyRest 4)])
+
+    , int 2 - poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==> 
+        poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest (-2)) ,(3, PolyRest (-4))])
+
+    -- Polynome/Int without x^0
+    , poly (Polynome "x" [(1, PolyRest 2),(3, PolyRest 4)]) * int 2 ==> 
+        poly (Polynome "x" [(1, PolyRest 4),(3, PolyRest 8)])
+
+    , int 2 * poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) ==> 
+        poly (Polynome "x" [(1, PolyRest 4) ,(3, PolyRest 8)])
+
+    , poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) + int 2 ==> 
+        poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest 2) ,(3, PolyRest 4)])
+
+    , int 2 + poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) ==> 
+        poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest 2) ,(3, PolyRest 4)])
+
+    , poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) - int 2 ==> 
+        poly (Polynome "x" [(0, PolyRest (-2)) ,(1, PolyRest 2) ,(3, PolyRest 4)])
+
+    , int 2 - poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) ==> 
+        poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest (-2)) ,(3, PolyRest (-4))])
+
+    -- Polynome/Polynome (same variable)
+    , poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) +
+      poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [(1, PolyRest 4) ,(3, PolyRest 8)])
+
+    , poly (Polynome "x" [(0, PolyRest 2) ,(12, PolyRest 4)]) +
+      poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [(0,PolyRest 2), (1, PolyRest 2) ,(3, PolyRest 4), (12, PolyRest 4)])
+
+    , poly (Polynome "x" [(1, PolyRest 2) ,(12, PolyRest 4)]) +
+      poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [(1, PolyRest 4) ,(3, PolyRest 4), (12, PolyRest 4)])
+
+    , poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 5)]) -
+      poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [(3, PolyRest 1)])
+
+    , poly (Polynome "x" [(0, PolyRest 2) ,(12, PolyRest 4)]) -
+      poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [(0,PolyRest 2), (1, PolyRest (-2)) ,(3, PolyRest (-4)), (12, PolyRest 4)])
+
+    , poly (Polynome "x" [(1, PolyRest 2) ,(12, PolyRest 4)]) -
+      poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [(3, PolyRest (-4)), (12, PolyRest 4)])
+
+    -- Polynome/Polynome (different variable)
+    , poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) +
+      poly (Polynome "y" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [ (0,Polynome "y" [(1, PolyRest 2) ,(3, PolyRest 4)])
+                             , (1, PolyRest 2)
+                             , (3, PolyRest 4)])
+
+    , poly (Polynome "x" [(0, PolyRest 2), (1, PolyRest 2), (3, PolyRest 4), (12, PolyRest 4)]) +
+      poly (Polynome "y" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [ (0, Polynome "y" [(0, PolyRest 2), (1, PolyRest 2) ,(3, PolyRest 4)])
+                             , (1, PolyRest 2)
+                             , (3, PolyRest 4)
+                             , (12, PolyRest 4)])
+
+    , poly (Polynome "y" [(1, PolyRest 2) ,(12, PolyRest 4)]) +
+      poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [ (0, Polynome "y" [(1, PolyRest 2) ,(12, PolyRest 4)])
+                             , (1, PolyRest 2)
+                             , (3, PolyRest 4)
+                             ])
+
+    , poly (Polynome "x" [(0, PolyRest 2), (12, PolyRest 4)]) +
+      poly (Polynome "y" [(0, PolyRest 1), (1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [ (0, Polynome "y" [(0, PolyRest 3), (1, PolyRest 2) ,(3, PolyRest 4)])
+                             , (12, PolyRest 4)])
+
+    , poly (Polynome "x" [(0, PolyRest 2), (12, PolyRest 4)]) +
+      poly (Polynome "y" [(0, Polynome "z" [(0, PolyRest 1)]), (1, PolyRest 2) ,(3, PolyRest 4)])
+      ==> poly (Polynome "x" [ (0, Polynome "y" [ (0, Polynome "z" [(0, PolyRest 3)])
+                                                , (1, PolyRest 2)
+                                                , (3, PolyRest 4)])
+                             , (12, PolyRest 4)])
+
+    {-, poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 5)]) --}
+      {-poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])-}
+      {-==> poly (Polynome "x" [(3, PolyRest 1)])-}
+
+    {-, poly (Polynome "x" [(0, PolyRest 2) ,(12, PolyRest 4)]) --}
+      {-poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])-}
+      {-==> poly (Polynome "x" [(0,PolyRest 2), (1, PolyRest (-2)) ,(3, PolyRest (-4)), (12, PolyRest 4)])-}
+
+    {-, poly (Polynome "x" [(1, PolyRest 2) ,(12, PolyRest 4)]) --}
+      {-poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])-}
+      {-==> poly (Polynome "x" [(3, PolyRest (-4)), (12, PolyRest 4)])-}
+    ]
+
+coeffArithmeticTest :: [(PolyCoeff, PolyCoeff)]
+coeffArithmeticTest =
+    let cint = CoeffInt
+        cfloat = CoeffFloat
+        cratio = CoeffRatio
+    in
+    [ cint 2 + cint 3 ==> cint 5
+    , cint 2 - cint 3 ==> cint (-1)
+    , cint 2 * cint 3 ==> cint 6
+    , cint 2 / cint 3 ==> cratio (2 % 3)
+
+    , cfloat 2 + cfloat 3 ==> cfloat 5
+    , cfloat 2 - cfloat 3 ==> cfloat (-1)
+    , cfloat 2 * cfloat 3 ==> cfloat 6
+    , cfloat 2 / cfloat 3 ==> cfloat (2.0 / 3.0)
+
+    , cint 1 ==> cfloat 1
     ]
 
 evalResultCheck :: FormulaPrim -> FormulaPrim -> Assertion
