@@ -10,10 +10,13 @@ import Test.HUnit.Text
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Renderer.Ascii
+import EqManips.Renderer.Sexpr
+import EqManips.Renderer.Latex
+import EqManips.Renderer.Mathml
+import EqManips.Renderer.RenderConf
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Eval
-import EqManips.Renderer.Sexpr
-import EqManips.InputParser.EqCode hiding expr
+import EqManips.InputParser.EqCode hiding( expr )
 
 infixr 1 ==>
 
@@ -446,18 +449,24 @@ zeroFy :: FormulaPrim -> FormulaPrim
 zeroFy (CFloat 0.0) = CInteger 0
 zeroFy a = a
 
-formatTester :: (Formula TreeForm -> String) -> String -> IO Bool
-formatTester formulaFormater filename = do
+wellFormated :: Formula TreeForm -> Bool
+wellFormated f = latexRender defaultRenderConf f /= ""
+              && formatFormula f /= ""
+              && mathmlRender defaultRenderConf f /= ""
+              && sexprRender f /= ""
+
+formatTester :: String -> IO Bool
+formatTester filename = do
     formulaText <- readFile filename
     either (const $ return False)
-           (return . ("" /=) . formulaFormater . treeIfyFormula)
+           (return . wellFormated . treeIfyFormula)
            $ perfectParse formulaText
 
 folder :: FilePath
 folder = "tests" </> "format"
 
 formatTestList :: IO [Test]
-formatTestList = pathes >>= mapM (\f -> return $ formatTester formatFormula f ~? f)
+formatTestList = pathes >>= mapM (\f -> return $ formatTester f ~? f)
         where pathes :: IO [FilePath]
               pathes = map (folder </>) . filter (\f -> takeExtension f == ".txt")
                     <$> getDirectoryContents folder
