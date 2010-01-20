@@ -30,14 +30,46 @@ eqUnittests :: Test
 eqUnittests = TestList $
     [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
     . TestCase
-    $ evalResultCheck toEval rez | (toEval, rez) <- arithmeticTest ++ polynomeTest ]
+    $ evalResultCheck toEval rez | (toEval, rez) <- arithmeticTest
+                                                 ++ polynomeTest
+                                                 ++ basicManualFunction
+                                                 ++ comparisonOperator ]
+
+    ++ [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
+       . TestCase
+       $ exactevalResultCheck toEval rez | (toEval, rez) <- exactArithmeticTest ]
 
     ++ [ TestLabel (show expr ++ " = " ++ show rez)
        . TestCase
        $ assertEqual "" rez expr | (expr, rez) <- coeffArithmeticTest ]
 
+    ++ [ TestLabel (show toEval ++ " = " ++ show rez)
+       . TestCase
+       $ evalResultCheck toEval rez | (x, x') <- [ (CInteger 1, 1.0)
+                                                 , (CInteger 2, 2.0)
+                                                 , (CFloat 0.5, 0.5) ]
+                                    , (toEval, rez) <- basicFunctions x x']
+
 (==>) :: a -> b -> (a,b)
 (==>) = (,)
+
+exactArithmeticTest :: [(FormulaPrim, FormulaPrim)]
+exactArithmeticTest =
+    [ -- Fraction -> Fraction -> Fraction
+      frac (1,2) + frac (1,2) ==> int 1
+    , frac (1,2) + frac (1,4) ==> frac (3,4)
+
+    , frac (1,2) - frac (1,2) ==> int 0
+    , frac (1,2) - frac (1,4) ==> frac (1,4)
+
+    , frac (1,3)   * frac (1, 4) ==> frac (1,12)
+    , frac (-1, 4) * frac (2, 4) ==> frac (-1, 8)
+
+    , frac (1,3)   / frac (1, 4) ==> frac (4,3)
+    , frac (-1, 4) / frac (2, 4) ==> frac (-1, 2)
+
+    , complex (int 0, int 4) / complex (int 1, int 2) ==> complex (frac (8,5), frac (4,5))
+    ]
 
 arithmeticTest :: [(FormulaPrim, FormulaPrim)]
 arithmeticTest =
@@ -110,7 +142,7 @@ arithmeticTest =
 
     -- Complex -> Float -> Complex
     , complex (int 0, int 2) + float 1 ==> complex (float 1, int 2)
-    , complex (int 1, int 2) - float 1 ==> complex (float 0, int 2)
+    , complex (int 1, int 2) - float 1 ==> complex (int   0, int 2)
     , complex (int 4, int 2) * float 2 ==> complex (float 8, float 4)
     , complex (int 4, int 2) / float 2 ==> complex (float 2, float 1)
 
@@ -118,20 +150,6 @@ arithmeticTest =
     , complex (int 0, int 1) + complex (int 1, int 2) ==> complex (int 1, int 3)
     , complex (int 2, int 3) - complex (int 1, int 2) ==> complex (int 1, int 1)
     , complex (int 0, int 1) * complex (int 1, int 2) ==> complex (negate $ int 2, int 1)
-    , complex (int 0, int 4) / complex (int 1, int 2) ==> complex (frac (8,5), frac (4,5))
-
-    -- Fraction -> Fraction -> Fraction
-    , frac (1,2) + frac (1,2) ==> int 1
-    , frac (1,2) + frac (1,4) ==> frac (3,4)
-
-    , frac (1,2) - frac (1,2) ==> int 0
-    , frac (1,2) - frac (1,4) ==> frac (1,4)
-
-    , frac (1,3)   * frac (1, 4) ==> frac (1,12)
-    , frac (-1, 4) * frac (2, 4) ==> frac (-1, 8)
-
-    , frac (1,3)   / frac (1, 4) ==> frac (4,3)
-    , frac (-1, 4) / frac (2, 4) ==> frac (-1, 2)
 
     ]
 
@@ -271,6 +289,114 @@ polynomeTest = [
                                                 , (1, PolyRest (-2))
                                                 , (3, PolyRest (-4))])
                              , (12, PolyRest 4)])
+
+    -- Multiplication
+    , poly (Polynome "x" [(0, PolyRest 1), (1, PolyRest 2), (2, PolyRest 3)]) *
+      poly (Polynome "x" [(3, PolyRest 4), (5, PolyRest 2)])
+      ==> poly (Polynome "x" [(3, PolyRest 4)
+                             ,(4, PolyRest 8)
+                             ,(5, PolyRest 14)
+                             ,(6, PolyRest 4)
+                             ,(7, PolyRest 6)
+                             ])
+
+    , poly (Polynome "x" [(0, PolyRest 1), (1, PolyRest 2), (2, PolyRest 3)]) *
+      poly (Polynome "y" [(3, PolyRest 4), (5, PolyRest 2)])
+      ==> poly (Polynome "x" [(0, Polynome "y" [(3, PolyRest 4), (5,PolyRest 2)])
+                             ,(1, Polynome "y" [(3, PolyRest 8), (5,PolyRest 4)])
+                             ,(2, Polynome "y" [(3, PolyRest 12), (5,PolyRest 6)])
+                             ])
+
+    -- Just like the last one, but swapped
+    , poly (Polynome "y" [(3, PolyRest 4), (5, PolyRest 2)]) *
+      poly (Polynome "x" [(0, PolyRest 1), (1, PolyRest 2), (2, PolyRest 3)])
+      ==> poly (Polynome "x" [(0, Polynome "y" [(3, PolyRest 4), (5,PolyRest 2)])
+                             ,(1, Polynome "y" [(3, PolyRest 8), (5,PolyRest 4)])
+                             ,(2, Polynome "y" [(3, PolyRest 12), (5,PolyRest 6)])
+                             ])
+    ]
+
+comparisonOperator :: [(FormulaPrim, FormulaPrim)]
+comparisonOperator =
+    [ binOp OpLt [1, 2, 3, 4, 5, 8, 10] ==> Truth True
+    , binOp OpLt [1, 2, 3, 3, 5, 8, 10] ==> Truth False
+    , binOp OpGt [1, 2, 3, 4, 5, 8, 10] ==> Truth False
+    , binOp OpGe [1, 2, 3, 4, 5, 8, 10] ==> Truth False
+
+    , binOp OpLe [1, 2, 3, 3, 5, 8, 10] ==> Truth True
+    , binOp OpLe [1, 2, 3, 4, 5, 8, 10] ==> Truth True
+
+    , binOp OpGt [10, 8, 5, 4, 3, 2, 1] ==> Truth True
+    , binOp OpLt [10, 8, 5, 4, 3, 2, 1] ==> Truth False
+    , binOp OpLe [10, 8, 5, 4, 3, 2, 1] ==> Truth False
+
+    , binOp OpGt [10, 8, 5, 5, 3, 2, 1] ==> Truth False
+    , binOp OpGe [10, 8, 5, 5, 3, 2, 1] ==> Truth True
+
+    , binOp OpGt [10, 8, Variable "x", 4, 3, 2, 1]
+      ==> binOp OpGt [8, Variable "x", 4]
+    , binOp OpLt [1, 2, 3, 4, Variable "x", 8, 10]
+      ==> binOp OpLt [4, Variable "x", 8]
+
+    , binOp OpEq [1, 2, 3, 4, 5, 8, 10] ==> Truth False
+    , binOp OpEq [1, 1, 1, 1] ==> Truth True
+    , binOp OpNe [1, 1, 1, 1] ==> Truth False
+    , binOp OpEq [1, 1, 1, CFloat 1.0] ==> Truth True
+
+    , binOp OpEq [1, Variable "x", 1, 1] ==> binOp OpEq [Variable "x", 1]
+    , binOp OpEq [1, Variable "x", 1, 2] ==> Truth False
+    ]
+
+basicManualFunction :: [(FormulaPrim, FormulaPrim)]
+basicManualFunction =
+    [ unOp OpNegate (int 12) ==> unOp OpNegate (int 12)
+    , unOp OpNegate (float 12) ==> float (-12)
+    , unOp OpNegate (unOp OpNegate $ int 12) ==> int 12
+    , unOp OpNegate (unOp OpNegate $ float 12) ==> float 12
+
+    , unOp OpNegate (unOp OpNegate $ Variable "x") ==> Variable "x"
+
+    , unOp OpAbs (unOp OpNegate $ int 12) ==> int 12
+    , unOp OpAbs (float (-12)) ==> float 12
+
+    , unOp OpFrac (int 4) ==> int 0
+    , unOp OpFrac (int 12) ==> int 0
+    , unOp OpFrac (float 12.0) ==> int 0
+    , unOp OpFrac (float 12.5) ==> float 0.5
+
+    , unOp OpASin (float 0.5) ==> CFloat (asin 0.5)
+    , unOp OpASin (int 0) ==> CFloat (asin 0)
+
+    , unOp OpACos (float 0.5) ==> CFloat (acos 0.5)
+    , unOp OpACos (int 0) ==> CFloat (acos 0)
+
+    , unOp OpATanh (float 0.5) ==> CFloat (atanh 0.5)
+    , unOp OpATanh (int 0) ==> CFloat (atanh 0)
+
+    , unOp OpASinh (float 0.5) ==> CFloat (asinh 0.5)
+    , unOp OpASinh (int 0) ==> CFloat (asinh 0)
+
+    , unOp OpACosh (float 1.5) ==> CFloat (acosh 1.5)
+    , unOp OpACosh (int 1) ==> CFloat (acosh 1)
+    ]
+
+basicFunctions :: FormulaPrim -> Double -> [(FormulaPrim, FormulaPrim)]
+basicFunctions n floatN =
+    [ unOp OpSqrt n ==> CFloat (sqrt floatN)
+    , unOp OpSin n ==> CFloat (sin floatN)
+    , unOp OpSinh n ==> CFloat (sinh floatN)
+    , unOp OpCos n ==> CFloat (cos floatN)
+    , unOp OpCosh n ==> CFloat (cosh floatN)
+
+    , unOp OpTan n ==> CFloat (tan floatN)
+    , unOp OpTanh n ==> CFloat (tanh floatN)
+    , unOp OpATan n ==> CFloat (atan floatN)
+    , unOp OpLn n ==> CFloat (log floatN)
+    , unOp OpLog n ==> CFloat (log floatN / log 10.0)
+    , unOp OpExp n ==> CFloat (exp floatN)
+    -- ?)
+    --, unOp OpCeil n ==> CInteger (ceil floatN)
+    , unOp OpFloor n ==> CInteger (floor floatN)
     ]
 
 coeffArithmeticTest :: [(PolyCoeff, PolyCoeff)]
@@ -300,4 +426,13 @@ evalResultCheck toEval finalFormula = assertEqual "" finalFormula
                                     . evalGlobalLossyStatement
                                     . listifyFormula 
                                     $ Formula toEval
+
+exactevalResultCheck :: FormulaPrim -> FormulaPrim -> Assertion
+exactevalResultCheck toEval finalFormula = assertEqual "" finalFormula
+                                        . unTagFormula
+                                        . result
+                                        . performTransformation
+                                        . evalGlobalLosslessStatement
+                                        . listifyFormula 
+                                        $ Formula toEval
 

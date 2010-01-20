@@ -7,15 +7,15 @@ module EqManips.Algorithm.Eval.Floating ( evalFloat, floatEvalRules ) where
 
 import Control.Applicative
 
+import Data.Maybe( fromMaybe )
 import Data.Ratio
 
 import qualified EqManips.ErrorMessages as Err
-import EqManips.Types
-import EqManips.EvaluationContext
 import EqManips.Algorithm.Eval.Types
 import EqManips.Algorithm.Eval.Utils
+import EqManips.EvaluationContext
+import EqManips.Types
 
-import Data.Maybe( fromMaybe )
 
 -- | General function favored to use the reduction rules
 -- as it preserve meta information about the formula form.
@@ -83,8 +83,8 @@ fAbs f = return $ abs f
 -----------------------------------------------
 -- | All the rules for floats
 floatEvalRules :: EvalFun
-{-floatEvalRules (Fraction f) = return . CFloat $ fromInteger (numerator f)-}
-                                              {-/ fromInteger (denominator f)-}
+floatEvalRules (Fraction f) = return . CFloat $ fromInteger (numerator f)
+                                              / fromInteger (denominator f)
 floatEvalRules (NumEntity Pi) = return $ CFloat pi
 floatEvalRules (BinOp _ OpAdd fs) = binEval OpAdd add add fs
 floatEvalRules (BinOp _ OpSub fs) = binEval OpSub sub add fs
@@ -131,6 +131,7 @@ floatEvalRules end = return end
 ---- Scalar related function
 --------------------------------------------------------------
 unOpReduce :: (forall a. (Floating a) => a -> a) -> FormulaPrim -> Maybe FormulaPrim
+unOpReduce f (Fraction r) = unOpReduce f . CFloat $ fromRational r
 unOpReduce f (CInteger i) = unOpReduce f . CFloat $ fromInteger i
 unOpReduce f (CFloat num) = Just . CFloat $ f num
 unOpReduce _ _ = Nothing

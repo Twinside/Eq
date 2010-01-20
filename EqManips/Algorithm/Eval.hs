@@ -32,6 +32,7 @@ reduce' f = eval reduce' (cleaner f)
         >>= complexEvalRules reduce'
         >>= polyEvalRules reduce' . cleaner
         >>= floatEvalRules . cleaner
+        >>= return . cleaner
     where cleaner = unTagFormula . cleanupRules . Formula
 
 -- | Only perform non-lossy transformations

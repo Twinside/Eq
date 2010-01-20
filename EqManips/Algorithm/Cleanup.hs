@@ -187,6 +187,7 @@ polyclean p = resulter $ pclean p
 ---- Linking all the rules together
 ---------------------------------------------
 rules :: FormulaPrim -> FormulaPrim
+rules (CFloat 0.0) = CInteger 0
 rules (Complex _ (re, CInteger 0)) = re
 rules (Complex _ (re, CFloat 0.0)) = re
 rules (Fraction f)
@@ -217,9 +218,6 @@ rules (BinOp _ OpMul fs)
 -- to be able to pattern match more easily
 rules cf@(CInteger i) | i < 0 = negate . CInteger $ negate i
                       | otherwise = cf
--- Same as above but for floats
-rules cf@(CFloat i) | i < 0 = negate . CFloat $ negate i
-                    | otherwise = cf
 -- -(-x) = x
 rules (UnOp _ OpNegate (UnOp _ OpNegate x)) = x
 
