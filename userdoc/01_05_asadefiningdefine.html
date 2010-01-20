@@ -60,7 +60,7 @@
 <!-- %%% -->
             </div>
             <div class="section">
-                <h3><a name="unification">Unification</a></h3>
+                <h3><a name="matching">Matching</a></h3>
                 <p>
                     You may now want to define functions with many if to change behaviour
                     of your definitions and everything. Sad news, there is no <code>if</code>,
@@ -78,15 +78,15 @@
 <!-- %% eq eval -f fun_unif1.txt -->
 <!-- %%% -->
                 <p>
-                    In the first call <code>uniftest</code> try to unify the first argument (here 3)
-                    with it's first pattern (here 3, also, nice). As these two value <i>Unify</i> it then
-                    continue with the variable <code>a</code>. As a is a variable, it can unify with
+                    In the first call <code>uniftest</code> try to match the first argument (here 3)
+                    with it's first pattern (here 3, also, nice). As these two value <i>Match</i> it then
+                    continue with the variable <code>a</code>. As a is a variable, it can match with
                     anything at least once. So the first definition of the <code>uniftest</code>
-                    unify with the given parameters so <code>2 * a</code> is returned but <code>a</code>
+                    match with the given parameters so <code>2 * a</code> is returned but <code>a</code>
                     is substituted by <code>12</code>.
                 </p>
                 <p>
-                    For the second call to <code>uniftest</code> We try to unify 1 to 3, which can't work.
+                    For the second call to <code>uniftest</code> We try to match 1 to 3, which can't work.
                     So we jump to the second definition and by the same principle, <code>2 * 2</code>
                     is returned.
                 </p>
@@ -127,7 +127,7 @@
 <!-- %% eq eval -f pattern_failure.txt -->
 <!-- %%% -->
                 <p>
-                    Your first unification error. Cute isn't it? So instead of getting a harsh crash,
+                    Your first matching error. Cute isn't it? So instead of getting a harsh crash,
                     we return the variable <code>undefined</code>, which can help you to reuse some result later.
                     You can bound the <code>undefined</code> variable like any other variable.
                 </p>
