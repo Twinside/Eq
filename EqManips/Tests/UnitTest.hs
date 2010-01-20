@@ -365,19 +365,19 @@ basicManualFunction =
     , unOp OpFrac (float 12.5) ==> float 0.5
 
     , unOp OpASin (float 0.5) ==> CFloat (asin 0.5)
-    , unOp OpASin (int 0) ==> CFloat (asin 0)
+    , unOp OpASin (int 0) ==> zeroFy (CFloat $ asin 0)
 
     , unOp OpACos (float 0.5) ==> CFloat (acos 0.5)
     , unOp OpACos (int 0) ==> CFloat (acos 0)
 
-    , unOp OpATanh (float 0.5) ==> CFloat (atanh 0.5)
-    , unOp OpATanh (int 0) ==> CFloat (atanh 0)
+    , unOp OpATanh (float 0.5) ==> zeroFy (CFloat $ atanh 0.5)
+    , unOp OpATanh (int 0) ==> zeroFy (CFloat $ atanh 0)
 
     , unOp OpASinh (float 0.5) ==> CFloat (asinh 0.5)
-    , unOp OpASinh (int 0) ==> CFloat (asinh 0)
+    , unOp OpASinh (int 0) ==> zeroFy (CFloat $ asinh 0)
 
     , unOp OpACosh (float 1.5) ==> CFloat (acosh 1.5)
-    , unOp OpACosh (int 1) ==> CFloat (acosh 1)
+    , unOp OpACosh (int 1) ==> zeroFy (CFloat $ acosh 1)
     ]
 
 basicFunctions :: FormulaPrim -> Double -> [(FormulaPrim, FormulaPrim)]
@@ -391,8 +391,8 @@ basicFunctions n floatN =
     , unOp OpTan n ==> CFloat (tan floatN)
     , unOp OpTanh n ==> CFloat (tanh floatN)
     , unOp OpATan n ==> CFloat (atan floatN)
-    , unOp OpLn n ==> CFloat (log floatN)
-    , unOp OpLog n ==> CFloat (log floatN / log 10.0)
+    , unOp OpLn n ==> zeroFy (CFloat $ log floatN)
+    , unOp OpLog n ==> zeroFy (CFloat $ log floatN / log 10.0)
     , unOp OpExp n ==> CFloat (exp floatN)
     -- ?)
     --, unOp OpCeil n ==> CInteger (ceil floatN)
@@ -435,4 +435,8 @@ exactevalResultCheck toEval finalFormula = assertEqual "" finalFormula
                                         . evalGlobalLosslessStatement
                                         . listifyFormula 
                                         $ Formula toEval
+
+zeroFy :: FormulaPrim -> FormulaPrim
+zeroFy (CFloat 0.0) = CInteger 0
+zeroFy a = a
 
