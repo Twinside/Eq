@@ -29,6 +29,9 @@ float = CFloat
 frac :: (Integer, Integer) -> FormulaPrim
 frac (a,b) = Fraction $ a % b
 
+var :: String -> FormulaPrim
+var = Variable
+
 runEqTests :: IO Bool
 runEqTests = do
     iotest <- formatTestList 
@@ -202,6 +205,9 @@ polynomeTest = [
     , int 2 - poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) ==>
         poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest (-2)) ,(3, PolyRest (-4))])
 
+    --------------------------------------------------
+    ----            Polynome/Polynome
+    --------------------------------------------------
     -- Polynome/Polynome (same variable)
     , poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)]) +
       poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
@@ -211,6 +217,7 @@ polynomeTest = [
       poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
       ==> poly (Polynome "x" [(0,PolyRest 2), (1, PolyRest 2) ,(3, PolyRest 4), (12, PolyRest 4)])
 
+    
     , poly (Polynome "x" [(1, PolyRest 2) ,(12, PolyRest 4)]) +
       poly (Polynome "x" [(1, PolyRest 2) ,(3, PolyRest 4)])
       ==> poly (Polynome "x" [(1, PolyRest 4) ,(3, PolyRest 4), (12, PolyRest 4)])
@@ -323,6 +330,82 @@ polynomeTest = [
                              ,(1, Polynome "y" [(3, PolyRest 8), (5,PolyRest 4)])
                              ,(2, Polynome "y" [(3, PolyRest 12), (5,PolyRest 6)])
                              ])
+
+    --------------------------------------------------
+    ----            Polynome/Variable
+    --------------------------------------------------
+    -- With Same variable
+    -- *
+    , var "x" * poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==>
+        poly (Polynome "x" [(1, PolyRest 1) ,(2, PolyRest 2) ,(4, PolyRest 4)])
+
+    , poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) * var "x" ==>
+        poly (Polynome "x" [(1, PolyRest 1) ,(2, PolyRest 2) ,(4, PolyRest 4)])
+
+    -- +
+    , var "x" + poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==>
+        poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 3) ,(3, PolyRest 4)])
+
+    , poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) + var "x" ==>
+        poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 3) ,(3, PolyRest 4)])
+
+    , var "x" + poly (Polynome "x" [(0, PolyRest 1), (3, PolyRest 4)]) ==>
+        poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 1) ,(3, PolyRest 4)])
+
+    , poly (Polynome "x" [(0, PolyRest 1) ,(3, PolyRest 4)]) + var "x" ==>
+        poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 1) ,(3, PolyRest 4)])
+
+    -- -
+    , var "x" - poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==>
+        poly (Polynome "x" [(0, PolyRest (-1)), (1, PolyRest (-1)) ,(3, PolyRest (-4))])
+
+    , poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest 2) ,(3, PolyRest 4)]) - var "x" ==>
+        poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest 1) ,(3, PolyRest 4)])
+
+    , var "x" - poly (Polynome "x" [(0, PolyRest 1) ,(3, PolyRest 4)]) ==>
+        poly (Polynome "x" [(0, PolyRest (-1)), (1, PolyRest 1) ,(3, PolyRest (-4))])
+
+    , poly (Polynome "x" [(0, PolyRest 2) ,(3, PolyRest 4)]) - var "x" ==>
+        poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest (-1)) ,(3, PolyRest 4)])
+
+    -- With /= variable
+    , var "y" * poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==>
+        poly (Polynome "x" [ (0, Polynome "y" [(1, PolyRest 1)])
+                           , (1, Polynome "y" [(1, PolyRest 2)])
+                           , (3, Polynome "y" [(1, PolyRest 4)])
+                           ])
+
+    , poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) * var "y" ==>
+        poly (Polynome "x" [ (0, Polynome "y" [(1, PolyRest 1)])
+                           , (1, Polynome "y" [(1, PolyRest 2)])
+                           , (3, Polynome "y" [(1, PolyRest 4)])
+                           ])
+
+    -- +
+    , var "y" + poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==>
+        poly (Polynome "x" [(0, Polynome "y" [(0, PolyRest 1), (1, PolyRest 1)])
+                           ,(1, PolyRest 2) ,(3, PolyRest 4)])
+
+    , poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) + var "y" ==>
+        poly (Polynome "x" [(0, Polynome "y" [(0, PolyRest 1), (1, PolyRest 1)])
+                           ,(1, PolyRest 2) ,(3, PolyRest 4)])
+
+    , var "y" + poly (Polynome "x" [(0, PolyRest 1), (3, PolyRest 4)]) ==>
+        poly (Polynome "x" [(0, Polynome "y" [(0, PolyRest 1), (1, PolyRest 1)])
+                           ,(3, PolyRest 4)])
+
+    , poly (Polynome "x" [(0, PolyRest 1) ,(3, PolyRest 4)]) + var "y" ==>
+        poly (Polynome "x" [(0, Polynome "y" [(0, PolyRest 1), (1, PolyRest 1)])
+                           ,(3, PolyRest 4)])
+
+    -- -
+    , var "y" - poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==>
+        poly (Polynome "x" [ (0, Polynome "y" [(0, PolyRest (-1)), (1, PolyRest 1)])
+                           , (1, PolyRest (-2)) ,(3, PolyRest (-4))])
+
+    , poly (Polynome "x" [(0, PolyRest 2) ,(1, PolyRest 2) ,(3, PolyRest 4)]) - var "y" ==>
+        poly (Polynome "x" [ (0, Polynome "y" [(0, PolyRest 2), (1, PolyRest (-1))])
+                           , (1, PolyRest (2)) ,(3, PolyRest (4))])
     ]
 
 comparisonOperator :: [(FormulaPrim, FormulaPrim)]

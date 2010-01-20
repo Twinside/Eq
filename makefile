@@ -24,7 +24,7 @@ clean:
 
 # only way to get this shit working on unix...
 EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.txt
-	ghc -package 'parsec-3.0.0' -cpp -o libMaker EqManips/libMaker.hs
+	ghc -package 'parsec-3.0.0' --make -cpp -o libMaker EqManips/libMaker.hs
 	./libMaker
 	$(FIND) EqManips -name '*.o' | xargs rm
 	$(FIND) EqManips -name '*.hi' | xargs rm

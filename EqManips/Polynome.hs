@@ -375,8 +375,8 @@ inf = coeffPredicate ((<) :: forall a. (Ord a) => a -> a -> Bool)
 lockStep :: (Polynome -> Polynome -> Polynome)
          -> [(PolyCoeff, Polynome)] -> [(PolyCoeff, Polynome)]
          -> [(PolyCoeff, Polynome)]
-lockStep  _ xs [] = xs
-lockStep  _ [] ys = ys
+lockStep op xs [] = map (\(c,v) -> (c, v `op` PolyRest 0)) xs
+lockStep op [] ys = map (\(c,v) -> (c, PolyRest 0 `op` v)) ys
 lockStep op whole1@((c1, def1):xs) whole2@((c2, def2):ys)
     | c1 `inf` c2 = 
         (c1, def1 `op` PolyRest (CoeffInt 0)) : lockStep op xs whole2
