@@ -1,0 +1,6 @@
+integrate( thisisveryveryveryverylong
+         , thisisalsoveryveryveryverylong
+         , (thiiiiiiiiiiiisisevenmorelong / andmultipletimes) ^ really
+         , andeventhelastvarisveryverylong
+         )
+

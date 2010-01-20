@@ -465,7 +465,7 @@ renderF conf (Integrate _ ini end what var)
             (_, (w,_h)) _ [iniSize,endSize,whatSize, derVarSize])
         (x,y) =
       renderF conf end endSize (x + (integWidth - ew) `div` 2, y)
-    . renderF conf ini iniSize (x + (integWidth - iw) `div` 2 - 1, bottom + 1)
+    . renderF conf ini iniSize (max 0 $ x + (integWidth - iw) `div` 2 - 1, bottom + 1)
     . renderF conf what whatSize (whatBegin + 1, whatTop)
     . renderF conf var derVarSize (varBegin + 1, varTop)
 
@@ -473,13 +473,13 @@ renderF conf (Integrate _ ini end what var)
            , ((integPos, bottom),'/'), ((integPos - 1, bottom),'_')
            , ((varBegin, varTop + vh `div` 2), 'd')]
 
-    . (++) [ ((x + 1, i), '|') | i <- [y + eh + 2 .. bottom - 1] ]
+    . (++) [ ((integPos, i), '|') | i <- [y + eh + 2 .. bottom - 1] ]
         where (ww, wh) = snd $ sizeExtract whatSize
               (ew, eh) = snd $ sizeExtract endSize
               (iw, _) = snd $ sizeExtract iniSize
               (vw, vh) = snd $ sizeExtract derVarSize
 
-              integPos = x + 1 -- (integWidth - 4) `div` 2
+              integPos = x + 1 + (integWidth - 4) `div` 2
               whatTop = y + eh + 1
               varTop = whatTop + (wh - vh) `div` 2
 
