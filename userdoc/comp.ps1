@@ -1,4 +1,4 @@
-$excludeList = ('temp.html', 'common.html', 'footer.html', 'header.html')
+$excludeList = ('temp.html', 'common.html', 'footer.html', 'header.html', 'skeleton.html')
 
 function indexmaker()
 {
