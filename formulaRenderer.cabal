@@ -45,6 +45,7 @@ Executable iotest
                  , mtl
                  , filepath
                  , containers
+                 , directory
                  , QuickCheck >= 2.1.0.2
                  , HUnit >= 1.2.2.1
 

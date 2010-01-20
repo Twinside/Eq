@@ -1,14 +1,19 @@
 module EqManips.Tests.UnitTest( eqUnittests, runEqTests ) where
 
+import Control.Applicative
+import System.Directory  
+import System.FilePath
 import Data.Ratio
 
 import Test.HUnit
 import Test.HUnit.Text
 import EqManips.Types
 import EqManips.EvaluationContext
+import EqManips.Renderer.Ascii
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Eval
 import EqManips.Renderer.Sexpr
+import EqManips.InputParser.EqCode hiding expr
 
 infixr 1 ==>
 
@@ -23,7 +28,8 @@ frac (a,b) = Fraction $ a % b
 
 runEqTests :: IO Bool
 runEqTests = do
-    rez <- runTestTT eqUnittests
+    iotest <- formatTestList 
+    rez <- runTestTT . TestList $ eqUnittests : iotest
     return $ errors rez == 0 && failures rez == 0
 
 eqUnittests :: Test
@@ -439,4 +445,20 @@ exactevalResultCheck toEval finalFormula = assertEqual "" finalFormula
 zeroFy :: FormulaPrim -> FormulaPrim
 zeroFy (CFloat 0.0) = CInteger 0
 zeroFy a = a
+
+formatTester :: (Formula TreeForm -> String) -> String -> IO Bool
+formatTester formulaFormater filename = do
+    formulaText <- readFile filename
+    either (const $ return False)
+           (return . ("" /=) . formulaFormater . treeIfyFormula)
+           $ perfectParse formulaText
+
+folder :: FilePath
+folder = "tests" </> "format"
+
+formatTestList :: IO [Test]
+formatTestList = pathes >>= mapM (\f -> return $ formatTester formatFormula f ~? f)
+        where pathes :: IO [FilePath]
+              pathes = map (folder </>) . filter (\f -> takeExtension f == ".txt")
+                    <$> getDirectoryContents folder
 
