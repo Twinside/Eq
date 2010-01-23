@@ -7,6 +7,7 @@ module EqManips.Renderer.Ascii( renderFormula
 
 import Data.List( foldl' )
 import Data.Array.Unboxed
+import Data.Ratio
 import EqManips.Types
 import EqManips.Renderer.Placer
 import EqManips.Algorithm.Utils
@@ -292,11 +293,13 @@ renderF :: Conf         -- ^ Rendering preferences
         -> Pos          -- ^ Where to render
         -> PoserS       -- ^ Result to be used in accumArray
 
+renderF conf (Fraction f) node pos = renderF conf ( CInteger (numerator f)
+                                                  / CInteger (denominator f)) node pos
 -- INVISIBLE META NINJA
-renderF conf (Meta _ f) node pos = renderF conf f node pos
-renderF conf (Complex c) node pos =
+renderF conf (Meta _ _ f) node pos = renderF conf f node pos
+renderF conf (Complex _ c) node pos =
     renderF conf (complexTranslate c) node pos
-renderF conf (Poly p) node pos =
+renderF conf (Poly _ p) node pos =
     renderF conf translated node pos
         where translated = unTagFormula 
                          . treeIfyFormula
@@ -330,10 +333,10 @@ renderF _ (NumEntity e) _ (x,y) = (++) . concat $
         | (yi, elines) <- zip [0..] $ snd $ textOfEntity e]
 renderF _ (Truth True) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "true"
 renderF _ (Truth False) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "false"
-renderF _ (BinOp _ []) _ _ = error "renderF conf - rendering BinOp with no operand."
-renderF _ (BinOp _ [_]) _ _ = error "renderF conf - rendering BinOp with only one operand."
+renderF _ (BinOp _ _ []) _ _ = error "renderF conf - rendering BinOp with no operand."
+renderF _ (BinOp _ _ [_]) _ _ = error "renderF conf - rendering BinOp with only one operand."
 
-renderF conf (BinOp OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =
+renderF conf (BinOp _ OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =
     leftRender . rightRender
     where leftRender = renderF conf f1 t1 (x, y + rh)
           rightRender = renderF conf f2 t2 (x + lw, y)
@@ -341,7 +344,7 @@ renderF conf (BinOp OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =
           (_, rh) = sizeOfTree t2
 
 -- Division is of another kind :]
-renderF conf (BinOp OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
+renderF conf (BinOp _ OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
     (++) [ ((xi,y + lh), '-') | xi <- [x .. x + w - 1]] 
     . renderF conf f1 t1 (leftBegin , y)
     . renderF conf f2 t2 (rightBegin, y + lh + 1)
@@ -350,7 +353,7 @@ renderF conf (BinOp OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
               leftBegin = x + (w - lw) `div` 2
               rightBegin = x + (w - rw) `div` 2
 
-renderF conf (BinOp OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y)
+renderF conf (BinOp _ OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y)
     | mulAsDot conf = leftRender . rightRender . (:) ((x + lw, y + base), '.')
     where (lw, _) = sizeOfTree t1
           leftBase = baseLineOfTree t1
@@ -364,7 +367,7 @@ renderF conf (BinOp OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y)
           leftRender = renderF conf f1 t1 (x, leftTop)
           rightRender = renderF conf f2 t2 (x + lw + 1, rightTop)
 
-renderF conf (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
+renderF conf (BinOp _ op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
   (++) [ ((i, y + base), c) | (i, c) <- zip [x + lw + 1 ..] opChar]
   . leftRender . rightRender
     where (lw, _) = sizeOfTree t1
@@ -381,14 +384,14 @@ renderF conf (BinOp op [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
           rightRender = renderF conf f2 t2 (x + lw + 2 + length opChar
                                       , rightTop)
 
-renderF conf f@(BinOp _ _) node pos = renderF conf (treeIfyBinOp f) node pos
+renderF conf f@(BinOp _ _ _) node pos = renderF conf (treeIfyBinOp f) node pos
 
-renderF conf (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) (x,y) =
+renderF conf (UnOp _ OpSqrt f) (MonoSizeNode _ (_,(w,2)) s) (x,y) =
     (++) [((x, y+1), '\\'), ((x + 1, y + 1), '/')]
     . (++) [ ((i, y), '_') | i <- [x + 2 .. x + w - 1] ]
     . renderF conf f s (x + 2, y + 1)
 
-renderF conf (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
+renderF conf (UnOp _ OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     -- The sub formula
     renderF conf f s (leftBegin, y + 1)
     -- The top line
@@ -403,45 +406,45 @@ renderF conf (UnOp OpSqrt f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
               halfScreen = y + h `div` 2 + 1
               midEnd = h `div` 2 - 2 + h `mod` 2
 
-renderF conf (UnOp OpCeil f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
+renderF conf (UnOp _ OpCeil f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     renderSquareBracket (x,y) (w,h) True False . renderF conf f s (x + 1,y + 1)
 
-renderF conf (UnOp OpFloor f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
+renderF conf (UnOp _ OpFloor f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     renderSquareBracket (x,y) (w,h) False True . renderF conf f s (x + 1,y)
 
-renderF conf (UnOp OpFrac f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
+renderF conf (UnOp _ OpFrac f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     renderBraces (x,y) (w,h) True True . renderF conf f s (x + 1,y)
 
-renderF conf (UnOp OpFactorial f) (MonoSizeNode _ (b,(w,_)) s) (x,y) =
+renderF conf (UnOp _ OpFactorial f) (MonoSizeNode _ (b,(w,_)) s) (x,y) =
     (((x + w - 1, y + b), '!') :) . renderF conf f s (x,y)
 
-renderF conf (UnOp OpNegate f) (MonoSizeNode _ (b,_) s) (x,y) =
+renderF conf (UnOp _ OpNegate f) (MonoSizeNode _ (b,_) s) (x,y) =
     (((x,y + b), '-') :) . renderF conf f s (x + 1,y)
 
-renderF conf (UnOp OpExp f) (MonoSizeNode _ (_,(_,h)) s) (x,y) =
+renderF conf (UnOp _ OpExp f) (MonoSizeNode _ (_,(_,h)) s) (x,y) =
     (((x, y + h - 1), 'e') :) . renderF conf f s (x + 1, y)
 
-renderF conf (UnOp OpAbs f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
+renderF conf (UnOp _ OpAbs f) (MonoSizeNode _ (_,(w,h)) s) (x,y) =
     (++) (concat [  [((x,height), '|'), ((x + w - 1, height), '|')]
                                 | height <- [y .. y + h - 1] ])
     . renderF conf f s (x+1,y)
 
-renderF conf (UnOp op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
-    renderF conf (App (Variable opName) [f]) 
+renderF conf (UnOp _ op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
+    renderF conf (app (Variable opName) [f]) 
             (SizeNodeList False nodeSize b 
                     [EndNode(0,(length opName,1)) ,subSize])
             (x,y) 
         where (b,_) = sizeExtract subSize
               opName = op `obtainProp` OperatorText
 
-renderF conf (App func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
+renderF conf (App _ func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
         (x,y) =
     snd (renderArgs conf (x + fw, y) argBase h mixedList) . renderF conf func s (x,baseLine) 
         where (fw, _) = sizeOfTree s
               baseLine = y + base
               mixedList = zip flist ts
 
-renderF conf (Lambda clauses) (SizeNodeClause _ (_,(w,h)) subTrees) (x,y) =
+renderF conf (Lambda _ clauses) (SizeNodeClause _ (_,(w,h)) subTrees) (x,y) =
     (fst . foldr renderClause (id, y + 1) . reverse $ zip clauses subTrees)
     . renderBraces (x,y) (w,h) True True
         where renderClause ((args, body), (argBase, trees, _bodyBase, bodyTree))
@@ -457,12 +460,12 @@ renderF conf (Lambda clauses) (SizeNodeClause _ (_,(w,h)) subTrees) (x,y) =
                   in
                   (arrow . rez . bodyText . lst, maxTop + top + 1)
 
-renderF conf (Integrate ini end what var)
+renderF conf (Integrate _ ini end what var)
         (SizeNodeList False
             (_, (w,_h)) _ [iniSize,endSize,whatSize, derVarSize])
         (x,y) =
       renderF conf end endSize (x + (integWidth - ew) `div` 2, y)
-    . renderF conf ini iniSize (x + (integWidth - iw) `div` 2 - 1, bottom + 1)
+    . renderF conf ini iniSize (max 0 $ x + (integWidth - iw) `div` 2 - 1, bottom + 1)
     . renderF conf what whatSize (whatBegin + 1, whatTop)
     . renderF conf var derVarSize (varBegin + 1, varTop)
 
@@ -470,13 +473,13 @@ renderF conf (Integrate ini end what var)
            , ((integPos, bottom),'/'), ((integPos - 1, bottom),'_')
            , ((varBegin, varTop + vh `div` 2), 'd')]
 
-    . (++) [ ((x + 1, i), '|') | i <- [y + eh + 2 .. bottom - 1] ]
+    . (++) [ ((integPos, i), '|') | i <- [y + eh + 2 .. bottom - 1] ]
         where (ww, wh) = snd $ sizeExtract whatSize
               (ew, eh) = snd $ sizeExtract endSize
               (iw, _) = snd $ sizeExtract iniSize
               (vw, vh) = snd $ sizeExtract derVarSize
 
-              integPos = x + 1 -- (integWidth - 4) `div` 2
+              integPos = x + 1 + (integWidth - 4) `div` 2
               whatTop = y + eh + 1
               varTop = whatTop + (wh - vh) `div` 2
 
@@ -485,7 +488,7 @@ renderF conf (Integrate ini end what var)
               whatBegin = varBegin - 2 - ww
               bottom = y + eh + max 2 wh
 
-renderF conf (Product ini end what)
+renderF conf (Product _ ini end what)
         (SizeNodeList False
              (_, (w,_h)) _ [iniSize,endSize,whatSize])
         (x,y) =
@@ -506,14 +509,14 @@ renderF conf (Product ini end what)
               {-middleStop = wh `div` 2 + if wh `mod` 2 == 0-}
                     {-then -1 else 0-}
 
-renderF conf (Derivate what var) (BiSizeNode _ (_,(w,_)) whatSize vardSize) (x,y) =
+renderF conf (Derivate _ what var) (BiSizeNode _ (_,(w,_)) whatSize vardSize) (x,y) =
     (++) [((x, y + wh - 1), 'd'), ((x, y + wh + 1), 'd')]
     . (++) [ ((i, y + wh), '-') | i <- [x .. x + w - 1] ]
     . renderF conf what whatSize (x + 2, y)
     . renderF conf var vardSize (x + 2, y + wh + 1)
      where (_, (_, wh)) = sizeExtract whatSize
 
-renderF conf (Sum ini end what)
+renderF conf (Sum _ ini end what)
         (SizeNodeList False
               (_, (w,_h)) _ [iniSize,endSize,whatSize])
         (x,y) =
@@ -537,7 +540,7 @@ renderF conf (Sum ini end what)
               middleStop = wh `div` 2 + if wh `mod` 2 == 0
                     then -1 else 0
 
-renderF conf (Matrix _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
+renderF conf (Matrix _ _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
     renderSquareBracket (x,y) (w,h) True True . final
      where renderLine (x', y', acc) (formu, ((base,(w',_)),size)) =
             let (nodeBase, (nodeWidth, _)) = sizeExtract size

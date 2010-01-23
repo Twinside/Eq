@@ -25,7 +25,7 @@ sub a b = right (a,b)
 ----            '*'
 -----------------------------------------------
 mul :: EvalOp
-mul (Fraction r1) (Fraction r2) = left . Fraction $ r1 + r2
+mul (Fraction r1) (Fraction r2) = left . Fraction $ r1 * r2
 mul a b = right (a,b)
 
 -----------------------------------------------
@@ -42,9 +42,9 @@ division a b = right (a,b)
 -----------------------------------------------
 -- | General evaluation/reduction function
 ratioEvalRules :: EvalFun
-ratioEvalRules (BinOp OpAdd fs) = binEval OpAdd add add fs
-ratioEvalRules (BinOp OpSub fs) = binEval OpSub sub add fs
-ratioEvalRules (BinOp OpMul fs) = binEval OpMul mul mul fs
-ratioEvalRules (BinOp OpDiv fs) = binEval OpDiv division mul fs
+ratioEvalRules (BinOp _ OpAdd fs) = binEval OpAdd add add fs
+ratioEvalRules (BinOp _ OpSub fs) = binEval OpSub sub add fs
+ratioEvalRules (BinOp _ OpMul fs) = binEval OpMul mul mul fs
+ratioEvalRules (BinOp _ OpDiv fs) = binEval OpDiv division mul fs
 ratioEvalRules end = return end
 

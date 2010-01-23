@@ -41,6 +41,10 @@ module EqManips.Types
          , foldf
          , canDistributeOver 
          , distributeOver 
+
+         , binOp, unOp, complex, meta
+         , app, summ, productt, derivate
+         , integrate, lambda, matrix, poly
          ) where
 
 import Data.Ord( comparing )
@@ -121,6 +125,7 @@ data MetaOperation =
     deriving (Eq, Show, Read)
 
 type FloatingValue = Double
+type HashResume = Int
 
 -- | Main type manipulated by the software.
 -- All relevant instances for numeric types
@@ -132,40 +137,40 @@ data FormulaPrim =
     | CInteger Integer
     | CFloat FloatingValue
     | Fraction (Ratio Integer)
-    | Complex (FormulaPrim , FormulaPrim)
+    | Complex HashResume (FormulaPrim , FormulaPrim)
 
     -- | FunName arguments
-    | App FormulaPrim [FormulaPrim]
+    | App HashResume FormulaPrim [FormulaPrim]
     -- | LowBound highbound expression
-    | Sum FormulaPrim FormulaPrim FormulaPrim
+    | Sum HashResume FormulaPrim FormulaPrim FormulaPrim
     -- | LowBound highbound expression
-    | Product FormulaPrim FormulaPrim FormulaPrim
+    | Product HashResume FormulaPrim FormulaPrim FormulaPrim
 
     -- | Derivate expression withVar
-    | Derivate FormulaPrim FormulaPrim
+    | Derivate HashResume FormulaPrim FormulaPrim
 
     -- | lowBound highBound expression dx
-    | Integrate FormulaPrim FormulaPrim FormulaPrim FormulaPrim
+    | Integrate HashResume FormulaPrim FormulaPrim FormulaPrim FormulaPrim
 
     -- | -1 for example
-    | UnOp UnOperator FormulaPrim
+    | UnOp HashResume UnOperator FormulaPrim
 
     -- | Represent a function. a function
     -- can have many definitions. The applied
     -- one must be the first in the list which
     -- unify with the applied parameters.
-    | Lambda [( [FormulaPrim] {- clause args -}
-              , FormulaPrim {- clause body -})
-             ] {- clauses -}
+    | Lambda HashResume [( [FormulaPrim] {- clause args -}
+                         , FormulaPrim {- clause body -})
+                        ] {- clauses -}
 
     -- | f1 op f2
-    | BinOp BinOperator [FormulaPrim]
+    | BinOp HashResume BinOperator [FormulaPrim]
 
     -- | Width, Height, all formulas
-    | Matrix Int Int [[FormulaPrim]]
+    | Matrix HashResume Int Int [[FormulaPrim]]
 
     -- | Form that can be used to make nice simplification.
-    | Poly Polynome
+    | Poly HashResume Polynome
 
     -- | Used for debug
     | Block Int Int Int
@@ -173,8 +178,44 @@ data FormulaPrim =
     -- | A meta operation is an operation used
     -- by the sysem, but that doesn't appear in the
     -- normal output.
-    | Meta MetaOperation FormulaPrim
+    | Meta HashResume MetaOperation FormulaPrim
     deriving (Eq, Show, Read)
+
+app :: FormulaPrim -> [FormulaPrim] -> FormulaPrim 
+app = App 0
+
+summ :: FormulaPrim -> FormulaPrim -> FormulaPrim -> FormulaPrim
+summ = Sum 0
+
+productt :: FormulaPrim -> FormulaPrim -> FormulaPrim -> FormulaPrim
+productt = Product 0
+
+derivate :: FormulaPrim -> FormulaPrim -> FormulaPrim
+derivate = Derivate 0
+
+integrate :: FormulaPrim -> FormulaPrim -> FormulaPrim -> FormulaPrim -> FormulaPrim 
+integrate = Integrate 0
+
+lambda :: [([FormulaPrim], FormulaPrim)] -> FormulaPrim
+lambda = Lambda 0
+
+matrix :: Int -> Int -> [[FormulaPrim]] -> FormulaPrim
+matrix = Matrix 0
+
+poly :: Polynome -> FormulaPrim
+poly = Poly 0
+
+binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
+binOp = BinOp 0
+
+unOp :: UnOperator -> FormulaPrim -> FormulaPrim
+unOp = UnOp 0
+
+complex :: (FormulaPrim, FormulaPrim) -> FormulaPrim
+complex = Complex 0
+
+meta :: MetaOperation -> FormulaPrim -> FormulaPrim
+meta = Meta 0
 
 -- | Type used to carry some meta information
 -- with the type system.
@@ -264,11 +305,11 @@ instance Ord Polynome where
 
 instance Ord FormulaPrim where
     -- Ignoring meta in comparisons
-    compare (Meta _ f) f2 = compare f f2
-    compare f (Meta _ f2) = compare f f2
+    compare (Meta _ _ f) f2 = compare f f2
+    compare f (Meta _ _ f2) = compare f f2
 
     compare (NumEntity e1) (NumEntity e2) = compare e1 e2
-    compare (UnOp _ f1) (UnOp _ f2) = compare f1 f2
+    compare (UnOp _ _ f1) (UnOp _ _ f2) = compare f1 f2
 
     compare (CInteger i) (CInteger i2) = compare i i2
     compare (CFloat f) (CFloat f2) = compare f f2
@@ -277,9 +318,9 @@ instance Ord FormulaPrim where
     compare (CFloat _) _ = LT
     compare (CInteger _) _ = LT
 
-    compare (Poly p1) (Poly p2) = compare p1 p2
-    compare (Poly _) _ = LT
-    compare _ (Poly _) = GT
+    compare (Poly _ p1) (Poly _ p2) = compare p1 p2
+    compare (Poly _ _) _ = LT
+    compare _ (Poly _ _) = GT
 
     -- x < y
     compare (Variable v) (Variable v1) = compare v v1
@@ -292,49 +333,49 @@ instance Ord FormulaPrim where
     compare _ (NumEntity _) = GT
 
     -- we don't sort matrixes, because the mul
-    compare (Matrix _ _ _) (Matrix _ _ _) = EQ
-    compare _ (Matrix _ _ _) = LT
-    compare (Matrix _ _ _) _ = LT
+    compare (Matrix _ _ _ _) (Matrix _ _ _ _) = EQ
+    compare _ (Matrix _ _ _ _) = LT
+    compare (Matrix _ _ _ _) _ = LT
 
-    compare (BinOp OpPow [Variable v1, p1])
-            (BinOp OpPow [Variable v2, p2])
+    compare (BinOp _ OpPow [Variable v1, p1])
+            (BinOp _ OpPow [Variable v2, p2])
             | p1 == p2 = compare v1 v2
             | otherwise = compare p1 p2
     
-    compare (BinOp OpPow a) (BinOp OpPow b) =
+    compare (BinOp _ OpPow a) (BinOp _ OpPow b) =
         case comparing length a b of
              LT -> LT
              EQ -> foldl' (\acc (a', b') -> acc <<>> compare a' b') EQ $ zip a b
              GT -> GT
 
-    compare (BinOp OpPow _) _ = GT
-    compare _ (BinOp OpPow _) = LT
+    compare (BinOp _ OpPow _) _ = GT
+    compare _ (BinOp _ OpPow _) = LT
 
-    compare (BinOp op (BinOp OpPow (Variable v1: p1: _):_))
-            (BinOp op' (BinOp OpPow (Variable v2: p2: _):_))
+    compare (BinOp _ op (BinOp _ OpPow (Variable v1: p1: _):_))
+            (BinOp _ op' (BinOp _ OpPow (Variable v2: p2: _):_))
         | op == op' && v1 == v2 && op `elem` [OpMul, OpDiv] = compare p1 p2
 
-    compare (BinOp op (_:(BinOp OpPow (Variable v1: p1: _):_)))
-            (BinOp op' (_:(BinOp OpPow (Variable v2: p2: _):_)))
+    compare (BinOp _ op (_:(BinOp _ OpPow (Variable v1: p1: _):_)))
+            (BinOp _ op' (_:(BinOp _ OpPow (Variable v2: p2: _):_)))
         | op == op' && v1 == v2 && op `elem` [OpMul, OpDiv] = compare p1 p2
 
-    compare (BinOp _ f1) (BinOp _ f2) = compare f1 f2
+    compare (BinOp _ _ f1) (BinOp _ _ f2) = compare f1 f2
 
-    compare (Derivate w _) (Derivate w' _) = compare w w'
-    compare (Derivate _ _) (Integrate _ _ _ _) = LT
-    compare (Derivate _ _) _ = GT
+    compare (Derivate _ w _) (Derivate _ w' _) = compare w w'
+    compare (Derivate _ _ _) (Integrate _ _ _ _ _) = LT
+    compare (Derivate _ _ _) _ = GT
 
-    compare (Integrate _ _ w _) (Integrate _ _ w' _) = compare w w'
-    compare (Integrate _ _ _ _) _ = GT
-    compare (Product l h w) (Product l' h' w') =
+    compare (Integrate _ _ _ w _) (Integrate _ _ _ w' _) = compare w w'
+    compare (Integrate _ _ _ _ _) _ = GT
+    compare (Product _ l h w) (Product _ l' h' w') =
         compare l l' <<>> compare h h' <<>> compare w w'
-    compare (Product _ _ _) _ = GT
+    compare (Product _ _ _ _) _ = GT
 
-    compare (Sum l h w) (Sum l' h' w') =
+    compare (Sum _ l h w) (Sum _ l' h' w') =
         compare l l' <<>> compare h h' <<>> compare w w'
-    compare (Sum _ _ _) _ = GT
+    compare (Sum _ _ _ _) _ = GT
 
-    compare (App _ _) _ = LT
+    compare (App _ _ _) _ = LT
 
     compare (Block _ _ _) _ = GT
     compare (NumEntity _) _ = LT
@@ -519,28 +560,28 @@ unOpNames = [ (op, reprez) | (op, reprez,_) <- realUnopOperators] ++
 -------------------------------------------
 foldf :: (Monoid b)
       => (FormulaPrim -> b -> b) -> b -> FormulaPrim -> b
-foldf f acc m@(Meta _ fo) = f m $ foldf f acc fo
-foldf f acc fo@(UnOp _ sub) = f fo $ foldf f acc sub
-foldf f acc fo@(App def args) =
+foldf f acc m@(Meta _ _ fo) = f m $ foldf f acc fo
+foldf f acc fo@(UnOp _ _ sub) = f fo $ foldf f acc sub
+foldf f acc fo@(App _ def args) =
     f fo (foldf f listAcc def)
      where listAcc = foldr f acc args
 
-foldf f acc fo@(BinOp _ args) =
+foldf f acc fo@(BinOp _ _ args) =
     f fo $ foldr f acc args
 
-foldf f acc fo@(Sum ini end what) = f fo finalAcc
+foldf f acc fo@(Sum _ ini end what) = f fo finalAcc
     where whatAcc = foldf f acc what
           iniAcc = foldf f acc ini
           endAcc = foldf f acc end
           finalAcc = whatAcc `mappend` iniAcc `mappend` endAcc
 
-foldf f acc fo@(Product ini end what) = f fo finalAcc
+foldf f acc fo@(Product _ ini end what) = f fo finalAcc
         where whatAcc = foldf f acc what
               iniAcc = foldf f acc ini
               endAcc = foldf f acc end
               finalAcc = whatAcc `mappend` iniAcc `mappend` endAcc
 
-foldf f acc fo@(Integrate ini end what var) = f fo finalAcc
+foldf f acc fo@(Integrate _ ini end what var) = f fo finalAcc
         where whatAcc = foldf f acc what
               iniAcc = foldf f acc ini
               endAcc = foldf f acc end
@@ -548,11 +589,11 @@ foldf f acc fo@(Integrate ini end what var) = f fo finalAcc
               finalAcc = whatAcc `mappend` iniAcc 
                                  `mappend` endAcc `mappend` varAcc
 
-foldf f acc fo@(Derivate what var) = f fo $ whatAcc `mappend` varAcc
+foldf f acc fo@(Derivate _ what var) = f fo $ whatAcc `mappend` varAcc
         where whatAcc = foldf f acc what
               varAcc = foldf f acc var
 
-foldf f acc fo@(Matrix _ _ cells) = f fo finalAcc
+foldf f acc fo@(Matrix _ _ _ cells) = f fo finalAcc
     where lineFolder acc' formu = acc' `mappend` foldf f acc formu
           rowAccs = [ foldl' lineFolder mempty row | row <- cells]
           finalAcc = foldl1' mappend rowAccs
@@ -563,39 +604,39 @@ foldf f acc fo = f fo acc
 ----  Strong and valid instances    ----
 ----------------------------------------
 instance Num FormulaPrim where
-    a + b = BinOp OpAdd [a,b]
-    a - b = BinOp OpSub [a,b]
-    a * b = BinOp OpMul [a,b]
-    negate = UnOp OpNegate
-    abs = UnOp OpAbs
+    a + b = binOp OpAdd [a,b]
+    a - b = binOp OpSub [a,b]
+    a * b = binOp OpMul [a,b]
+    negate = unOp OpNegate
+    abs = unOp OpAbs
     signum (CInteger n) = CInteger (signum n)
     signum (CFloat f) = CFloat (signum f)
     signum _ = CInteger 0
     fromInteger = CInteger . fromInteger
 
 instance Fractional FormulaPrim where
-    a / b = BinOp OpDiv [a,b]
-    recip b = BinOp OpDiv [CInteger 1, b]
-    fromRational a = BinOp OpDiv [ int $ numerator a
+    a / b = binOp OpDiv [a,b]
+    recip b = binOp OpDiv [CInteger 1, b]
+    fromRational a = binOp OpDiv [ int $ numerator a
                                  , int $ denominator a]
             where int = CInteger . fromInteger
     
 instance Floating FormulaPrim where
     pi = CFloat pi 
-    exp = UnOp OpExp
-    sqrt = UnOp OpSqrt
-    log = UnOp OpLn
-    a ** b = BinOp OpPow [a,b]
-    sin = UnOp OpSin
-    cos = UnOp OpCos
-    tan = UnOp OpTan
-    asin = UnOp OpASin
-    acos = UnOp OpACos
-    atan = UnOp OpATan
-    sinh = UnOp OpSinh
-    cosh = UnOp OpCosh
-    tanh = UnOp OpTanh
-    asinh = UnOp OpASinh
-    acosh = UnOp OpACosh
-    atanh = UnOp OpATanh
+    exp = unOp OpExp
+    sqrt = unOp OpSqrt
+    log = unOp OpLn
+    a ** b = binOp OpPow [a,b]
+    sin = unOp OpSin
+    cos = unOp OpCos
+    tan = unOp OpTan
+    asin = unOp OpASin
+    acos = unOp OpACos
+    atan = unOp OpATan
+    sinh = unOp OpSinh
+    cosh = unOp OpCosh
+    tanh = unOp OpTanh
+    asinh = unOp OpASinh
+    acosh = unOp OpACosh
+    atanh = unOp OpATanh
 

@@ -30,8 +30,6 @@ import EqManips.Algorithm.Utils
 import EqManips.FormulaIterator
 import qualified EqManips.ErrorMessages as Err
 
---import System.IO.Unsafe
-
 -- | will pack/simplify internal representation of a polynome.
 -- If there is only one null coefficient only subPoly will be present
 simplifyPolynome :: Polynome -> Polynome
@@ -57,7 +55,7 @@ convertToFormula = Formula . convertToFormulaPrim
 -- can polynomized by a polynome
 polynomizeFormula :: Formula ListForm -> Formula ListForm
 polynomizeFormula (Formula f) = Formula $ topDownTraversal converter f
-        where converter f' = Poly <$> convertToPolynome (Formula f')
+        where converter f' = poly <$> convertToPolynome (Formula f')
 
 -- | Convert a polynome into a simpler formula using only
 -- basic operators.
@@ -65,7 +63,7 @@ convertToFormulaPrim :: Polynome -> FormulaPrim
 convertToFormulaPrim (PolyRest coeff) = coefToFormula coeff
 convertToFormulaPrim (Polynome var lst) = adder $ map elemConverter lst
     where adder [x] = x
-          adder rest = BinOp OpAdd rest
+          adder rest = binOp OpAdd rest
           fvar = Variable var
           elemConverter (degree,def) = degreeOf (convertToFormulaPrim def)
                                                 (coefToFormula degree)
@@ -105,76 +103,76 @@ polySort = depthFormulaPrimTraversal `asAMonad` sortBinOp sorter
           -- Special sort which bring x in front, followed by others. Lexical
           -- order first.
 
-          sorter (Poly p1) (Poly p2) = compare p1 p2
-          sorter (Poly _) _ = LT
-          sorter _ (Poly _) = GT
+          sorter (Poly _ p1) (Poly _ p2) = compare p1 p2
+          sorter (Poly _ _) _ = LT
+          sorter _ (Poly _ _) = GT
 
           -- Rules to fine-sort '*' elements
           -- (x before y), no regard for formula degree
           sorter (Variable v1) (Variable v2) = compare v1 v2
 
           -- x ^ n * y ^ n (n can be one, not shown)
-          sorter (BinOp OpPow [Variable v1, p1])
-                 (BinOp OpPow [Variable v2, p2]) =
+          sorter (BinOp _ OpPow [Variable v1, p1])
+                 (BinOp _ OpPow [Variable v2, p2]) =
                      compare v1 v2 `lexicalOrder` compare p1 p2
 
           -- x * y ^ n
           sorter (Variable v1)
-                 (BinOp OpPow (Variable v2:_)) =
+                 (BinOp _ OpPow (Variable v2:_)) =
                      compare v1 v2 `lexicalOrder` LT
 
           -- x ^ n * y
-          sorter (BinOp OpPow (Variable v1:_))
+          sorter (BinOp _ OpPow (Variable v1:_))
                  (Variable v2) = compare v1 v2 `lexicalOrder` GT
 
           -- (x * ...) + y ^ n
-          sorter (BinOp OpMul (Variable v1:_))
-                 (BinOp OpPow [Variable v2, _]) = compare v1 v2 `lexicalOrder` LT
+          sorter (BinOp _ OpMul (Variable v1:_))
+                 (BinOp _ OpPow [Variable v2, _]) = compare v1 v2 `lexicalOrder` LT
 
           -- x ^ n + (y * ...)
-          sorter (BinOp OpPow [Variable v1, _])
-                 (BinOp OpMul (Variable v2:_))  = compare v1 v2 `lexicalOrder` GT
+          sorter (BinOp _ OpPow [Variable v1, _])
+                 (BinOp _ OpMul (Variable v2:_))  = compare v1 v2 `lexicalOrder` GT
 
           -- (x ^ m * ...) + y ^ n
-          sorter (BinOp OpMul (BinOp OpPow [Variable v1,p1]:_))
-                 (BinOp OpPow [Variable v2, p2]) =
+          sorter (BinOp _ OpMul (BinOp _ OpPow [Variable v1,p1]:_))
+                 (BinOp _ OpPow [Variable v2, p2]) =
                      compare v1 v2 `lexicalOrder` compare p1 p2
 
           -- x ^ n + (y ^ m * ...)
-          sorter (BinOp OpPow [Variable v1, p1])
-                 (BinOp OpMul (BinOp OpPow [Variable v2,p2]:_)) =
+          sorter (BinOp _ OpPow [Variable v1, p1])
+                 (BinOp _ OpMul (BinOp _ OpPow [Variable v2,p2]:_)) =
                      compare v1 v2 `lexicalOrder` compare p1 p2
 
           -- Rules to fine sort the '+' elements, lowest variable
           -- first (x before y), smallest order first (x before x ^ 15)
 
           -- (x^n * ....) + (y^n * ...)
-          sorter (BinOp OpMul (BinOp OpPow (Variable v1: power1):_))
-                 (BinOp OpMul (BinOp OpPow (Variable v2: power2):_)) = 
+          sorter (BinOp _ OpMul (BinOp _ OpPow (Variable v1: power1):_))
+                 (BinOp _ OpMul (BinOp _ OpPow (Variable v2: power2):_)) = 
                     compare v1 v2 `lexicalOrder` compare power1 power2
 
           -- (x * ...) + (y^n * ...)
-          sorter (BinOp OpMul (Variable v1:_))
-                 (BinOp OpMul (BinOp OpPow (Variable v2:_):_)) =
+          sorter (BinOp _ OpMul (Variable v1:_))
+                 (BinOp _ OpMul (BinOp _ OpPow (Variable v2:_):_)) =
                      compare v1 v2 `lexicalOrder` LT
 
           -- (x^n * ...) + (y * ...)
-          sorter (BinOp OpMul (BinOp OpPow (Variable v1:_):_))
-                 (BinOp OpMul (Variable v2:_)) = compare v1 v2 `lexicalOrder` GT
+          sorter (BinOp _ OpMul (BinOp _ OpPow (Variable v1:_):_))
+                 (BinOp _ OpMul (Variable v2:_)) = compare v1 v2 `lexicalOrder` GT
 
           -- (x * ...) + (y * ...)
-          sorter (BinOp OpMul (Variable v1:_))
-                 (BinOp OpMul (Variable v2:_)) = compare v1 v2
+          sorter (BinOp _ OpMul (Variable v1:_))
+                 (BinOp _ OpMul (Variable v2:_)) = compare v1 v2
 
           -- x + (y * ...)
           sorter (Variable v1)
-                 (BinOp OpMul (Variable v2:_)) = compare v1 v2
+                 (BinOp _ OpMul (Variable v2:_)) = compare v1 v2
 
           -- (x * ...) + y
-          sorter (BinOp OpMul (Variable v1:_))
+          sorter (BinOp _ OpMul (Variable v1:_))
                  (Variable v2) = compare v1 v2
 
-          sorter (BinOp OpPow a) (BinOp OpPow b) =
+          sorter (BinOp _ OpPow a) (BinOp _ OpPow b) =
                 case comparing length a b of
                      LT -> LT
                      GT -> GT
@@ -182,8 +180,8 @@ polySort = depthFormulaPrimTraversal `asAMonad` sortBinOp sorter
                                                         then acc
                                                         else compare a' b') EQ $ zip a b
           -- x ^ n * ?
-          sorter _ (BinOp OpPow (Variable _:_)) = GT
-          sorter (BinOp OpPow (Variable _:_)) _ = LT
+          sorter _ (BinOp _ OpPow (Variable _:_)) = GT
+          sorter (BinOp _ OpPow (Variable _:_)) _ = LT
 
           -- make sure weird things go at the end.
           sorter (Variable _) _ = LT
@@ -196,17 +194,17 @@ polySort = depthFormulaPrimTraversal `asAMonad` sortBinOp sorter
 -- formula.  -- We assume that the formula as been previously sorted
 resign :: FormulaPrim -> [FormulaPrim] -> [FormulaPrim]
 resign = globalResign
-    where globalResign (BinOp OpMul (a:xs)) acc
+    where globalResign (BinOp _ OpMul (a:xs)) acc
             | isFormulaInteger a = case atomicResign a of
-                        Nothing -> BinOp OpMul (CInteger (-1):a:xs) : acc
-                        Just a' -> BinOp OpMul (a':xs) : acc
-          globalResign (BinOp OpAdd lst) acc = foldr resign acc lst
+                        Nothing -> binOp OpMul (CInteger (-1):a:xs) : acc
+                        Just a' -> binOp OpMul (a':xs) : acc
+          globalResign (BinOp _ OpAdd lst) acc = foldr resign acc lst
           globalResign a acc = fromMaybe (CInteger (-1) * a) (atomicResign a) : acc
 
           atomicResign (CInteger i) = Just $ CInteger (-i)
           atomicResign (CFloat i) = Just $ CFloat (-i)
-          atomicResign (UnOp OpNegate a) = Just a
-          atomicResign (BinOp OpDiv [a,b]) = (\a' -> BinOp OpDiv [a', b]) <$> atomicResign a
+          atomicResign (UnOp _ OpNegate a) = Just a
+          atomicResign (BinOp _ OpDiv [a,b]) = (\a' -> binOp OpDiv [a', b]) <$> atomicResign a
           atomicResign _ = Nothing
 
 -- | Flatten a whole formula, by flattening from the leafs.
@@ -216,33 +214,33 @@ formulaFlatter = depthFormulaPrimTraversal `asAMonad` listFlatter
 -- | Given a formula in LIST form, provide a version
 -- with only Pluses.
 listFlatter :: FormulaPrim -> FormulaPrim
-listFlatter (BinOp OpAdd lst) = BinOp OpAdd $ foldr flatter [] lst
-    where flatter (BinOp OpSub (x:xs)) acc = x : foldr resign acc xs
-          flatter (BinOp OpAdd lst') acc = lst' ++ acc
+listFlatter (BinOp _ OpAdd lst) = binOp OpAdd $ foldr flatter [] lst
+    where flatter (BinOp _ OpSub (x:xs)) acc = x : foldr resign acc xs
+          flatter (BinOp _ OpAdd lst') acc = lst' ++ acc
           flatter x acc = x:acc
-listFlatter (BinOp OpSub ((BinOp OpAdd lst'):xs)) =
-    BinOp OpAdd $ lst' ++ foldr resign [] xs
-listFlatter (BinOp OpSub (x:xs)) =
-    BinOp OpAdd $ x : foldr resign [] xs
+listFlatter (BinOp _ OpSub ((BinOp _ OpAdd lst'):xs)) =
+    binOp OpAdd $ lst' ++ foldr resign [] xs
+listFlatter (BinOp _ OpSub (x:xs)) =
+    binOp OpAdd $ x : foldr resign [] xs
 
 -- Remove the maximum of negation in the multiplication.
 -- In the end, keep the needed negation into the first term
-listFlatter (BinOp OpMul lst) = if foldr countInversion False lst
+listFlatter (BinOp _ OpMul lst) = if foldr countInversion False lst
                 then let (x:xs) = map cleanSign lst
-                     in BinOp OpMul $ resign x xs
-                else BinOp OpMul $ map cleanSign lst
+                     in binOp OpMul $ resign x xs
+                else binOp OpMul $ map cleanSign lst
    where iodd :: Int -> Bool
          iodd = odd
-         countInversion whole@(UnOp OpNegate _) acc =
+         countInversion whole@(UnOp _ OpNegate _) acc =
              if iodd . fst $ getUnsignedRoot 0 whole
                 then not acc
                 else acc
          countInversion _ acc = acc
 
-         getUnsignedRoot n (UnOp OpNegate something) = getUnsignedRoot (n+1) something
+         getUnsignedRoot n (UnOp _ OpNegate something) = getUnsignedRoot (n+1) something
          getUnsignedRoot n (something) = (n :: Int, something)
 
-         cleanSign whole@(UnOp OpNegate _) = snd $ getUnsignedRoot 0 whole
+         cleanSign whole@(UnOp _ OpNegate _) = snd $ getUnsignedRoot 0 whole
          cleanSign a = a
 
 listFlatter a = a
@@ -252,10 +250,10 @@ listFlatter a = a
 evalCoeff :: [FormulaPrim] -> Maybe PolyCoeff
 evalCoeff [CInteger i] = Just $ CoeffInt i
 evalCoeff [CFloat f] = Just $ CoeffFloat f
-evalCoeff [UnOp OpNegate (CInteger i)] = Just $ CoeffInt (-i)
-evalCoeff [UnOp OpNegate (CFloat f)] = Just $ CoeffFloat (-f)
-evalCoeff [BinOp OpDiv [CInteger a, CInteger b]] = Just . CoeffRatio $ a % b
-evalCoeff [UnOp OpNegate (BinOp OpDiv [CInteger a, CInteger b])] = Just . CoeffRatio $ (-a) % b
+evalCoeff [UnOp _ OpNegate (CInteger i)] = Just $ CoeffInt (-i)
+evalCoeff [UnOp _ OpNegate (CFloat f)] = Just $ CoeffFloat (-f)
+evalCoeff [BinOp _ OpDiv [CInteger a, CInteger b]] = Just . CoeffRatio $ a % b
+evalCoeff [UnOp _ OpNegate (BinOp _ OpDiv [CInteger a, CInteger b])] = Just . CoeffRatio $ (-a) % b
 evalCoeff _ = Nothing
 
 -- | Given a rest (a leading +c, where c is a constant) and
@@ -265,16 +263,16 @@ translator :: [FormulaPrim]                            -- Unnammed rest (var ^ 0
            -> [(String, [(FormulaPrim, FormulaPrim)])] -- Named things x ^ n or y ^ n, n > 0
            -> Maybe (Maybe Polynome)                   -- ^ First maybe: error, nested maybe: empty
 translator [] [(var, coefs)] = do 
-        result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
+        result <- mapM (\(rank, polyn) -> (,) <$> evalCoeff [rank] <*> polynomize polyn) coefs
         return . Just $ Polynome var result
 
 translator pow0 [(var, coefs)] = do
-        result <- mapM (\(rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
+        result <- mapM (\(rank,polyn) -> (,) <$> evalCoeff [rank] <*> polynomize polyn) coefs
         rest <- evalCoeff pow0
         return . Just . Polynome var $ (CoeffInt 0, PolyRest rest):result
 
 translator pow0 ((var,coefs):rest) = do
-    result <- mapM (\ (rank,poly) -> (,) <$> evalCoeff [rank] <*> polynomize poly) coefs
+    result <- mapM (\ (rank,polyn) -> (,) <$> evalCoeff [rank] <*> polynomize polyn) coefs
     subPolynome <- translator pow0 rest
     let finalList = case subPolynome of
                          Nothing -> result
@@ -285,12 +283,12 @@ translator pow0 [] = return $ PolyRest <$> evalCoeff pow0
 
 -- | Try to transform a formula in polynome.
 polynomize :: FormulaPrim -> Maybe Polynome
-polynomize wholeFormula@(BinOp OpMul _) = polynomize (BinOp OpAdd [wholeFormula])
+polynomize wholeFormula@(BinOp _ OpMul _) = polynomize (binOp OpAdd [wholeFormula])
 -- HMmm?
-polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don't distingate
-                             . translator pow0  -- cases at the upper level.
-                             . packCoefs
-                             $ varGroup polys
+polynomize (BinOp _ OpAdd lst) = join             -- flatten a maybe level, we don't distingate
+                               . translator pow0  -- cases at the upper level.
+                               . packCoefs
+                               $ varGroup polys
   where (polys, pow0) = partitionEithers $ map extractFirstTerm lst
         varGroup = groupBy (\(var,_,_) (var',_,_) -> var == var')
         coeffGroup = groupBy (\(_,coeff1,_) (_,coeff2,_) -> coeff1 == coeff2)
@@ -302,7 +300,7 @@ polynomize (BinOp OpAdd lst) = join             -- flatten a maybe level, we don
 
                   grouper :: [(String,FormulaPrim,FormulaPrim)] -> (String, [(FormulaPrim,FormulaPrim)])
                   grouper lst' = (nameOfGroup lst'
-                                 , [(coef group, polySort $ BinOp OpAdd $ defs group) 
+                                 , [(coef group, polySort $ binOp OpAdd $ defs group) 
                                                 | group <- coeffGroup lst'])
                   defs = map (\(_,_,def) -> def)
                   coef ((_,c1,_):_) = c1
@@ -314,17 +312,17 @@ polynomize _ = Nothing
 -- return the coeff function.
 extractFirstTerm :: FormulaPrim
                  -> Either (String, FormulaPrim, FormulaPrim) FormulaPrim
-extractFirstTerm fullFormula@(BinOp OpMul lst) = varCoef lst
-    where varCoef ((BinOp OpPow [(Variable v), f]):xs)
+extractFirstTerm fullFormula@(BinOp _ OpMul lst) = varCoef lst
+    where varCoef ((BinOp _ OpPow [(Variable v), f]):xs)
                 | isFormulaConstant f = Left (v, f, multify xs)
           varCoef ((Variable v):xs) = Left (v, CInteger 1, multify xs)
           varCoef _ = Right fullFormula
         
           multify [] = error $ Err.empty_binop "Polynome.OpMul"
           multify [x] = x
-          multify alist = BinOp OpMul alist
+          multify alist = binOp OpMul alist
 
-extractFirstTerm (BinOp OpPow [Variable v, order])
+extractFirstTerm (BinOp _ OpPow [Variable v, order])
     | isFormulaConstant order = Left (v, order, CInteger 1)
 
 extractFirstTerm (Variable v) = Left (v, CInteger 1, CInteger 1)
@@ -351,10 +349,10 @@ polyMap f rest@(PolyRest _) = snd $ f (CoeffInt 0, rest)
 -- a polynome coefficient. If formula is not
 -- a scalar, error is called.
 scalarToCoeff :: FormulaPrim -> PolyCoeff
-scalarToCoeff (UnOp OpNegate f) = negate $ scalarToCoeff f
+scalarToCoeff (UnOp _ OpNegate f) = negate $ scalarToCoeff f
 scalarToCoeff (CFloat f) = CoeffFloat f
 scalarToCoeff (CInteger i) = CoeffInt i
-scalarToCoeff (BinOp OpDiv [CInteger a, CInteger b]) = CoeffRatio $ a % b
+scalarToCoeff (BinOp _ OpDiv [CInteger a, CInteger b]) = CoeffRatio $ a % b
 scalarToCoeff _ = error Err.polynom_coeff_notascalar
 
 -- | Operation on polynome coefficients. Put there
@@ -377,8 +375,8 @@ inf = coeffPredicate ((<) :: forall a. (Ord a) => a -> a -> Bool)
 lockStep :: (Polynome -> Polynome -> Polynome)
          -> [(PolyCoeff, Polynome)] -> [(PolyCoeff, Polynome)]
          -> [(PolyCoeff, Polynome)]
-lockStep  _ xs [] = xs
-lockStep  _ [] ys = ys
+lockStep op xs [] = map (\(c,v) -> (c, v `op` PolyRest 0)) xs
+lockStep op [] ys = map (\(c,v) -> (c, PolyRest 0 `op` v)) ys
 lockStep op whole1@((c1, def1):xs) whole2@((c2, def2):ys)
     | c1 `inf` c2 = 
         (c1, def1 `op` PolyRest (CoeffInt 0)) : lockStep op xs whole2
@@ -398,29 +396,35 @@ coeffPropagator :: (forall a. (Num a) => a -> a -> a) -> (PolyCoeff, Polynome) -
 coeffPropagator op (degree, PolyRest a) = (degree, PolyRest $ coeffOp op (CoeffInt 0) a)
 coeffPropagator op (degree, Polynome v lst) = (degree, Polynome v $ map (coeffPropagator op) lst)
 
+
 polySimpleOp :: (forall a. (Num a) => a -> a -> a) -> Polynome -> Polynome -> Polynome
 polySimpleOp _ (Polynome _ []) _ = error Err.ill_formed_polynomial
 polySimpleOp _ _ (Polynome _ []) = error Err.ill_formed_polynomial
+
 polySimpleOp op (PolyRest c1) (PolyRest c2) = PolyRest $ coeffOp op c1 c2
--- FUCKING WRONG for '-'
-polySimpleOp op left@(PolyRest _) right@(Polynome _ _) =
-    polySimpleOp (flip op) right left
+
+polySimpleOp op left@(PolyRest c1) (Polynome v1 as@((coeff, def):xs))
+    | isCoeffNull coeff = case def of
+        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op c1 a) : map (coeffPropagator op) xs
+        _          -> Polynome v1 $ (coeff,polySimpleOp op left def) : map (coeffPropagator op) xs
+
+    | otherwise = 
+        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op c1 (CoeffInt 0)) : map (coeffPropagator op) as
+
 polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
     | isCoeffNull coeff = case def of
-        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1) : map (coeffPropagator op) xs
-        _          -> Polynome v1 $ (coeff,polySimpleOp op def right) : map (coeffPropagator op) xs
+        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1) : map (coeffPropagator $ flip op) xs
+        _          -> Polynome v1 $ (coeff,polySimpleOp op def right) : map (coeffPropagator $ flip op) xs
     | otherwise = 
-        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1):as
+        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1) : as
 
-polySimpleOp op (Polynome v1 as@((c, d1):rest)) left@(Polynome v2 bs)
+polySimpleOp op (Polynome v1 as@((c, d1):rest)) right@(Polynome v2 bs)
     | v1 > v2 = polySimpleOp (flip op) (Polynome v2 bs) (Polynome v1 as)
     | v1 == v2 = Polynome v1 $ lockStep op as bs
-    | isCoeffNull c = case d1 of 
-          PolyRest a   -> polyMap executor left
-                where executor (c', PolyRest n) = (c', PolyRest $ coeffOp op a n)
-                      executor a' = a'
-          Polynome _ _ -> Polynome v1 $ (CoeffInt 0, polySimpleOp op d1 left) : map (coeffPropagator op) rest
-    | otherwise = Polynome v1 $ (CoeffInt 0, PolyRest (CoeffInt 0) `op` left) : map (coeffPropagator op) as
+    | isCoeffNull c = 
+        Polynome v1 $ (c, polySimpleOp op d1 right) : map (coeffPropagator $ flip op) rest
+    | otherwise = 
+        Polynome v1 $ (CoeffInt 0, polySimpleOp op (PolyRest $ CoeffInt 0) right) : map (coeffPropagator $ flip op) as
 
 
 -- | Multiply two polynomials between them using the brute force
@@ -481,9 +485,9 @@ headApply f (x:xs) (y:ys) = (f x y :) <$> headApply f xs ys
 -- | Try to perform a polynomial synthetic division on
 -- monovariate polynomial.
 syntheticDiv :: Polynome -> Polynome -> (Maybe Polynome, Maybe Polynome)
-syntheticDiv poly@(Polynome var lst1) divisor@(Polynome var' lst2)
+syntheticDiv polyn@(Polynome var lst1) divisor@(Polynome var' lst2)
     | var == var'
-    && isPolyMonovariate poly && isPolyMonovariate divisor
+    && isPolyMonovariate polyn && isPolyMonovariate divisor
     && fst (last lst1) > fst (last lst2)=
         (finalize . packCoeffs *** finalize . packCoeffs)
       . splitAt (length coefList + 1 - length divCoeff)
@@ -497,7 +501,7 @@ syntheticDiv poly@(Polynome var lst1) divisor@(Polynome var' lst2)
                 print a
                 ) `seq` a) -}
       $ firstCoeff : syntheticInnerDiv divCoeff firstCoeff coefList
-    where Just (firstCoeff: coefList) = expandCoeff poly
+    where Just (firstCoeff: coefList) = expandCoeff polyn
           Just (_:divCoeff) = map negate <$> expandCoeff divisor
 
           finalize [] = Nothing

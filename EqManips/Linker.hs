@@ -31,90 +31,90 @@ entityList =
              , NumEntity Pi))
     , ("i", ( "The imaginary number, use it to describe complex numbers."
             , "i * i = -1"
-            , Complex (CInteger 0, CInteger 1)))
+            , complex (CInteger 0, CInteger 1)))
     ]
 
 metaFunctionList :: [(String, (DocString, LongDescr, FormulaPrim -> FormulaPrim))]
 metaFunctionList =
     [ ("Hold", ( "Avoid evaluating the expression passed as parameter."
                , ""
-               , Meta Hold))
+               , meta Hold))
     , ("Force", ( "Force the evaluation of sub-expression even if the enclosing"
                 , ""
-                , Meta Force))
+                , meta Force))
     , ("Expand", ( ""
                  , ""
-                 , Meta Expand))
+                 , meta Expand))
     , ("Cleanup", ( "Make trivial simplification to the formula"
                   , "Simplify things like '1 * x' to 'x'."
-                  , Meta Cleanup))
+                  , meta Cleanup))
     , ("Sort", ( ""
                , ""
-               , Meta Sort))
+               , meta Sort))
     ]
 
 unaryFunctions :: [(String, (DocString, LongDescr, FormulaPrim -> FormulaPrim))]
 unaryFunctions =
     [ ("ceil", ( ""
                , ""
-               , UnOp OpCeil))
+               , unOp OpCeil))
     , ("floor", ( ""
                 , ""
-                , UnOp OpFloor))
+                , unOp OpFloor))
     , ("frac", ( ""
                , ""
-               , UnOp OpFrac))
+               , unOp OpFrac))
     , ("sin", ( ""
               , ""
-              , UnOp OpSin))
+              , unOp OpSin))
     , ("sinh", ( ""
                , ""
-               , UnOp OpSinh))
+               , unOp OpSinh))
     , ("asin", ( ""
                , ""
-               , UnOp OpASin))
+               , unOp OpASin))
     , ("asinh", ( ""
                 , ""
-                , UnOp OpASinh))
+                , unOp OpASinh))
     , ("cos", ( ""
               , ""
-              , UnOp OpCos))
+              , unOp OpCos))
     , ("cosh", ( ""
                , ""
-               , UnOp OpCosh))
+               , unOp OpCosh))
     , ("acos", ( ""
                , ""
-               , UnOp OpACos))
+               , unOp OpACos))
     , ("acosh", ( ""
                 , ""
-                , UnOp OpACosh))
+                , unOp OpACosh))
     , ("tan", ( ""
               , ""
-              , UnOp OpTan))
+              , unOp OpTan))
     , ("tanh", ( ""
                , ""
-               , UnOp OpTanh))
+               , unOp OpTanh))
     , ("atan", ( ""
                , ""
-               , UnOp OpATan))
+               , unOp OpATan))
     , ("atanh", ( ""
                 , ""
-                , UnOp OpATanh))
+                , unOp OpATanh))
     , ("abs", ( ""
               , ""
-              , UnOp OpAbs))
+              , unOp OpAbs))
     , ("sqrt", ( ""
                , ""
-               , UnOp OpSqrt))
+               , unOp OpSqrt))
     , ("exp", ( ""
               , ""
-              , UnOp OpExp))
+              , unOp OpExp))
     , ("log", ( ""
               , ""
-              , UnOp OpLog))
+              , unOp OpLog))
     , ("ln", ( ""
              , ""
-             , UnOp OpLn))
+             , unOp OpLn))
     ]
 
 unaryTranslations :: Map.Map String (FormulaPrim -> FormulaPrim)
@@ -177,80 +177,80 @@ multiParamsFunctions =
     ]
 
 lambdaBuilder, derivateBuilder :: [FormulaPrim] -> FormulaPrim
-lambdaBuilder [arg, body] = Meta LambdaBuild $ Lambda [([arg], body)]
-lambdaBuilder lst = App (Variable "Lambda") lst
+lambdaBuilder [arg, body] = meta LambdaBuild $ lambda [([arg], body)]
+lambdaBuilder lst = app (Variable "Lambda") lst
 
-derivateBuilder [what, var] = Derivate what var
-derivateBuilder lst = App (Variable "Derivate") lst
+derivateBuilder [what, var] = derivate what var
+derivateBuilder lst = app (Variable "Derivate") lst
 
 
 sumBuilder :: [FormulaPrim] -> FormulaPrim
-sumBuilder [ini, end, what] = Sum ini end what
-sumBuilder [ini, what] = Sum ini (Variable "") what
-sumBuilder [what] = Sum (Variable "") (Variable "") what
-sumBuilder lst = App (Variable "sum") lst
+sumBuilder [ini, end, what] = summ ini end what
+sumBuilder [ini, what] = summ ini (Variable "") what
+sumBuilder [what] = summ (Variable "") (Variable "") what
+sumBuilder lst = app (Variable "sum") lst
 
 productBuilder :: [FormulaPrim] -> FormulaPrim
-productBuilder [ini, end, what] = Product ini end what
-productBuilder [ini, what] = Product ini (Variable "") what
-productBuilder [what] = Product (Variable "") (Variable "") what
-productBuilder lst = App (Variable "product") lst
+productBuilder [ini, end, what] = productt ini end what
+productBuilder [ini, what] = productt ini (Variable "") what
+productBuilder [what] = productt (Variable "") (Variable "") what
+productBuilder lst = app (Variable "product") lst
 
 integrateBuilder :: [FormulaPrim] -> FormulaPrim
-integrateBuilder [ini, end, what, dvar] = Integrate ini end what dvar
-integrateBuilder [ini, what, dvar] = Integrate ini (Variable "") what dvar
-integrateBuilder [what, dvar] = Integrate (Variable "") (Variable "") what dvar
-integrateBuilder lst = App (Variable "integrate") lst
+integrateBuilder [ini, end, what, dvar] = integrate ini end what dvar
+integrateBuilder [ini, what, dvar] = integrate ini (Variable "") what dvar
+integrateBuilder [what, dvar] = integrate (Variable "") (Variable "") what dvar
+integrateBuilder lst = app (Variable "integrate") lst
 
 matrixBuilder :: [FormulaPrim] -> FormulaPrim
 matrixBuilder (CInteger n: CInteger m: exps)
     | fromEnum n * fromEnum m > length exps = error "The matrix has not enough expressions"
     | fromEnum n * fromEnum m < length exps = error "The matrix has too much expressions"
-    | otherwise = Matrix (fromEnum n) (fromEnum m) $ splitMatrix exps
+    | otherwise = matrix (fromEnum n) (fromEnum m) $ splitMatrix exps
         where splitMatrix  [] = []
               splitMatrix lst =
                 let (matrixLine, matrixRest) = genericSplitAt n lst
                 in map link matrixLine : splitMatrix matrixRest
-matrixBuilder lst = App (Variable "matrix") lst
+matrixBuilder lst = app (Variable "matrix") lst
 
 multivarLinker :: String -> [FormulaPrim] -> FormulaPrim
 multivarLinker v flst =
-    maybe (App (Variable v) linked) (\f -> f linked) 
+    maybe (app (Variable v) linked) (\f -> f linked) 
     $ Map.lookup v multiParametersFunction
         where linked = map link flst
 
 -- | Function associating variables to symbol.
 link :: FormulaPrim -> FormulaPrim
-link (App (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
+link (App _ (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
     Block (fromEnum i1) (fromEnum i2) (fromEnum i3)
 
 -- Transformations for operators
-link p@(Poly _) = p
+link p@(Poly _ _) = p
 link v@(Variable varName) =
     fromMaybe v $ Map.lookup varName entityTranslation
-link (App (Variable funName) [x]) = 
+link (App _ (Variable funName) [x]) = 
     maybe (multivarLinker funName [x]) (\f -> f linked)
     $ Map.lookup funName unaryTranslations
         where linked = link x
 
-link (App (Variable v) flst) = multivarLinker v flst
+link (App _ (Variable v) flst) = multivarLinker v flst
 
 -- General transformations
-link (App f flst) = App (link f) $ map link flst
-link (UnOp op f) = UnOp op $ link f
-link (BinOp op fs) = BinOp op [link f | f <- fs]
-link (Meta m fs) = Meta m $ link fs
+link (App _ f flst) = app (link f) $ map link flst
+link (UnOp _ op f) = unOp op $ link f
+link (BinOp _ op fs) = binOp op [link f | f <- fs]
+link (Meta _ m fs) = meta m $ link fs
 link a@(CFloat _) = a
 link a@(CInteger _) = a
 link a@(NumEntity _) = a
 link a@(Block _ _ _) = a
 link t@(Truth _) = t
 link f@(Fraction _) = f
-link (Complex (r,i)) = Complex (link r, link i)
-link (Lambda l) = Lambda [ (map link fl, link f)| (fl, f) <- l]
-link (Matrix n m ll) = Matrix n m [map link rows | rows <- ll]
-link (Derivate a b) = Derivate (link a) (link b)
-link (Sum a b c) = Sum (link a) (link b) (link c)
-link (Product a b c) = Sum (link a) (link b) (link c)
-link (Integrate a b c d) = Integrate (link a) (link b) (link c) (link d)
+link (Complex _ (r,i)) = complex (link r, link i)
+link (Lambda _ l) = lambda [ (map link fl, link f)| (fl, f) <- l]
+link (Matrix _ n m ll) = matrix n m [map link rows | rows <- ll]
+link (Derivate _ a b) = derivate (link a) (link b)
+link (Sum _ a b c) = summ (link a) (link b) (link c)
+link (Product _ a b c) = productt (link a) (link b) (link c)
+link (Integrate _ a b c d) = integrate (link a) (link b) (link c) (link d)
 

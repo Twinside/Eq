@@ -56,8 +56,8 @@ leafs =
 formulaGen :: Int -> Gen ContinuousFormula
 formulaGen 0 = oneof leafs
 formulaGen n = oneof $
-    leafs ++ [ ContinuousFormula <$> (UnOp <$> arbunop <*> subFormul)
-             , ContinuousFormula <$> (BinOp <$> arbinop <*> sequence [subFormul, subFormul])
+    leafs ++ [ ContinuousFormula <$> (unOp <$> arbunop <*> subFormul)
+             , ContinuousFormula <$> (binOp <$> arbinop <*> sequence [subFormul, subFormul])
              ]
       where subFormul = do
                 ContinuousFormula f <- formulaGen (n-1)

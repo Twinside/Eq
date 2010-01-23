@@ -19,9 +19,9 @@ metaEval _ Hold f = return f
 metaEval _ Expand f = return . listifyFormula . expand . treeIfyFormula $ f
 
 metaEval evaluator Sort f = return . sortFormula =<< evaluator f
-metaEval evaluator LambdaBuild (Formula (Lambda [([arg], body)])) = do
+metaEval evaluator LambdaBuild (Formula (Lambda _ [([arg], body)])) = do
     arg' <- evaluator . Formula $ arg 
     body' <- evaluator . Formula $ body
-    return . Formula $ Lambda [([unTagFormula arg'], unTagFormula body')]
+    return . Formula $ lambda [([unTagFormula arg'], unTagFormula body')]
 metaEval _ LambdaBuild _ = eqFail (Formula $ Block 1 1 1) Err.wrong_lambda_format 
 

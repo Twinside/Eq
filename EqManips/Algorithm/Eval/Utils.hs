@@ -18,22 +18,22 @@ right = return . Right
 
 -- | Used to transform a binop to a scalar if size
 -- is small
-binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
-binOp _ [x] = x
-binOp op lst = BinOp op lst
+binOpReducer :: BinOperator -> [FormulaPrim] -> FormulaPrim
+binOpReducer _ [x] = x
+binOpReducer op lst = binOp op lst
 
 -- | Evaluate a binary operator
 binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext FormulaPrim
 binEval op f inv formulaList 
     | op `hasProp` Associativ && op `hasProp` Commutativ =
 #ifdef _DEBUG
-        addTrace ("Sorting => ", treeIfyFormula . Formula $ BinOp op formulaList) >>
+        addTrace ("Sorting => ", treeIfyFormula . Formula $ binOp op formulaList) >>
 #endif
-        binOp op <$> biAssocM f inv (sort formulaList)
+        binOpReducer op <$> biAssocM f inv (sort formulaList)
 
     | otherwise =
 #ifdef _DEBUG
-        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ BinOp op formulaList) >>
+        addTrace ("Basic Eval=>", treeIfyFormula . Formula $ binOp op formulaList) >>
 #endif
-        binOp op <$> biAssocM f inv formulaList
+        binOpReducer op <$> biAssocM f inv formulaList
 

@@ -16,16 +16,17 @@ import System.Exit
 import System.IO
 import System.Console.GetOpt
 
-import Data.List( find )
+import Data.List( find, intersperse )
 import Data.Maybe( fromMaybe )
 
 import qualified System.IO.UTF8 as Utf8
+import qualified Data.Map as Map
 
 -- Just to be able to compile...
 import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 import EqManips.Preprocessor
-
+import EqManips.Linker
 import EqManips.BaseLibrary
 import EqManips.InputParser.MathML
 import EqManips.InputParser.EqCode
@@ -44,7 +45,7 @@ data Flag =
     deriving Eq
 
 version :: String
-version = "0.1"
+version = "0.2"
 
 commonOption :: [OptDescr (Flag, String)]
 commonOption =
@@ -128,7 +129,17 @@ introspect args = do
     when ((SupportedFunction, "") `elem` opts)
          (do putStrLn "Supported functions :"
              putStrLn "====================="
-             putStrLn "(to be implemented)")
+             putStrLn "Built-in functions :"
+             putStrLn "--------------------"
+             mapM_ (putStrLn . ('\t':) . fst) $ unaryFunctions ++ metaFunctionList 
+             mapM_ putStrLn
+                    [ '\t': name ++ '(' : (concat . intersperse ", " $ map fst params) ++ ")"
+                                | (name, (_,_,params,_)) <- multiParamsFunctions]
+
+             putStrLn "\nBase library functions :"
+             putStrLn "------------------------"
+             mapM_ (putStrLn . ('\t':)) $ Map.keys defaultSymbolTable 
+             )
 
     when ((SupportedOperators, "") `elem` opts)
          (do putStrLn "Supported operators :   "
@@ -183,12 +194,14 @@ transformParseFormula operation args = do
     let formulaList = parseProgramm formulaText
     either (parseErrorPrint finalFile)
            (\formulal -> do
-               let rez = performLastTransformationWithContext defaultSymbolTable
-                       $ mapM operation formulal
 #ifdef _DEBUG
                mapM_ (\a-> do hPutStr finalFile $ sexprRender a
                               hPutStr finalFile "\n") formulal
-               
+               hFlush finalFile
+#endif
+               let rez = performLastTransformationWithContext defaultSymbolTable
+                       $ mapM operation formulal
+#ifdef _DEBUG
                hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
                hPutStrLn finalFile "####### </TRACE> #########\n"

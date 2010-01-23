@@ -1,5 +1,5 @@
 import Control.Applicative
-import Control.Monad( when )
+import Control.Monad
 import Control.Monad.State.Lazy
 
 import Data.Char
@@ -16,7 +16,6 @@ import System.Process.Internals
 import System.IO.Error
 import qualified Control.Exception as C
 import Control.Concurrent
-import Control.Monad
 import Foreign
 import Foreign.C
 import System.IO
@@ -67,7 +66,7 @@ parseParam :: String -> [String]
 parseParam [] = []
 parseParam (' ':xs) = parseParam xs
 parseParam ('\t':xs) = parseParam xs
-parseParam s = maybe [] dumper $ (s =~~ "([^ ]*)|(\"[^\"]*\")" :: Match)
+parseParam s = maybe [] dumper (s =~~ "([^ ]*)|(\"[^\"]*\")" :: Match)
     where unquote = filter (/= '"')
           dumper a@(_, [], _) = [show a]
           dumper a@(_, ma, after) = unquote ma : parseParam after
@@ -104,7 +103,7 @@ includerMatcher str = case (str =~~ ".*<!-- %INCLUDE% ([^ ]*) -->" :: MatchExten
         Nothing -> return Nothing
         Just (_,_,_,[file]) -> do
             fileData <- liftIO $ lines <$> readFile file
-            Just . concat <$> (mapM matcher fileData)
+            Just . concat <$> mapM matcher fileData
 
 preprocessCommand :: [String -> StateT String IO (Maybe [String])]
 preprocessCommand = [ commandMatcher

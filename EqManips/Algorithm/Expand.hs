@@ -14,9 +14,9 @@ expand (Formula f) = Formula
 
 -- | Filter used to perform formula expansion.
 expander :: FormulaPrim -> FormulaPrim
-expander (BinOp op [a,b])
+expander (BinOp _ op [a,b])
     | op `hasProp` Distributiv = 
-        distributeLeft op (BinOp op) a b
+        distributeLeft op (binOp op) a b
 expander f = f
 
 -- | The role of this function is to search all pseudo-end
@@ -27,9 +27,9 @@ distributeLeft :: BinOperator            -- ^ Priority of distributiv operator
                -> FormulaPrim
                -> FormulaPrim
                -> FormulaPrim
-distributeLeft op combine formula (BinOp op' [a,b]) 
+distributeLeft op combine formula (BinOp _ op' [a,b]) 
     | not $ op `canDistributeOver` op'
-    = BinOp op' [digg a, digg b]
+    = binOp op' [digg a, digg b]
         where digg = distributeLeft op combine formula
 
 distributeLeft _iniPrio combine formula with =
@@ -38,8 +38,8 @@ distributeLeft _iniPrio combine formula with =
 -- | Really apply the distributivity.
 distributeRight :: ([FormulaPrim] -> FormulaPrim)
                 -> FormulaPrim -> FormulaPrim -> FormulaPrim
-distributeRight combine (BinOp op [a,b]) sub
-    | not $ op `hasProp` Distributiv = BinOp op [digg a, digg b]
+distributeRight combine (BinOp _ op [a,b]) sub
+    | not $ op `hasProp` Distributiv = binOp op [digg a, digg b]
         where digg tree = distributeRight combine tree sub
 distributeRight combine op sub = combine [op, sub]
 

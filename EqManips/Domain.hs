@@ -16,7 +16,7 @@ data Domain =
     -- [-inf; +inf] -> [-1;1]
     -- [0; +inf] -> [-inf; +inf]
     -- [0;1] U [2;3] -> [0;1] U [2;2.5]
-      App [Domain] Domain
+      App [Interval] [Interval]
     deriving (Eq, Show)
 
 union :: Interval -> Interval -> [Interval]

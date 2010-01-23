@@ -6,6 +6,9 @@
 *_stub.*
 *.dll.a
 *.exe
+*.tix
+.hpc
+coverageReport
 Debug
 Release
 Build

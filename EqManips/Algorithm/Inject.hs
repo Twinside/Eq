@@ -35,28 +35,28 @@ injectIntern f = scope $ reBoundVar f
 -- The pattern is explicitely exaustive to be sure
 -- to get the compiler shout if a change is made.
 reBoundVar :: FormulaPrim -> Maybe [String]
-reBoundVar (Product (BinOp OpEq (Variable v:_)) _ _) = Just [v]
-reBoundVar (Sum (BinOp OpEq (Variable v: _)) _ _) = Just [v]
-reBoundVar (Lambda clauses) =
+reBoundVar (Product _ (BinOp _ OpEq (Variable v:_)) _ _) = Just [v]
+reBoundVar (Sum _ (BinOp _ OpEq (Variable v: _)) _ _) = Just [v]
+reBoundVar (Lambda _ clauses) =
     Just $ concat [concatMap collectSymbols args
                         | (args, _) <- clauses]
 
-reBoundVar (Complex _) = Nothing
+reBoundVar (Complex _ _) = Nothing
 reBoundVar (Fraction _) = Nothing
-reBoundVar (Poly _) = Nothing
+reBoundVar (Poly _ _) = Nothing
 reBoundVar (Variable _) = Nothing
 reBoundVar (NumEntity _) = Nothing
 reBoundVar (CInteger _) = Nothing
 reBoundVar (CFloat _) = Nothing
-reBoundVar (App _ _) = Nothing
-reBoundVar (Derivate _ _) = Nothing
-reBoundVar (Integrate _ _ _ _) = Nothing
-reBoundVar (UnOp _ _) = Nothing
-reBoundVar (BinOp _ _) = Nothing
-reBoundVar (Matrix _ _ _) = Nothing
+reBoundVar (App _ _ _) = Nothing
+reBoundVar (Derivate _ _ _) = Nothing
+reBoundVar (Integrate _ _ _ _ _) = Nothing
+reBoundVar (UnOp _ _ _) = Nothing
+reBoundVar (BinOp _ _ _) = Nothing
+reBoundVar (Matrix _ _ _ _) = Nothing
 reBoundVar (Block _ _ _) = Nothing
-reBoundVar (Product _ _ _) = Nothing
-reBoundVar (Sum _ _ _) = Nothing
+reBoundVar (Product _ _ _ _) = Nothing
+reBoundVar (Sum _ _ _ _) = Nothing
 reBoundVar (Truth _) = Nothing
 -- Nothing preserved during evaluation normaly.
-reBoundVar (Meta _ _) = Nothing
+reBoundVar (Meta _ _ _) = Nothing

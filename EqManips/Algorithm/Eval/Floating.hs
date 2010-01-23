@@ -7,13 +7,15 @@ module EqManips.Algorithm.Eval.Floating ( evalFloat, floatEvalRules ) where
 
 import Control.Applicative
 
+import Data.Maybe( fromMaybe )
+import Data.Ratio
+
 import qualified EqManips.ErrorMessages as Err
-import EqManips.Types
-import EqManips.EvaluationContext
 import EqManips.Algorithm.Eval.Types
 import EqManips.Algorithm.Eval.Utils
+import EqManips.EvaluationContext
+import EqManips.Types
 
-import Data.Maybe( fromMaybe )
 
 -- | General function favored to use the reduction rules
 -- as it preserve meta information about the formula form.
@@ -23,8 +25,12 @@ evalFloat (Formula f) = Formula <$> floatEvalRules f
 floatCastingOperator :: (Double -> Double -> Double) -> EvalOp
 floatCastingOperator f (CInteger i1) (CFloat f2) =
     left . CFloat $ f (fromIntegral i1) f2
+floatCastingOperator f (UnOp _ OpNegate (CInteger i1)) (CFloat f2) =
+    left . CFloat $ f (fromIntegral $ negate i1) f2
 floatCastingOperator f (CFloat f1) (CInteger i2) =
     left . CFloat $ f f1 (fromIntegral i2)
+floatCastingOperator f (CFloat f1) (UnOp _ OpNegate (CInteger i2)) =
+    left . CFloat $ f f1 (fromIntegral $ negate i2)
 floatCastingOperator f (CFloat f1) (CFloat f2) =
     left . CFloat $ f f1 f2
 floatCastingOperator _ e e' = right (e, e')
@@ -41,14 +47,14 @@ power = floatCastingOperator (**)
 -----------------------------------------------
 floorEval :: EvalFun
 floorEval (CFloat f) = return . CInteger $ floor f
-floorEval f = return $ UnOp OpFloor f
+floorEval f = return $ unOp OpFloor f
 
 -----------------------------------------------
 ----        'frac'
 -----------------------------------------------
 fracEval :: EvalFun
 fracEval (CFloat f) = return . CFloat . snd $ (properFraction f :: (Int,Double))
-fracEval f = return $ UnOp OpFrac f
+fracEval f = return $ unOp OpFrac f
 
 -----------------------------------------------
 ----        'Ceil'
@@ -56,7 +62,7 @@ fracEval f = return $ UnOp OpFrac f
 ceilEval :: EvalFun
 ceilEval i@(CInteger _) = return i
 ceilEval (CFloat f) = return . CInteger $ ceiling f
-ceilEval f = return $ UnOp OpCeil f
+ceilEval f = return $ unOp OpCeil f
 
 -----------------------------------------------
 ----        'negate'
@@ -77,22 +83,24 @@ fAbs f = return $ abs f
 -----------------------------------------------
 -- | All the rules for floats
 floatEvalRules :: EvalFun
+floatEvalRules (Fraction f) = return . CFloat $ fromInteger (numerator f)
+                                              / fromInteger (denominator f)
 floatEvalRules (NumEntity Pi) = return $ CFloat pi
-floatEvalRules (BinOp OpAdd fs) = binEval OpAdd add add fs
-floatEvalRules (BinOp OpSub fs) = binEval OpSub sub add fs
-floatEvalRules (BinOp OpMul fs) = binEval OpMul mul mul fs
+floatEvalRules (BinOp _ OpAdd fs) = binEval OpAdd add add fs
+floatEvalRules (BinOp _ OpSub fs) = binEval OpSub sub add fs
+floatEvalRules (BinOp _ OpMul fs) = binEval OpMul mul mul fs
 -- | Todo fix this, it's incorrect
-floatEvalRules (BinOp OpPow fs) = binEval OpPow power power fs
-floatEvalRules (BinOp OpDiv fs) = binEval OpDiv division mul fs
+floatEvalRules (BinOp _ OpPow fs) = binEval OpPow power power fs
+floatEvalRules (BinOp _ OpDiv fs) = binEval OpDiv division mul fs
 
-floatEvalRules (UnOp OpFloor f) = floorEval f
-floatEvalRules (UnOp OpCeil f) = ceilEval f
-floatEvalRules (UnOp OpFrac f) = fracEval f
+floatEvalRules (UnOp _ OpFloor f) = floorEval f
+floatEvalRules (UnOp _ OpCeil f) = ceilEval f
+floatEvalRules (UnOp _ OpFrac f) = fracEval f
 
-floatEvalRules (UnOp OpNegate f) = fNegate f
-floatEvalRules (UnOp OpAbs f) = fAbs f
+floatEvalRules (UnOp _ OpNegate f) = fNegate f
+floatEvalRules (UnOp _ OpAbs f) = fAbs f
 
-floatEvalRules formula@(UnOp op f) =
+floatEvalRules formula@(UnOp _ op f) =
   return . fromMaybe formula $ unOpReduce (funOf op) f
     where funOf OpSqrt = sqrt
           funOf OpSin = sin
@@ -123,6 +131,7 @@ floatEvalRules end = return end
 ---- Scalar related function
 --------------------------------------------------------------
 unOpReduce :: (forall a. (Floating a) => a -> a) -> FormulaPrim -> Maybe FormulaPrim
+unOpReduce f (Fraction r) = unOpReduce f . CFloat $ fromRational r
 unOpReduce f (CInteger i) = unOpReduce f . CFloat $ fromInteger i
 unOpReduce f (CFloat num) = Just . CFloat $ f num
 unOpReduce _ _ = Nothing

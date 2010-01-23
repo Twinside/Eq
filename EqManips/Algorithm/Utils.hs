@@ -55,8 +55,8 @@ sortFormula (Formula a) = Formula
 -- | Sort a binary operator, used by sortFormula to sort globally
 -- a formula
 sortBinOp :: (FormulaPrim -> FormulaPrim -> Ordering) -> FormulaPrim -> FormulaPrim
-sortBinOp f (BinOp op lst)
-    | op `hasProp` Associativ && op `hasProp` Commutativ = BinOp op $ sortBy f lst
+sortBinOp f (BinOp _ op lst)
+    | op `hasProp` Associativ && op `hasProp` Commutativ = binOp op $ sortBy f lst
 sortBinOp _f a = a
 
 invSortFormula :: Formula ListForm -> Formula ListForm
@@ -76,7 +76,7 @@ listifyFormula (Formula a) = Formula $
 -- | Given a binary operator in binary tree form,
 -- transform it in list form.
 listifyBinOp :: FormulaPrim -> FormulaPrim
-listifyBinOp (BinOp op lst) = BinOp op $ translate lst
+listifyBinOp (BinOp _ op lst) = binOp op $ translate lst
     where translate = flatten (op `obtainProp` AssocSide)
           flatten OpAssocRight = rightLister
           flatten OpAssocLeft 
@@ -86,13 +86,13 @@ listifyBinOp (BinOp op lst) = BinOp op $ translate lst
           leftLister = foldr lefter []
 
           -- left associative operator packing.
-          lefter (BinOp op' fl) acc
+          lefter (BinOp _ op' fl) acc
                 | op == op' = foldr lefter acc fl
           lefter final acc = final : acc
 
           rightLister = foldl' righter []
           -- right associative operator packing.
-          righter acc (BinOp op' fl)
+          righter acc (BinOp _ op' fl)
                 | op' == op = foldl' righter acc fl
           righter acc e = acc ++ [e]
 
@@ -107,20 +107,20 @@ treeIfyFormula (Formula a) = Formula f
 -- | Given a formula where all binops are in list
 -- forms, transform it back to binary tree.
 treeIfyBinOp :: FormulaPrim -> FormulaPrim
-treeIfyBinOp (BinOp _ []) = error "treeIfyBinOp - empty binop"
-treeIfyBinOp f@(BinOp _ [_]) = error ("treeIfyBinOp - Singleton binop " ++ show f)
-treeIfyBinOp f@(BinOp _ [_,_]) = f
-treeIfyBinOp (BinOp op lst) = innerNode (op `obtainProp` AssocSide) lst
+treeIfyBinOp (BinOp _ _ []) = error "treeIfyBinOp - empty binop"
+treeIfyBinOp f@(BinOp _ _ [_]) = error ("treeIfyBinOp - Singleton binop " ++ show f)
+treeIfyBinOp f@(BinOp _ _ [_,_]) = f
+treeIfyBinOp (BinOp _ op lst) = innerNode (op `obtainProp` AssocSide) lst
         where innerNode OpAssocLeft (fx:fy:fs) = 
-                foldl' innerLeft (BinOp op [fx, fy]) fs
+                foldl' innerLeft (binOp op [fx, fy]) fs
               innerNode OpAssocRight lst' = innerRight lst'
               innerNode _ _ = error "treeIfyBinOp - weird unhandled case"
 
-              innerRight [a,b] = BinOp op [a,b]
-              innerRight (fx:fs) = BinOp op [fx, innerRight fs]
+              innerRight [a,b] = binOp op [a,b]
+              innerRight (fx:fs) = binOp op [fx, innerRight fs]
               innerRight _ = error "treeIfyBinOp - bleh right"
 
-              innerLeft acc fx = BinOp op [acc, fx]
+              innerLeft acc fx = binOp op [acc, fx]
 treeIfyBinOp f = f
 
 -- | Little helper to help to know if a formula renderer
@@ -199,27 +199,27 @@ collectSymbols' (Formula a) = collectSymbols a
 isFormulaInteger :: FormulaPrim -> Bool
 isFormulaInteger = getAll . foldf isConstant mempty
     where isConstant (Variable _) _ = All False
-          isConstant (Sum _ _ _) _ = All False
-          isConstant (Poly _) _ = All False
-          isConstant (Product _ _ _) _ = All False
-          isConstant (Derivate _ _) _ = All False
-          isConstant (Integrate _ _ _ _) _ = All False
-          isConstant (Lambda _) _ = All False
-          isConstant (App _ _) _ = All False
+          isConstant (Sum _ _ _ _) _ = All False
+          isConstant (Poly _ _) _ = All False
+          isConstant (Product _ _ _ _) _ = All False
+          isConstant (Derivate _ _ _) _ = All False
+          isConstant (Integrate _ _ _ _ _) _ = All False
+          isConstant (Lambda _ _) _ = All False
+          isConstant (App _ _ _) _ = All False
           isConstant (Block _ _ _) _ = All False
           --
           isConstant (CFloat _) _ = All False
           isConstant (CInteger _) _ = All True
-          isConstant (Complex _) _ = All True
+          isConstant (Complex _ _) _ = All False
           isConstant (Fraction _) _ = All True
           isConstant (Truth _) _ = All False
           isConstant (NumEntity _) _ = All False
           --
-          isConstant (UnOp op _) a = isValidUnop op a
-          isConstant (BinOp _ _) a = a
-          isConstant (Meta _ _) a = a
-          isConstant (Matrix 1 1 _) a = a
-          isConstant (Matrix _ _ _) _ = All False
+          isConstant (UnOp _ op _) a = isValidUnop op a
+          isConstant (BinOp _ _ _) a = a
+          isConstant (Meta _ _ _) a = a
+          isConstant (Matrix _ 1 1 _) a = a
+          isConstant (Matrix _ _ _ _) _ = All False
 
           isValidUnop OpNegate a = a
           isValidUnop OpAbs a = a
@@ -232,8 +232,8 @@ isFormulaScalar :: FormulaPrim -> Bool
 isFormulaScalar (CFloat _) = True
 isFormulaScalar (CInteger _) = True
 isFormulaScalar (Fraction _) = True
-isFormulaScalar (Complex (a,b)) = isFormulaScalar a && isFormulaScalar b
-isFormulaScalar (UnOp OpNegate f) = isFormulaScalar f
+isFormulaScalar (Complex _ (a,b)) = isFormulaScalar a && isFormulaScalar b
+isFormulaScalar (UnOp _ OpNegate f) = isFormulaScalar f
 isFormulaScalar _ = False
 
 -- | Translate a complex to a simpler formula using '+' and '*'
@@ -248,13 +248,13 @@ complexTranslate (a,b)
 isFormulaConstant :: FormulaPrim -> Bool
 isFormulaConstant = getAll . foldf isConstant mempty
     where isConstant (Variable _) _ = All False
-          isConstant (Poly _) _ = All False
-          isConstant (Sum _ _ _) _ = All False
-          isConstant (Product _ _ _) _ = All False
-          isConstant (Derivate _ _) _ = All False
-          isConstant (Integrate _ _ _ _) _ = All False
-          isConstant (Lambda _) _ = All False
-          isConstant (App _ _) _ = All False
+          isConstant (Poly _ _) _ = All False
+          isConstant (Sum _ _ _ _) _ = All False
+          isConstant (Product _ _ _ _) _ = All False
+          isConstant (Derivate _ _ _) _ = All False
+          isConstant (Integrate _ _ _ _ _) _ = All False
+          isConstant (Lambda _ _) _ = All False
+          isConstant (App _ _ _) _ = All False
           isConstant (Block _ _ _) _ = All False
           --
           isConstant (CFloat _) _ = All True
@@ -264,12 +264,12 @@ isFormulaConstant = getAll . foldf isConstant mempty
           isConstant (Fraction _) _ = All True
 
           --
-          isConstant (Complex _) a = a
-          isConstant (UnOp _ _) a = a
-          isConstant (BinOp _ _) a = a
-          isConstant (Meta _ _) a = a
-          isConstant (Matrix 1 1 _) a = a
-          isConstant (Matrix _ _ _) _ = All False
+          isConstant (Complex _ _) a = a
+          isConstant (UnOp _ _ _) a = a
+          isConstant (BinOp _ _ _) a = a
+          isConstant (Meta _ _ _) a = a
+          isConstant (Matrix _ 1 1 _) a = a
+          isConstant (Matrix _ _ _ _) _ = All False
 
 -- | Tell if a formula in any form can be reduced
 -- to a scalar somehow
