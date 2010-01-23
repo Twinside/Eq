@@ -9,7 +9,7 @@ Maintainer: Vincent Berthoux
 
 Executable eq
     Main-Is: formulaMain.hs
-    ghc-options:-Wall -O3 -static -optl-static -v
+    ghc-options:-Wall -O3
     extensions: CPP
     Build-Depends: base >= 4.1
                  , parsec >= 3.0
@@ -19,4 +19,33 @@ Executable eq
                  , containers
                  , filepath
                  , utf8-string >= 0.3.5
+
+Executable deq
+    Main-Is: formulaMain.hs
+    ghc-options:-Wall
+    extensions: CPP
+    cpp-options: -D_DEBUG
+    Build-Depends: base >= 4.1
+                 , parsec >= 3.0
+                 , HaXml >= 1.9
+                 , array
+                 , mtl
+                 , containers
+                 , filepath
+                 , utf8-string >= 0.3.5
+
+Executable iotest
+    Main-Is: EqManips/Tests/iotestSuite.hs
+    ghc-options: -fhpc -Wall -O2
+    extensions: CPP
+    cpp-options: -D_DEBUG
+    Build-Depends: base >= 4.0
+                 , parsec >= 3.0
+                 , array
+                 , mtl
+                 , filepath
+                 , containers
+                 , directory
+                 , QuickCheck >= 2.1.0.2
+                 , HUnit >= 1.2.2.1
 
