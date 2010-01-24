@@ -31,7 +31,7 @@ import Data.Monoid( All( .. ), mempty )
 import EqManips.Algorithm.EmptyMonad
 import EqManips.Propreties
 import EqManips.Types
-import EqManips.FormulaIterator
+import {-# SOURCE #-} EqManips.FormulaIterator
 import Data.List( foldl', sortBy )
 
 -----------------------------------------------------------

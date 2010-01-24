@@ -378,7 +378,7 @@ eval evaluator (Derivate _ what (Variable s)) = do
 #ifdef _DEBUG
     addTrace ("Derivation on " ++ s, treeIfyFormula . Formula $ what)
 #endif
-    derived <- derivateFormula (taggedEvaluator evaluator) s (treeIfyFormula $ Formula what)
+    derived <- derivateFormula (taggedEvaluator evaluator) s $ Formula what
     return . unTagFormula $ cleanup derived
 
 eval _ f@(Derivate _ _ _) =

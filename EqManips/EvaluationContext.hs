@@ -76,7 +76,10 @@ instance Functor EqContext where
         in (c', f a)
 
 instance Applicative EqContext where
-    pure a = EqContext $ \c -> (c,a) 
+    {-# INLINE pure #-}
+    pure a = EqContext $ \c -> (c,a)
+
+    {-# INLINE (<*>) #-}
     (EqContext ff) <*> (EqContext a) = EqContext $ \c ->
         let (c' , f) = ff c
             (c'', a') = a c'

@@ -15,6 +15,9 @@ endif
 EQ     := dist/build/eq/eq$(EXEEXT)
 EQTEST := dist/build/eqtestsuite/eqtestsuite$(EXEEXT)
 
+# Calculated on demand, I hope...
+PARSECVER = $(shell ghc-pkg list --simple-output parsec | tr " " "\n" | grep "parsec-3\.")
+
 build: EqManips/BaseLibrary.hs
 	runhaskell Setup.hs build
 	cp $(EQ) .
@@ -25,14 +28,13 @@ clean:
 
 # only way to get this shit working on unix...
 EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.txt
-	PARSECVER=ghc-pkg list --simple-output parsec | tr '  ' '\n' | grep "parsec-3\."
 	ghc -package $(PARSECVER) --make -cpp -o libMaker EqManips/libMaker.hs
 	./libMaker
 	$(FIND) EqManips -name '*.o' | xargs rm
 	$(FIND) EqManips -name '*.hi' | xargs rm
 	$(FIND) EqManips -name '*.o-boot' | xargs rm
 	$(FIND) EqManips -name '*.hi-boot' | xargs rm
-	rm libMaker
+	rm libMaker$(EXEEXT)
 
 showdoc:
 	echo dist\doc\html\FormulaRenderer\eq\index.html
@@ -40,12 +42,17 @@ showdoc:
 doc:
 	runhaskell Setup.hs haddock --executables
 
-conf:
-	runhaskell Setup.hs configure --flags="debug"
+profiling:
+	runhaskell Setup.hs configure --flags="profiling optimize"
+
+debug:
+	runhaskell Setup.hs configure --flags="debug profiling optimize"
 
 release:
-	runhaskell Setup.hs configure
-	runhaskell Setup.hs build
+	runhaskell Setup.hs configure --flags="optimize"
+
+conf:
+	runhaskell Setup.hs configure --flags="optimize"
 
 test:
 	rm -f *.tix

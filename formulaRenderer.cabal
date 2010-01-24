@@ -19,23 +19,38 @@ Flag StaticLinking
     Description: Try to link statically on Linux
     Default: False
 
+Flag Profiling
+    Description: enable profiling for eq
+    Default: False
+
+Flag optimize
+    Description: turn on optimisation
+    Default: True
+
 -- Main executable
 Executable eq
     Main-Is: formulaMain.hs
     Extensions: CPP
+    Ghc-options:-Wall
 
-    if os(darwin) || os(windows) || !flag(StaticLinking)
-        ghc-options:-Wall -O3
-        -- Compile staticly on Unix, need some /hoops/ to work
-    else 
-        ghc-options:-Wall -O3 -static -optl-static
+    -- Special static linking only required
+    -- in linux so far.
+    if !os(darwin) && !os(windows) && flag(StaticLinking)
+        Ghc-options:-static -optl-static
+
+    -- If we profile the execution
+    if flag(profiling)
+        Ghc-options:-prof -auto-all
 
     if flag(debug)
-        cpp-options: -D_DEBUG
+        cpp-options:-D_DEBUG
+
+    if flag(optimize)
+        Ghc-options:-O3
 
     Build-Depends: base >= 4.1
-                 , parsec >= 3.0
-                 , HaXml >= 1.9
+                 , parsec >= 3.0 && < 4.0
+                 , HaXml >= 1.9 && < 2.0
                  , array
                  , mtl
                  , containers
@@ -49,12 +64,12 @@ Executable eqtestsuite
     if flag(debug)
         cpp-options: -D_DEBUG
     Build-Depends: base >= 4.0
-                 , parsec >= 3.0
+                 , parsec >= 3.0 && < 4.0
                  , array
                  , mtl
                  , filepath
                  , containers
                  , directory
-                 , QuickCheck >= 2.1.0.2
-                 , HUnit >= 1.2.2.1
+                 , QuickCheck >= 2.1.0.2 && < 2.3
+                 , HUnit >= 1.2.2.1 && < 2.0
 

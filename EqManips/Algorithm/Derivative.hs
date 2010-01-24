@@ -2,6 +2,7 @@ module EqManips.Algorithm.Derivative( derivateFormula
                                     , Var ) where
 
 import Control.Applicative
+import Control.Monad( foldM )
 import Data.Monoid( Monoid( .. ), Any( .. ) )
 
 import qualified EqManips.ErrorMessages as Err
@@ -23,24 +24,20 @@ int = CInteger
 -- variable.
 derivateFormula :: (Formula ListForm -> EqContext (Formula ListForm))
                 -> Var
-                -> Formula TreeForm
+                -> Formula ListForm
                 -> EqContext (Formula ListForm)
-derivateFormula evaluator v f = do
-    derived <- derivationRules evaluator v f
-    let finalForm = listifyFormula $ Formula derived
-    return $ sortFormula finalForm
+derivateFormula evaluator v f =
+    Formula <$> derivationRules evaluator v f
 
 -- | real function for derivation, d was choosen
 -- because I'm too lasy to type something else :]
 derivationRules :: (Formula ListForm -> EqContext (Formula ListForm))
                 -> String
-                -> Formula TreeForm
+                -> Formula ListForm
                 -> EqContext FormulaPrim
 derivationRules evaluator variable (Formula func) = d func variable
  where d (Meta _ m f) var = do
-           let listified = listifyFormula $ Formula f
-           formula <- metaEval evaluator m listified
-           let (Formula evaluated) = treeIfyFormula formula
+           Formula evaluated <- metaEval evaluator m $ Formula f
            d evaluated var
 
        -- Poloynome with only ^ 0, degenerated case, but
@@ -82,9 +79,14 @@ derivationRules evaluator variable (Formula func) = d func variable
            binOp OpSub <$> mapM (flip d var) formulas
      
        -- Eq:format derivate( f * g, x ) =
-       --      derivate( f, x ) * g + f + derivate( g, x )
-       d (BinOp _ OpMul [f1,f2]) var =
-           (\f1' f2' -> f1' * f2 + f1 * f2') <$> d f1 var <*> d f2 var
+       --      derivate( f, x ) * g + f * derivate( g, x )
+       d (BinOp _ OpMul lst) var = do
+          (_,_, subTrees) <- foldM mulDeriver (int 0, int 1, []) lst
+          return $ binOp OpAdd subTrees
+            where mulDeriver (previousDerivation, previous, rezLst) f =
+                      (\derived -> ( derived
+                                   , f
+                                   , previousDerivation * f : previous * derived : rezLst)) <$> d f var
      
        -- Eq:format derivate( 1 / f, x ) =
        --  -derivate( f, x ) / f ^ 2
@@ -94,23 +96,34 @@ derivationRules evaluator variable (Formula func) = d func variable
        -- Eq:format derivate( f / g, x ) =
        --  (derivate( f, x) * g - f * derivate( g, x )) 
        --              / g ^ 2
-       d (BinOp _ OpDiv [f1,f2]) var =
-           if derivableDenumerator
-              then (\f1' f2' -> (f1' * f2 - f1 * f2') / (f2 ** int 2))
-                      <$> d f1 var <*> d f2 var
-               else (/ f2) <$> d f1 var
-        where derivableDenumerator = getAny $ foldf notConst (Any False) f2
-              notConst (Variable v) acc = Any (v == var) `mappend` acc
-              notConst _ acc = acc
-     
-     
+       d (BinOp _ OpDiv (f1:lst)) var = do
+          f1' <- d f1 var
+          (_,_, subTrees) <- foldM divDeriver (f1', f1, []) lst
+          return $ binOp OpDiv $ reverse subTrees
+            where derivableDenumerator = getAny . foldf notConst (Any False)
+                  notConst (Variable v) acc = Any (v == var) `mappend` acc
+                  notConst _ acc = acc
+
+                  divDeriver (previousDerivation, previous, rezLst) f
+                        | derivableDenumerator f = do
+                            derived <- d f var
+                            let nume = (previousDerivation * f - previous * derived)
+                                denom = (f ** int 2)
+                            return ( nume / denom, f, denom : nume : rezLst)
+
+                  divDeriver (previousDerivation, _, rezLst) f =
+                      return (previousDerivation / f, f, f : rezLst)
+
        -- Eq:format derivate( f ^ n, x ) = 
        --  n * derivate( f, x ) * f ^ (n - 1)
-       d (BinOp _ OpPow [f1,f2]) var =
+       d (BinOp _ OpPow (f1:rest)) var =
          (\f1' -> f2 * f1' * f1 ** (f2 - int 1)) <$> d f1 var
+            where f2 = if length rest > 1
+                          then binOp OpPow rest
+                          else head rest
      
-       d (BinOp _ op (x:x2:xs)) var =
-           d (binOp op [x, binOp op $ x2:xs]) var
+       d f@(BinOp _ _ _) _ =
+           unTagFormula <$> eqFail (Formula f) "Bad binary operator biduling"
      
        -- Eq:format derivate( -f, x ) = - derivate( f, x )
        d (UnOp _ OpNegate f) var = negate <$> d f var
