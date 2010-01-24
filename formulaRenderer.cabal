@@ -7,10 +7,32 @@ Description: Lalalal
 Author: Vincent Berthoux
 Maintainer: Vincent Berthoux
 
+Flag Debug
+    Description: Enable debug prints
+    Default: False
+
+Flag TestProject
+    Description: Enable compilation of the test project
+    Default: False
+
+Flag StaticLinking
+    Description: Try to link statically on Linux
+    Default: False
+
+-- Main executable
 Executable eq
     Main-Is: formulaMain.hs
-    ghc-options:-Wall -O3
-    extensions: CPP
+    Extensions: CPP
+
+    if os(darwin) || os(windows) || !flag(StaticLinking)
+        ghc-options:-Wall -O3
+        -- Compile staticly on Unix, need some /hoops/ to work
+    else 
+        ghc-options:-Wall -O3 -static -optl-static
+
+    if flag(debug)
+        cpp-options: -D_DEBUG
+
     Build-Depends: base >= 4.1
                  , parsec >= 3.0
                  , HaXml >= 1.9
@@ -20,25 +42,12 @@ Executable eq
                  , filepath
                  , utf8-string >= 0.3.5
 
-Executable deq
-    Main-Is: formulaMain.hs
-    ghc-options:-Wall
-    extensions: CPP
-    cpp-options: -D_DEBUG
-    Build-Depends: base >= 4.1
-                 , parsec >= 3.0
-                 , HaXml >= 1.9
-                 , array
-                 , mtl
-                 , containers
-                 , filepath
-                 , utf8-string >= 0.3.5
-
-Executable iotest
+Executable eqtestsuite
     Main-Is: EqManips/Tests/iotestSuite.hs
     ghc-options: -fhpc -Wall -O2
     extensions: CPP
-    cpp-options: -D_DEBUG
+    if flag(debug)
+        cpp-options: -D_DEBUG
     Build-Depends: base >= 4.0
                  , parsec >= 3.0
                  , array

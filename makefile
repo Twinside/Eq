@@ -12,19 +12,21 @@ FIND := find
 
 endif
 
+EQ     := dist/build/eq/eq$(EXEEXT)
+EQTEST := dist/build/eqtestsuite/eqtestsuite$(EXEEXT)
 
 build: EqManips/BaseLibrary.hs
 	runhaskell Setup.hs build
-	cp dist/build/eq/eq$(EXEEXT) .
-	cp dist/build/deq/deq$(EXEEXT) .
-	cp dist/build/iotest/iotest$(EXEEXT) .
+	cp $(EQ) .
+	cp $(EQTEST) .
 
 clean:
 	runhaskell Setup.hs clean
 
 # only way to get this shit working on unix...
 EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.txt
-	ghc -package 'parsec-3.0.0' --make -cpp -o libMaker EqManips/libMaker.hs
+	PARSECVER=ghc-pkg list --simple-output parsec | tr '  ' '\n' | grep "parsec-3\."
+	ghc -package $(PARSECVER) --make -cpp -o libMaker EqManips/libMaker.hs
 	./libMaker
 	$(FIND) EqManips -name '*.o' | xargs rm
 	$(FIND) EqManips -name '*.hi' | xargs rm
@@ -39,26 +41,21 @@ doc:
 	runhaskell Setup.hs haddock --executables
 
 conf:
+	runhaskell Setup.hs configure --flags="debug"
+
+release:
 	runhaskell Setup.hs configure
+	runhaskell Setup.hs build
 
 test:
 	rm -f *.tix
-	./iotest
-
-debug:
-	runhaskell EqManips/Tests/polyTest.hs
-
-run:
-	./deq eval -o out.txt -f tests/programm/valid/metaTest.txt
-
-help:
-	dist/build/eq/eq$(EXEEXT) help
+	./eqtestsuite
 
 hlint:
 	$(FIND) . -name *.hs | grep -v dist | grep -v ErrorMessages | xargs hlint
 
 coverage:
-	hpc markup --destdir coverageReport iotest
+	hpc markup --destdir coverageReport $(EQTEST)
 
 # This really complicated build target is there to overcome
 # a GHC bug (at least in GHC 6.10.4) when linking in static.
@@ -72,19 +69,15 @@ coverage:
 #
 # With all this work, we add a little stripping/compression,
 # just to be clean.
-staticrelease:
+staticrelease: EqManips/BaseLibrary.hs
 	- [ -e dist ] && rm -Rf dist
-	mv formulaRenderer.cabal temp.cabal.tmp
-	cp formulaStatic.cabal.wait formulaRenderer.cabal
-	runhaskell Setup.hs configure
+	runhaskell Setup.hs configure --flags="StaticLinking"
 	- runhaskell Setup.hs build -v >> outLogFile 2>&1
 	echo \#!/bin/sh > futureScript.sh
 	cat outLogFile | grep collect2 | head -n 1 | sed 's/--start-group/--start-group -lpthread/' >> futureScript.sh
 	chmod 700 futureScript.sh
 	./futureScript.sh
 	rm futureScript.sh outLogFile
-	rm formulaRenderer.cabal
-	mv temp.cabal.tmp formulaRenderer.cabal
 	cp dist/build/eq/eq$(EXEEXT) .
 	strip eq$(EXEEXT)
 	upx --best eq$(EXEEXT)
