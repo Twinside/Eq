@@ -36,8 +36,8 @@ getFirstUnifying :: [([FormulaPrim], FormulaPrim)]
                  -> Maybe (FormulaPrim, [(String,FormulaPrim)])
 getFirstUnifying matches toMatch = foldl' unif Nothing matches
     where unif Nothing (args, body) =
-              let (rez, list) = runState (unifyList args toMatch) []
-              in if rez then Just (body, list)
+              let (rez, lst) = runState (unifyList args toMatch) []
+              in if rez then Just (body, lst)
                         else Nothing
           unif j@(Just _) _ = j
           
@@ -48,8 +48,8 @@ unify :: Formula anyKind -> Formula anyKind
 unify (Formula a) (Formula b) =
      if rez
         then Nothing
-        else Just [(s, Formula f) | (s,f) <- list]
-    where (rez, list) = runState (a =~= b) []
+        else Just [(s, Formula f) | (s,f) <- lst]
+    where (rez, lst) = runState (a =~= b) []
 
 -- | Helper function to unify list of formula side by side.
 -- Used for "tuples"/arguments

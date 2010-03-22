@@ -56,6 +56,8 @@ derivationRules evaluator variable (Formula func) = d func variable
            | otherwise = return $ int 0
        d (Fraction _) _ = return $ int 0
        d (CInteger _) _ = return $ int 0
+       d (Indexes _ _ _) _ = return $ int 0
+
        d (CFloat _) _ = return $ int 0
        d (NumEntity _) _ = return $ int 0
        d (App _ f [g]) var =
@@ -196,6 +198,7 @@ derivationRules evaluator variable (Formula func) = d func variable
        d f@(Matrix _ _ _ _formulas) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_matrix
        d f@(Truth _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_bool
        d (Block _ _ _) _var = unTagFormula <$> eqFail (Formula $ Block 0 1 1) Err.deriv_block
+       d (List _ _) _var = unTagFormula <$> eqFail (Formula $ Block 0 1 1) Err.deriv_no_list
 
 polyDerivate :: Polynome -> String -> Polynome
 polyDerivate (PolyRest _) _ = PolyRest $ CoeffInt 0

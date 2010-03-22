@@ -58,6 +58,8 @@ data Dimensioner = Dimensioner
     , derivateSize :: Conf -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , entitySize :: Conf -> Entity -> RelativePlacement
     , truthSize :: Conf -> Bool -> RelativePlacement
+    , listSize :: Conf -> [RelativePlacement] -> RelativePlacement
+    , indexesSize :: Conf -> RelativePlacement -> [RelativePlacement] -> RelativePlacement
     }
 
 sizeExtract :: SizeTree -> RelativePlacement
@@ -216,6 +218,21 @@ sizeOfFormula conf sizer _isRight _prevPrio (Sum _ inite end what) =
               [iniDim, endDim, whatDim] = map sizeExtract trees
               sizeDim = sumSize sizer conf iniDim endDim whatDim
 
+sizeOfFormula conf sizer _ _ (List _ lst) =
+  SizeNodeList False wholeSize listBase trees
+    where trees = map (sizeOfFormula conf sizer False maxPrio) lst
+          wholeSize = listSize sizer conf $ map sizeExtract trees
+          (_, listBase, _) = argSizes sizer conf trees
+
+sizeOfFormula conf sizer _ _ (Indexes _ f1 f2) =
+    SizeNodeList False sizeDim argsBase (funcSize : trees)
+        where subSize = sizeOfFormula conf sizer False maxPrio
+              trees = map subSize f2
+              funcSize = subSize f1
+
+              accumulated = argSizes sizer conf trees
+              sizeDim = indexesSize sizer conf (sizeExtract funcSize) (map sizeExtract trees)
+              (_, argsBase, _) = accumulated
 
 -- do something like this :
 --      #######

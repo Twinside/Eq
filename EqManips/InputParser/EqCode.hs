@@ -90,10 +90,6 @@ expr :: Parsed st FormulaPrim
 expr = whiteSpace >> buildExpressionParser operatorDefs funCall
     <?> "expression"
 
-reindexer :: FormulaPrim -> FormulaPrim -> FormulaPrim
-reindexer (Indexes _ main lst) b = indexes main $ lst ++ [b]
-reindexer a b = indexes a [b]
-
 operatorDefs :: OperatorTable String st Identity FormulaPrim
 operatorDefs = 
     [ [postfix "!" (unOp OpFactorial)]
@@ -134,6 +130,7 @@ term = try trueConst
     <|> try (CFloat <$> float)
     <|> CInteger . fromInteger <$> integer
     <|> parens expr
+    <|> listParser
     <?> "Term error"
 
 trueConst :: Parsed st FormulaPrim

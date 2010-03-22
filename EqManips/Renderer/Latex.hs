@@ -64,10 +64,17 @@ stringOfBinOp _ = error "stringOfBinOp - unknown op"
 lno :: Conf -> FormulaPrim -> ShowS
 lno conf = l conf (Nothing, False)
 
+latexargs :: Conf -> [FormulaPrim] -> ShowS
+latexargs _ [] = id
+latexargs conf (x:xs) = foldr (\e acc -> lno conf e . str ", " . acc)
+                              (lno conf x) xs
+
 l :: Conf -> (Maybe BinOperator, Bool) -> FormulaPrim -> ShowS
 l conf op (Poly _ p) = l conf op . unTagFormula . treeIfyFormula $ convertToFormula p
 l conf op (Fraction f) = l conf op $ (CInteger $ numerator f) / (CInteger $ denominator f)
 l conf op (Complex _ c) = l conf op $ complexTranslate c
+l conf _ (List _ lst) = str "\\left[" . latexargs conf lst . str "\\right]"
+l conf _ (Indexes _ main lst) = lno conf main . str "_{" . latexargs conf lst . char '}'
 l _ _ (Block _ _ _) = str "block"
 l _ _ (Variable v) = str v
 l _ _ (NumEntity e) = str $ latexOfEntity e
@@ -133,11 +140,8 @@ l conf _ (Derivate _ f var) =
     str "\\frac{d " . lno conf f . str "}{ d" . lno conf var . char '}'
 
 l conf _ (App _ func args) = 
-    lno conf func . str "\\left(" . latexargs args . str "\\right)"
-     where latexargs [] = id
-           latexargs (x:xs) = foldr (\e acc -> lno conf e . str ", " . acc)
-                                    (lno conf x) xs
-
+    lno conf func . str "\\left(" . latexargs conf args . str "\\right)"
+     where 
 l conf _ (Matrix _ _ _ lsts) = str "\\begin{bmatrix}\n"
                       . matrixCells
                       . str "\n\\end{bmatrix}"

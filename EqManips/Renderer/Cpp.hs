@@ -100,7 +100,10 @@ cOut _ (Truth True) = return $ str "true"
 cOut _ (Truth False) = return $ str "false"
 cOut _ (NumEntity Pi) = return $ str "M_PI"
 cOut _ (NumEntity _) = return $ str ""
-
+cOut _ (Indexes _ main lst) =
+    (.) <$> cOut Nothing main
+        <*> (concatS <$> sequence [ (\a -> ('[':) . a . (']':)) <$> cOut Nothing index | index <- lst])
+    
 cOut _ (Fraction f) = return $ char '(' . shows (numerator f) 
                              . str " / " . shows (denominator f)
                              . char ')'
@@ -141,6 +144,7 @@ cOut _ (Integrate _ _ _ _ _) = outFail Err.c_out_integrate
 cOut _ (Lambda _ _) = outFail Err.c_out_lambda 
 cOut _ (Block _ _ _) = outFail Err.c_out_block
 cOut _ (Complex _ _) = outFail Err.c_out_complex
+cOut _ (List _ _) = outFail Err.c_out_list
 
 iteration :: String -> FormulaPrim -> FormulaPrim -> FormulaPrim -> OutContext ShowS
 iteration op (BinOp _ OpEq [Variable v, iniExpr]) exprEnd what = do
