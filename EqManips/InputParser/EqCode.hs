@@ -72,7 +72,9 @@ lexer :: P.GenTokenParser String st Identity
 lexer  = P.makeTokenParser 
          (haskellStyle { P.reservedOpNames = [ "&", "|", "<", ">"
                                              , "*", "/", "+", "-"
-                                             , "^", "=", "!", ":"] } )
+                                             , "^", "=", "!", ":"
+                                             , "_"
+                                             ] } )
 
 -----------------------------------------------------------
 --          Real "grammar"
@@ -87,6 +89,10 @@ program = sepBy expr (whiteSpace >> char ';' >> whiteSpace) <* whiteSpace
 expr :: Parsed st FormulaPrim
 expr = whiteSpace >> buildExpressionParser operatorDefs funCall
     <?> "expression"
+
+reindexer :: FormulaPrim -> FormulaPrim -> FormulaPrim
+reindexer (Indexes _ main lst) b = indexes main $ lst ++ [b]
+reindexer a b = indexes a [b]
 
 operatorDefs :: OperatorTable String st Identity FormulaPrim
 operatorDefs = 
@@ -103,12 +109,19 @@ operatorDefs =
     ]
 
 funCall :: Parsed st FormulaPrim
-funCall =  do
+funCall = do
     caller <- term
     (app caller <$> argList) <|> return caller
         where argSeparator = whiteSpace >> char ',' >> whiteSpace
               exprList = sepBy expr argSeparator
               argList = parens (whiteSpace >> (exprList <* whiteSpace))
+
+listParser :: Parsed st FormulaPrim
+listParser = do
+    char '['
+    lst <- sepBy expr (whiteSpace >> char ',' >> whiteSpace) <* whiteSpace
+    char ']'
+    return $ list lst
 
 variable :: Parsed st FormulaPrim
 variable = Variable <$> identifier

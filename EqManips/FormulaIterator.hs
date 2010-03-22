@@ -63,6 +63,12 @@ topDownTraversal f l@(Lambda _ eqs) =
 topDownTraversal f met@(Meta _ op form) =
     fromMaybe (meta op $ topDownTraversal f form) $ f met
 
+topDownTraversal f i@(Indexes _ what lst) =
+    fromMaybe (indexes (topDownTraversal f what) $ map (topDownTraversal f) lst) $ f i
+
+topDownTraversal f l@(List _ lst) =
+    fromMaybe (list $ map (topDownTraversal f) lst) $ f l
+
 topDownTraversal f formula@(App _ func args) =
     fromMaybe (app mayFunc mayArgs) $ f formula
         where mayFunc = topDownTraversal f func
@@ -132,6 +138,16 @@ depthPrimTraversal _ f i@(Fraction _) = f i
 depthPrimTraversal _ f d@(CFloat _) = f d
 depthPrimTraversal _ f e@(NumEntity _) = f e
 depthPrimTraversal _ f t@(Truth _) = f t
+depthPrimTraversal pre f i@(Indexes _ main lst) = do
+    pre i
+    main' <- depthPrimTraversal pre f main
+    lst' <- mapM (depthPrimTraversal pre f) lst
+    f $ indexes main' lst'
+
+depthPrimTraversal pre f i@(List _ lst) = do
+    pre i
+    lst' <- mapM (depthPrimTraversal pre f) lst
+    f $ list lst'
 
 depthPrimTraversal pre f c@(Complex _ (r, i)) = do
     pre c

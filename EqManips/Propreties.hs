@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 module EqManips.Propreties( Property( .. )
+                          , TypeInfo( .. )
                           , obtainProp
                           ) where
 
@@ -17,7 +18,7 @@ class (Eq propKey) => Property onType propKey propVal
     -- | retrieve a propretie if it exists
     getProp :: onType -> propKey -> Maybe propVal
     getProp a what = lookup what $ getProps a
-    
+
     -- | Tell if the element as the propreties
     -- passed as parameters
     hasProp :: onType -> propKey -> Bool
@@ -25,7 +26,11 @@ class (Eq propKey) => Property onType propKey propVal
         Nothing -> False
         Just _ -> True
 
-                                 
+-- | Associate an unique meta information
+-- to a type/value
+class TypeInfo onType infoToken tokenType where
+    propOf :: onType -> infoToken -> tokenType
+
 obtainProp :: (Property a p c) => a -> p -> c
 obtainProp a = fromJust . getProp a
 

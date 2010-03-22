@@ -8,15 +8,18 @@ module EqManips.Linker( DocString, LongDescr
                       , linkFormula
                       ) where
 
-import EqManips.Types
+import Control.Applicative
 import Data.List
 import Data.Maybe( fromMaybe )
 import qualified Data.Map as Map
 
+import EqManips.Types
+import EqManips.EvaluationContext
+
 -- | Linking formula doesn't change it's form,
 -- so we can keep it
-linkFormula :: Formula anyForm -> Formula anyForm
-linkFormula (Formula a) = Formula $ link a
+linkFormula :: Formula anyForm -> EqContext (Formula anyForm)
+linkFormula (Formula a) = Formula <$> link a
 
 type DocString = String
 type LongDescr = String
@@ -176,10 +179,11 @@ multiParamsFunctions =
                  , matrixBuilder ))
     ]
 
-lambdaBuilder, derivateBuilder :: [FormulaPrim] -> FormulaPrim
+lambdaBuilder :: [FormulaPrim] -> FormulaPrim
 lambdaBuilder [arg, body] = meta LambdaBuild $ lambda [([arg], body)]
 lambdaBuilder lst = app (Variable "Lambda") lst
 
+derivateBuilder :: [FormulaPrim] -> FormulaPrim
 derivateBuilder [what, var] = derivate what var
 derivateBuilder lst = app (Variable "Derivate") lst
 
@@ -210,47 +214,47 @@ matrixBuilder (CInteger n: CInteger m: exps)
         where splitMatrix  [] = []
               splitMatrix lst =
                 let (matrixLine, matrixRest) = genericSplitAt n lst
-                in map link matrixLine : splitMatrix matrixRest
+                in matrixLine : splitMatrix matrixRest
 matrixBuilder lst = app (Variable "matrix") lst
 
-multivarLinker :: String -> [FormulaPrim] -> FormulaPrim
+multivarLinker :: String -> [FormulaPrim] -> EqContext FormulaPrim
 multivarLinker v flst =
-    maybe (app (Variable v) linked) (\f -> f linked) 
+    maybe (app (Variable v) <$> linked) (\f -> f <$> linked) 
     $ Map.lookup v multiParametersFunction
-        where linked = map link flst
+        where linked = mapM link flst
 
 -- | Function associating variables to symbol.
-link :: FormulaPrim -> FormulaPrim
+link :: FormulaPrim -> EqContext FormulaPrim
 link (App _ (Variable "block") [CInteger i1, CInteger i2, CInteger i3]) = 
-    Block (fromEnum i1) (fromEnum i2) (fromEnum i3)
+    pure $ Block (fromEnum i1) (fromEnum i2) (fromEnum i3)
 
 -- Transformations for operators
-link p@(Poly _ _) = p
+link p@(Poly _ _) = pure p
 link v@(Variable varName) =
-    fromMaybe v $ Map.lookup varName entityTranslation
+    pure $ fromMaybe v $ Map.lookup varName entityTranslation
 link (App _ (Variable funName) [x]) = 
-    maybe (multivarLinker funName [x]) (\f -> f linked)
+      maybe (multivarLinker funName [x]) (\f -> f <$> linked)
     $ Map.lookup funName unaryTranslations
         where linked = link x
 
 link (App _ (Variable v) flst) = multivarLinker v flst
 
 -- General transformations
-link (App _ f flst) = app (link f) $ map link flst
-link (UnOp _ op f) = unOp op $ link f
-link (BinOp _ op fs) = binOp op [link f | f <- fs]
-link (Meta _ m fs) = meta m $ link fs
-link a@(CFloat _) = a
-link a@(CInteger _) = a
-link a@(NumEntity _) = a
-link a@(Block _ _ _) = a
-link t@(Truth _) = t
-link f@(Fraction _) = f
-link (Complex _ (r,i)) = complex (link r, link i)
-link (Lambda _ l) = lambda [ (map link fl, link f)| (fl, f) <- l]
-link (Matrix _ n m ll) = matrix n m [map link rows | rows <- ll]
-link (Derivate _ a b) = derivate (link a) (link b)
-link (Sum _ a b c) = summ (link a) (link b) (link c)
-link (Product _ a b c) = productt (link a) (link b) (link c)
-link (Integrate _ a b c d) = integrate (link a) (link b) (link c) (link d)
+link (App _ f flst) = app <$> (link f) <*> mapM link flst
+link (UnOp _ op f) = unOp op <$> link f
+link (BinOp _ op fs) = binOp op <$> mapM link fs
+link (Meta _ m fs) = meta m <$> link fs
+link a@(CFloat _) = pure a
+link a@(CInteger _) = pure a
+link a@(NumEntity _) = pure a
+link a@(Block _ _ _) = pure a
+link t@(Truth _) = pure t
+link f@(Fraction _) = pure f
+link (Complex _ (r,i)) = (\r i -> complex (r,i)) <$> link r <*> link i
+link (Lambda _ l) = lambda <$> sequence [ (,) <$> mapM link fl <*> link f | (fl, f) <- l]
+link (Matrix _ n m ll) = matrix n m <$> sequence [mapM link rows | rows <- ll]
+link (Derivate _ a b) = derivate <$> link a <*> link b
+link (Sum _ a b c) = summ <$> link a <*> link b <*> link c
+link (Product _ a b c) = productt <$> link a <*> link b <*> link c
+link (Integrate _ a b c d) = integrate <$> link a <*> link b <*> link c <*> link d
 

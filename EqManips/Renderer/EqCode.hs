@@ -50,6 +50,9 @@ deparse _ _ (NumEntity e) = (en e ++)
           en Infinite = "infinite"
 deparse _ _ (CInteger i) = shows i
 deparse _ _ (CFloat d) = shows d
+deparse _ _ (List _ l) = ('[':) . argListToString l . (']':)
+deparse prio left (Indexes _ a b) = deparse prio left a . ("_("++) . argListToString b . (')':)
+
 deparse _ _ (Block i i1 i2) =
     ("block(" ++) . shows i . (',':) . shows i1 . (',' :) . shows i2 . (')' :)
 

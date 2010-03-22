@@ -29,6 +29,13 @@ sexprS (Poly _ (Polynome v lst)) =
                   . sexprS (poly polyn)
                   . str ") "
 
+sexprS (List _ lst) =
+    str "(list " . concatMapS (\a -> char ' ' . sexprS a) lst . str ") "
+
+sexprS (Indexes _ main lst) =
+    str "(indexes " . sexprS main . char ' ' 
+                    . concatMapS (\a -> char ' ' . sexprS a) lst . str ") "
+
 sexprS (Block _ _ _) = str "(block)"
 sexprS (Variable v) = str v
 sexprS (NumEntity e) = shows e

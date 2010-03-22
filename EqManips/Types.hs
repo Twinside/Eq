@@ -45,6 +45,7 @@ module EqManips.Types
          , binOp, unOp, complex, meta
          , app, summ, productt, derivate
          , integrate, lambda, matrix, poly
+         , indexes, list
          ) where
 
 import Data.Ord( comparing )
@@ -52,6 +53,7 @@ import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
 import qualified EqManips.ErrorMessages as Err
 
+import Data.Word
 import Data.Ratio
 import Data.List( foldl', foldl1' )
 import Data.Maybe( fromJust )
@@ -139,6 +141,11 @@ data FormulaPrim =
     | Fraction (Ratio Integer)
     | Complex HashResume (FormulaPrim , FormulaPrim)
 
+    -- | To index nDimensional data
+    | Indexes HashResume FormulaPrim [FormulaPrim]
+    -- | Yay, adding list to the language
+    | List HashResume [FormulaPrim]
+
     -- | FunName arguments
     | App HashResume FormulaPrim [FormulaPrim]
     -- | LowBound highbound expression
@@ -181,6 +188,9 @@ data FormulaPrim =
     | Meta HashResume MetaOperation FormulaPrim
     deriving (Eq, Show, Read)
 
+--------------------------------------------------
+----            Hash construction
+--------------------------------------------------
 app :: FormulaPrim -> [FormulaPrim] -> FormulaPrim 
 app = App 0
 
@@ -217,6 +227,23 @@ complex = Complex 0
 meta :: MetaOperation -> FormulaPrim -> FormulaPrim
 meta = Meta 0
 
+indexes :: FormulaPrim -> [FormulaPrim] -> FormulaPrim
+indexes = Indexes 0
+
+list :: [FormulaPrim] -> FormulaPrim
+list = List 0
+
+-- | Special binOp declaration used to merge two previous binary
+-- operators. Update the hash rather than perform full recalculation.
+binOpMerger :: BinOperator -> FormulaPrim -> FormulaPrim -> FormulaPrim
+binOpMerger op (BinOp _ op1 lst1) (BinOp _ op2 lst2)
+    | op == op1 && op == op2 = binOp op $ lst1 ++ lst2
+binOpMerger op (BinOp _ op1 lst1) node2
+    | op == op1 = binOp op $ lst1 ++ [node2]
+binOpMerger op node1 (BinOp _ op2 lst2)
+    | op == op2 = binOp op $ node1 : lst2
+binOpMerger op node1 node2 = binOp op [node1, node2]
+
 -- | Type used to carry some meta information
 -- with the type system.
 -- - formula Form : how is handled the binop form
@@ -228,7 +255,6 @@ data ListForm
 -- | Type token for format of the form [a,b]
 data TreeForm
 -- | Ok the data doesn't have any specific form
-{-data NoForm-}
 
 -- | Coefficient for polynoms
 data PolyCoeff =
@@ -384,7 +410,6 @@ instance Ord FormulaPrim where
                     (\_ a -> Monoid.Sum $ getSum a + 1)
                     (Monoid.Sum 0 :: Monoid.Sum Int)
     
-
 -----------------------------------------------------------
 --          Side Associativity
 -----------------------------------------------------------
@@ -401,6 +426,64 @@ data OpAssoc = OpAssocLeft | OpAssocRight
 instance Property BinOperator AssocSide OpAssoc where
     getProps OpEq = [(AssocSide, OpAssocRight)] 
     getProps _  = [(AssocSide, OpAssocLeft)]
+
+-- | Token used by the type system to retrieve constant
+-- associated to binary/unary operators
+data HashCode = HashCode
+
+instance TypeInfo Entity HashCode Word64 where
+    propOf Pi HashCode = 0
+    propOf Nabla HashCode = 0
+    propOf Infinite HashCode = 0
+
+instance TypeInfo MetaOperation HashCode Word64 where
+    propOf Hold HashCode = 0
+    propOf Force HashCode = 0
+    propOf Expand HashCode = 0
+    propOf Cleanup HashCode = 0
+    propOf LambdaBuild HashCode = 0
+    propOf Sort HashCode = 0
+
+instance TypeInfo UnOperator HashCode Word64 where
+    propOf OpNegate HashCode = 0
+    propOf OpAbs HashCode = 0
+    propOf OpSqrt HashCode = 0
+    propOf OpSin HashCode = 0
+    propOf OpSinh HashCode = 0
+    propOf OpASin HashCode = 0
+    propOf OpASinh HashCode = 0
+    propOf OpCos HashCode = 0
+    propOf OpCosh HashCode = 0
+    propOf OpACos HashCode = 0
+    propOf OpACosh HashCode = 0
+    propOf OpTan HashCode = 0
+    propOf OpTanh HashCode = 0
+    propOf OpATan HashCode = 0
+    propOf OpATanh HashCode = 0
+    propOf OpLn HashCode = 0
+    propOf OpLog HashCode = 0
+    propOf OpExp HashCode = 0
+    propOf OpFactorial HashCode = 0
+    propOf OpCeil HashCode = 0
+    propOf OpFloor HashCode = 0
+    propOf OpFrac HashCode = 0
+
+instance TypeInfo BinOperator HashCode Word64 where
+    propOf OpAdd HashCode = 0
+    propOf OpSub HashCode = 0
+    propOf OpMul HashCode = 0
+    propOf OpDiv HashCode = 0
+    propOf OpPow HashCode = 0
+    propOf OpAnd HashCode = 0
+    propOf OpOr HashCode = 0
+    propOf OpEq HashCode = 0
+    propOf OpNe HashCode = 0
+    propOf OpLt HashCode = 0
+    propOf OpGt HashCode = 0
+    propOf OpGe HashCode = 0
+    propOf OpLe HashCode = 0
+    propOf OpLazyAttrib HashCode = 0
+    propOf OpAttrib HashCode = 0
 
 -----------------------------------------------------------
 --          General operator property
@@ -604,9 +687,9 @@ foldf f acc fo = f fo acc
 ----  Strong and valid instances    ----
 ----------------------------------------
 instance Num FormulaPrim where
-    a + b = binOp OpAdd [a,b]
-    a - b = binOp OpSub [a,b]
-    a * b = binOp OpMul [a,b]
+    (+) = binOpMerger OpAdd
+    (-) = binOpMerger OpSub
+    (*) = binOpMerger OpMul
     negate = unOp OpNegate
     abs = unOp OpAbs
     signum (CInteger n) = CInteger (signum n)
@@ -615,7 +698,7 @@ instance Num FormulaPrim where
     fromInteger = CInteger . fromInteger
 
 instance Fractional FormulaPrim where
-    a / b = binOp OpDiv [a,b]
+    (/) = binOpMerger OpDiv
     recip b = binOp OpDiv [CInteger 1, b]
     fromRational a = binOp OpDiv [ int $ numerator a
                                  , int $ denominator a]
@@ -626,7 +709,7 @@ instance Floating FormulaPrim where
     exp = unOp OpExp
     sqrt = unOp OpSqrt
     log = unOp OpLn
-    a ** b = binOp OpPow [a,b]
+    (**) = binOpMerger OpPow
     sin = unOp OpSin
     cos = unOp OpCos
     tan = unOp OpTan

@@ -154,6 +154,11 @@ biAssoc f finv = fromEmptyMonad
                           (\a -> return . finv a)
 
 -- | same as biAssoc, but use monads.
+{-
+{-# SPECIALIZE biAssocM :: (FormulaPrim -> FormulaPrim -> EqContext (Either FormulaPrim (FormulaPrim,FormulaPrim))) 
+                        -> (FormulaPrim -> FormulaPrim -> EqContext (Either FormulaPrim (FormulaPrim,FormulaPrim)))
+                        -> [FormulaPrim] -> EqContext [FormulaPrim] #-}
+                        -}
 biAssocM :: (Monad m, Functor m)
          => (a -> a -> m (Either a (a,a))) 
          -> (a -> a -> m (Either a (a,a))) 
@@ -220,6 +225,8 @@ isFormulaInteger = getAll . foldf isConstant mempty
           isConstant (Meta _ _ _) a = a
           isConstant (Matrix _ 1 1 _) a = a
           isConstant (Matrix _ _ _ _) _ = All False
+          isConstant (Indexes _ _ _) _ = All False
+          isConstant (List _ _) _ = All False
 
           isValidUnop OpNegate a = a
           isValidUnop OpAbs a = a
@@ -262,6 +269,8 @@ isFormulaConstant = getAll . foldf isConstant mempty
           isConstant (Truth _) _ = All True
           isConstant (NumEntity _) _ = All True
           isConstant (Fraction _) _ = All True
+          isConstant (List _ _) _ = All False
+          isConstant (Indexes _ _ _) _ = All False
 
           --
           isConstant (Complex _ _) a = a
