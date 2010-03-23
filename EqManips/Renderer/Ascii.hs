@@ -100,12 +100,11 @@ asciiSizer = Dimensioner
             in ((finalY - hf) `div` 2, (wf + pw, finalY))
 
     , listSize = \_ (width, base, belowBase) -> (base, (width + 2, base + belowBase))
-    , indexesSize = \_ (sourceBase, (sourceWidth, sourceHeight)) subTrees ->
-                            let indexWidth = sum [ w + 1 | (_,(w,_)) <- subTrees ] - 1
+    , indexesSize = \_ (base, (width, height)) subTrees ->
+                            let indexWidth = sum [ w + 1 | (_,(w,_)) <- subTrees ]
                                 indexHeight = maximum [ h | (_,(_,h)) <- subTrees ]
                             in
-                            (sourceBase, ( sourceWidth + indexWidth + 2
-                                         , sourceHeight + indexHeight))
+                            (base, ( width + indexWidth + 2, height + indexHeight))
 
     , indexPowerSize = \_conf (base, (width, height)) subTrees (_, (powerWidth, powerHeight)) ->
                             let indexWidth = sum [ w + 1 | (_,(w,_)) <- subTrees ]
@@ -361,8 +360,18 @@ renderF _ (Truth False) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [
 renderF _ (BinOp _ _ []) _ _ = error "renderF conf - rendering BinOp with no operand."
 renderF _ (BinOp _ _ [_]) _ _ = error "renderF conf - rendering BinOp with only one operand."
 
+renderF conf (Indexes _ f1 f2) (SizeNodeList _ (_,(_,wholeHeight)) idBase (base:subs))
+             (x,y) = baseRender . indexRender
+        where baseRender = renderF conf f1 base (x, y)
+              (_, indexRender) = renderArgs conf False (x + lw, y + lh)
+                                        idBase idHeight
+                                        $ zip f2 subs
+                                      
+              (lw, lh) = sizeOfTree base
+              idHeight = wholeHeight - lh
+
 renderF conf (BinOp _ OpPow [Indexes _ f1 f2, rest])
-             (BiSizeNode False _ (SizeNodeList _ (idBase,(_,wholeHeight)) _ (base:subs)) t2)
+             (BiSizeNode False _ (SizeNodeList _ (_,(_,wholeHeight)) idBase (base:subs)) t2)
              (x,y) =
     baseRender . powRender . indexRender
         where baseRender = renderF conf f1 base (x, y + rh)

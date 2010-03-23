@@ -138,19 +138,18 @@ sizeOfFormula conf sizer _ _ (BinOp _ OpDiv [f1,f2]) =
 --      ^^^
 --      ^^^
 sizeOfFormula conf sizer isRight prevPrio (BinOp _ OpPow [Indexes _ f1 f2, rest]) =
-    BiSizeNode needParenthes lastSize (SizeNodeList False (realArgBase, snd lastSize) 0
+    BiSizeNode needParenthes lastSize (SizeNodeList False lastSize indexBase
                                                     $ baseSize:subTrees)
                                       powerUp
         where subSize = sizeOfFormula conf sizer False maxPrio
               baseSize = subSize f1
               powerUp = subSize rest
               subTrees = map subSize f2
-              bs@(_, (_,bh)) = sizeExtract baseSize
-              ps@(_, (_,ph)) = sizeExtract powerUp
-              lastSize = indexPowerSize sizer conf bs (map sizeExtract subTrees) ps
+              lastSize = indexPowerSize sizer conf (sizeExtract baseSize)
+                                                   (map sizeExtract subTrees)
+                                                   (sizeExtract powerUp)
 
               (_, indexBase, _) = argSizes sizer conf subTrees
-              realArgBase = indexBase -- + bh + ph
               needParenthes = needParenthesisPrio isRight prevPrio OpPow
 
 -- do something like that
@@ -159,14 +158,15 @@ sizeOfFormula conf sizer isRight prevPrio (BinOp _ OpPow [Indexes _ f1 f2, rest]
 --      ^^^
 --      ^^^
 sizeOfFormula conf sizer _ _ (Indexes _ f1 f2) =
-    SizeNodeList False sizeDim argsBase (funcSize : trees)
+    (SizeNodeList False lastSize indexBase $ baseSize:subTrees)
         where subSize = sizeOfFormula conf sizer False maxPrio
-              trees = map subSize f2
-              funcSize = subSize f1
+              baseSize = subSize f1
+              subTrees = map subSize f2
 
-              accumulated = argSizes sizer conf trees
-              sizeDim = indexesSize sizer conf (sizeExtract funcSize) (map sizeExtract trees)
-              (_, argsBase, _) = accumulated
+              lastSize = indexesSize sizer conf (sizeExtract baseSize)
+                                                (map sizeExtract subTrees)
+
+              (_, indexBase, _) = argSizes sizer conf subTrees
 
 -- do something like that
 --         %%%%%%%
