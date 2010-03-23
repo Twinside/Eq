@@ -9,7 +9,7 @@ Maintainer: Vincent Berthoux
 
 Flag Debug
     Description: Enable debug prints
-    Default: False
+    Default: True
 
 Flag TestProject
     Description: Enable compilation of the test project
@@ -25,7 +25,7 @@ Flag Profiling
 
 Flag optimize
     Description: turn on optimisation
-    Default: True
+    Default: False
 
 -- Main executable
 Executable eq

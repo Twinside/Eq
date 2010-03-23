@@ -228,7 +228,8 @@ meta :: MetaOperation -> FormulaPrim -> FormulaPrim
 meta = Meta 0
 
 indexes :: FormulaPrim -> [FormulaPrim] -> FormulaPrim
-indexes = Indexes 0
+indexes (Indexes _ a b) lst = Indexes 0 a $ b ++ lst
+indexes a b = Indexes 0 a b
 
 list :: [FormulaPrim] -> FormulaPrim
 list = List 0

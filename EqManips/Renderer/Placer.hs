@@ -58,8 +58,10 @@ data Dimensioner = Dimensioner
     , derivateSize :: Conf -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , entitySize :: Conf -> Entity -> RelativePlacement
     , truthSize :: Conf -> Bool -> RelativePlacement
-    , listSize :: Conf -> [RelativePlacement] -> RelativePlacement
+    , listSize :: Conf -> (Int, Int, Int) -> RelativePlacement
+
     , indexesSize :: Conf -> RelativePlacement -> [RelativePlacement] -> RelativePlacement
+    , indexPowerSize :: Conf -> RelativePlacement -> [RelativePlacement] -> RelativePlacement -> RelativePlacement
     }
 
 sizeExtract :: SizeTree -> RelativePlacement
@@ -127,6 +129,44 @@ sizeOfFormula conf sizer _ _ (BinOp _ OpDiv [f1,f2]) =
     where nodeLeft = sizeOfFormula conf sizer False maxPrio f1
           nodeRight = sizeOfFormula conf sizer True maxPrio f2
           sizeDim = divBar sizer conf (sizeExtract nodeLeft) (sizeExtract nodeRight)
+
+-- do something like that
+--       %%%%%%%
+--       %%%%%%%
+--  #### 
+--  ####
+--      ^^^
+--      ^^^
+sizeOfFormula conf sizer isRight prevPrio (BinOp _ OpPow [Indexes _ f1 f2, rest]) =
+    BiSizeNode needParenthes lastSize (SizeNodeList False (realArgBase, snd lastSize) 0
+                                                    $ baseSize:subTrees)
+                                      powerUp
+        where subSize = sizeOfFormula conf sizer False maxPrio
+              baseSize = subSize f1
+              powerUp = subSize rest
+              subTrees = map subSize f2
+              bs@(_, (_,bh)) = sizeExtract baseSize
+              ps@(_, (_,ph)) = sizeExtract powerUp
+              lastSize = indexPowerSize sizer conf bs (map sizeExtract subTrees) ps
+
+              (_, indexBase, _) = argSizes sizer conf subTrees
+              realArgBase = indexBase -- + bh + ph
+              needParenthes = needParenthesisPrio isRight prevPrio OpPow
+
+-- do something like that
+--  #### 
+--  ####
+--      ^^^
+--      ^^^
+sizeOfFormula conf sizer _ _ (Indexes _ f1 f2) =
+    SizeNodeList False sizeDim argsBase (funcSize : trees)
+        where subSize = sizeOfFormula conf sizer False maxPrio
+              trees = map subSize f2
+              funcSize = subSize f1
+
+              accumulated = argSizes sizer conf trees
+              sizeDim = indexesSize sizer conf (sizeExtract funcSize) (map sizeExtract trees)
+              (_, argsBase, _) = accumulated
 
 -- do something like that
 --         %%%%%%%
@@ -221,18 +261,8 @@ sizeOfFormula conf sizer _isRight _prevPrio (Sum _ inite end what) =
 sizeOfFormula conf sizer _ _ (List _ lst) =
   SizeNodeList False wholeSize listBase trees
     where trees = map (sizeOfFormula conf sizer False maxPrio) lst
-          wholeSize = listSize sizer conf $ map sizeExtract trees
-          (_, listBase, _) = argSizes sizer conf trees
-
-sizeOfFormula conf sizer _ _ (Indexes _ f1 f2) =
-    SizeNodeList False sizeDim argsBase (funcSize : trees)
-        where subSize = sizeOfFormula conf sizer False maxPrio
-              trees = map subSize f2
-              funcSize = subSize f1
-
-              accumulated = argSizes sizer conf trees
-              sizeDim = indexesSize sizer conf (sizeExtract funcSize) (map sizeExtract trees)
-              (_, argsBase, _) = accumulated
+          wholeSize = listSize sizer conf size
+          size@(_, listBase, _) = argSizes sizer conf trees
 
 -- do something like this :
 --      #######
@@ -258,6 +288,7 @@ sizeOfFormula conf sizer _ _ (Lambda _ clauses) = SizeNodeClause False nodeSize 
                             | ( (argTrees, bodyTree)
                               , ((_, argBase,_),(bodyBase,_)) ) <- zip subTrees subPlacement]
 
+-- | Compute size for all args and return (width, aboveBaseLine, belowBaseline)
 argSizes :: Dimensioner -> Conf -> [SizeTree] -> (Int, Int, Int)
 argSizes sizer conf args = foldl' sizeExtractor (0, 0, 0) args
     where sizeExtractor acc = argSize sizer conf acc . sizeExtract

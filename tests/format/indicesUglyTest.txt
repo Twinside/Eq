@@ -1,0 +1,1 @@
+a _ ii _ j _ sqrt( sin(x + y/4)) ^ sqrt(9+x+ceil(pi/15)) + n + 15

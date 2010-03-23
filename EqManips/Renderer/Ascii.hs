@@ -99,6 +99,22 @@ asciiSizer = Dimensioner
             let finalY = max hf (argsBase + argsLeft)
             in ((finalY - hf) `div` 2, (wf + pw, finalY))
 
+    , listSize = \_ (width, base, belowBase) -> (base, (width + 2, base + belowBase))
+    , indexesSize = \_ (sourceBase, (sourceWidth, sourceHeight)) subTrees ->
+                            let indexWidth = sum [ w + 1 | (_,(w,_)) <- subTrees ] - 1
+                                indexHeight = maximum [ h | (_,(_,h)) <- subTrees ]
+                            in
+                            (sourceBase, ( sourceWidth + indexWidth + 2
+                                         , sourceHeight + indexHeight))
+
+    , indexPowerSize = \_conf (base, (width, height)) subTrees (_, (powerWidth, powerHeight)) ->
+                            let indexWidth = sum [ w + 1 | (_,(w,_)) <- subTrees ]
+                                indexHeight = maximum [ h | (_,(_,h)) <- subTrees ]
+                            in
+                            (base + powerHeight
+                                   , ( width + max indexWidth powerWidth + 2
+                                     , height + powerHeight + indexHeight))
+
     , lambdaSize = \_ poses -> 
         let clauseCount = length poses
             mHeight = 2 + clauseCount + sum
@@ -267,15 +283,24 @@ renderBraces (x,y) (w, h) renderLeft renderRight = leftChar . rightChar
 
 -- | Render a list of arguments, used by lambdas & functions
 renderArgs :: Conf -- ^ How to render stuff
+           -> Bool -- ^ With parenthesis
            -> Pos -- ^ Where to render the arguments
            -> Int -- ^ The baseline for all the arguments
-           -> Int 
+           -> Int -- ^ Maximum height for all the arguments
            -> [(FormulaPrim, SizeTree)] -- ^ Arguments to be rendered
            -> (Int, PoserS) -- ^ Width & charList
-renderArgs conf (x,y) argBase argsMaxHeight mixedList = (xla, params
-    . renderParens (x , y) (xla - argBegin, argsMaxHeight))
+renderArgs conf withParenthesis (x,y) argBase argsMaxHeight mixedList =
+    (xla + lastWidth + 2,
+            if withParenthesis
+                then fullArgs . renderParens (x , y) (xla + lastWidth + 2 - argBegin, argsMaxHeight)
+                else fullArgs)
+
   where argBegin = x + 1
-        (params, (xla,_)) = foldl' write (id, (argBegin,y)) mixedList
+        (params, (xla,_)) = foldl' write (id, (argBegin,y)) $ init mixedList
+        (lastNode, lastSize) = last mixedList
+        (lastBase, (lastWidth, _)) = sizeExtract lastSize
+
+        fullArgs = params . renderF conf lastNode lastSize (xla, y + (argBase - lastBase))
 
         write (acc, (x',y')) (node, size) =
             ( commas . argWrite . acc , (x' + nodeWidth + 2, y') )
@@ -335,6 +360,20 @@ renderF _ (Truth True) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [x
 renderF _ (Truth False) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "false"
 renderF _ (BinOp _ _ []) _ _ = error "renderF conf - rendering BinOp with no operand."
 renderF _ (BinOp _ _ [_]) _ _ = error "renderF conf - rendering BinOp with only one operand."
+
+renderF conf (BinOp _ OpPow [Indexes _ f1 f2, rest])
+             (BiSizeNode False _ (SizeNodeList _ (idBase,(_,wholeHeight)) _ (base:subs)) t2)
+             (x,y) =
+    baseRender . powRender . indexRender
+        where baseRender = renderF conf f1 base (x, y + rh)
+              powRender = renderF conf rest t2 (x + lw, y)
+              (_, indexRender) = renderArgs conf False (x + lw, y + rh + lh)
+                                        idBase idHeight
+                                        $ zip f2 subs
+                                      
+              (lw, lh) = sizeOfTree base
+              ( _, rh) = sizeOfTree t2
+              idHeight = wholeHeight - lh
 
 renderF conf (BinOp _ OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =
     leftRender . rightRender
@@ -437,9 +476,13 @@ renderF conf (UnOp _ op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
         where (b,_) = sizeExtract subSize
               opName = op `obtainProp` OperatorText
 
+renderF conf (List _ lst) (SizeNodeList False (_, (w, h)) argBase trees) pos@(x,y) =
+    snd (renderArgs conf False (x+1, y) argBase h sizes) . renderSquareBracket pos (w,h) True True 
+        where sizes = zip lst trees
+
 renderF conf (App _ func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
         (x,y) =
-    snd (renderArgs conf (x + fw, y) argBase h mixedList) . renderF conf func s (x,baseLine) 
+    snd (renderArgs conf True (x + fw, y) argBase h mixedList) . renderF conf func s (x,baseLine) 
         where (fw, _) = sizeOfTree s
               baseLine = y + base
               mixedList = zip flist ts
@@ -449,7 +492,7 @@ renderF conf (Lambda _ clauses) (SizeNodeClause _ (_,(w,h)) subTrees) (x,y) =
     . renderBraces (x,y) (w,h) True True
         where renderClause ((args, body), (argBase, trees, _bodyBase, bodyTree))
                            (lst, top) =
-                  let (left, rez) = renderArgs conf (x + 1, top) argBase argsHeight
+                  let (left, rez) = renderArgs conf True (x + 1, top) argBase argsHeight
                                   $ zip args trees
                       bodyText = renderF conf body bodyTree (left + 3, top)
                       (_, bodyHeight) = sizeOfTree bodyTree

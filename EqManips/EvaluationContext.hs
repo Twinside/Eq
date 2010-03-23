@@ -29,8 +29,8 @@ import EqManips.Algorithm.Utils
 
 #ifdef _DEBUG
 import System.IO
-import EqManips.Renderer.Ascii( formatFormula )
-import EqManips.Renderer.Sexpr
+import {-# SOURCE #-} EqManips.Renderer.Ascii( formatFormula )
+import {-# SOURCE #-} EqManips.Renderer.Sexpr
 #endif /* _DEBUG */
 
 -- | The real context info.
