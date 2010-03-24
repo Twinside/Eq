@@ -45,7 +45,8 @@ eqUnittests = TestList $
     $ evalResultCheck toEval rez | (toEval, rez) <- arithmeticTest
                                                  ++ polynomeTest
                                                  ++ basicManualFunction
-                                                 ++ comparisonOperator ]
+                                                 ++ comparisonOperator 
+                                                 ++ indexationOperation ]
 
     ++ [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
        . TestCase
@@ -546,6 +547,47 @@ basicManualFunction =
 
     , unOp OpACosh (float 1.5) ==> CFloat (acosh 1.5)
     , unOp OpACosh (int 1) ==> zeroFy (CFloat $ acosh 1)
+    ]
+
+errorFormula :: FormulaPrim
+errorFormula = Block 1 1 1
+
+indexationOperation :: [(FormulaPrim, FormulaPrim)]
+indexationOperation =
+    [ indexes (int 3) [int 1]       ==> errorFormula
+    , indexes (list [1, 2, 3, 4, 5, 6, 7, 9, 10]) [4] ==> 4
+    , indexes (matrix 3 3 [ [ 1, 2, 3 ]
+                          , [ 4, 5, 6 ]
+                          , [ 7, 8, 9 ] ]) [1, 2] ==> 2
+
+    , indexes (matrix 3 3 [ [ 1, 2, 3 ]
+                          , [ 4, 5, 6 ]
+                          , [ 7, 8, 9 ] ]) [2, 3] ==> 6
+
+    , indexes (matrix 3 3 [ [ 1, 2, 3 ]
+                          , [ 4, 5, 6 ]
+                          , [ 7, 8, 9 ] ]) [1, 1] ==> 1
+
+    , indexes (matrix 3 3 [ [ 1, 2, 3 ]
+                          , [ 4, 5, 6 ]
+                          , [ 7, 8, 9 ] ]) [1, 4] ==> errorFormula
+
+    , indexes (matrix 3 3 [ [ 1, 2, 3 ]
+                          , [ 4, 5, 6 ]
+                          , [ 7, 8, 9 ] ]) [4, 2] ==> errorFormula
+
+    , indexes (matrix 3 3 [ [ 1, 2, 3 ]
+                          , [ 4, 5, 6 ]
+                          , [ 7, 8, 9 ] ]) [0, 0] ==> errorFormula
+
+    , indexes (matrix 2 2 [ [ 1, 2            ]
+                          , [ 4, Variable "a" ] ]) [2, 2, 3] ==> indexes (Variable "a") [3]
+    , indexes (matrix 5 1 [ [ 1, 2, 3, 4, 5 ] ]) [3] ==> 3
+    , indexes (matrix 1 5 [ [1], [2], [3], [4], [5] ]) [4] ==> 4
+    , indexes (matrix 5 1 [ [ 1, 2, 3, 4, 5 ] ]) [7] ==> errorFormula
+    , indexes (matrix 1 5 [ [1], [2], [3], [4], [5] ]) [5] ==> errorFormula
+    , indexes (matrix 5 1 [ [ 1, 2, 3, 4, 5 ] ]) [0] ==> errorFormula
+    , indexes (matrix 1 5 [ [1], [2], [3], [4], [5] ]) [0] ==> errorFormula
     ]
 
 basicFunctions :: FormulaPrim -> Double -> [(FormulaPrim, FormulaPrim)]

@@ -285,10 +285,20 @@ metaEvaluation evaluator m f = unTagFormula
 --------------------------------------------------
 indexCompute :: FormulaPrim -> [FormulaPrim] -> EqContext FormulaPrim
 indexCompute a [] = return a
+indexCompute n@(CInteger _) idx = eqPrimFail (indexes n idx) Err.integer_not_indexable
+indexCompute n@(CFloat _) idx = eqPrimFail (indexes n idx) Err.float_not_indexable
+
+indexCompute mm@(Matrix _ 1 m lst) idxs@(CInteger i : rest)
+    | m >= 1 && m <= fromInteger i = indexCompute (lst !! 0 !! (fromInteger i - 1)) rest
+    | otherwise = eqPrimFail (indexes mm idxs) Err.out_of_bound_index
+
+indexCompute mm@(Matrix _ n 1 lst) idxs@(CInteger i : rest)
+    | n >= 1 && n <= fromInteger i = indexCompute (lst !! (fromInteger i - 1) !! 0) rest
+    | otherwise = eqPrimFail (indexes mm idxs) Err.out_of_bound_index
+
 indexCompute mm@(Matrix _ n m lst) idxs@(CInteger i : CInteger j : rest)
     | i >= 1 && i <= toInteger n && j >= 1 && j <= toInteger m = 
-        if null rest then return $ lst !! (fromInteger i - 1) !! (fromInteger j - 1)
-                     else return $ indexes (lst !! (fromInteger i - 1) !! (fromInteger j - 1)) rest
+            indexCompute (lst !! (fromInteger i - 1) !! (fromInteger j - 1)) rest
     | otherwise = eqPrimFail (indexes mm idxs) Err.out_of_bound_index
 
 indexCompute m@(Matrix _ n _ lst) idx@[CInteger i]
@@ -296,7 +306,7 @@ indexCompute m@(Matrix _ n _ lst) idx@[CInteger i]
     | otherwise = eqPrimFail (indexes m idx) Err.out_of_bound_index
 
 indexCompute l@(List _ lst) idx@(CInteger i : rest)
-    | i - 1 < toInteger (length lst) = indexCompute (lst !! fromInteger i) rest
+    | i - 1 < toInteger (length lst) = indexCompute (lst !! (fromInteger i - 1)) rest
     | otherwise = eqPrimFail (indexes l idx) Err.out_of_bound_index
 
 indexCompute a b = return $ indexes a b

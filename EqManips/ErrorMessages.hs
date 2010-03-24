@@ -51,6 +51,8 @@ matrix_empty = "Matrixes are empty"
 matrix_diff_size = "Sorry can't apply this operation on matrix of different sizes"
 
 out_of_bound_index = "Your indexes are out of bound"
+integer_not_indexable = "Numbers cannot be indexed"
+float_not_indexable = "Numbers cannot be indexed"
 
 --------------------------------------------------
 ----            MetaEval

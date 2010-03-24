@@ -39,7 +39,7 @@ Executable eq
         Ghc-options:-static -optl-static
 
     -- If we profile the execution
-    if flag(profiling)
+    if flag(Profiling)
         Ghc-options:-prof -auto-all
 
     if flag(debug)
@@ -63,6 +63,7 @@ Executable eqtestsuite
     extensions: CPP
     if flag(debug)
         cpp-options: -D_DEBUG
+
     Build-Depends: base >= 4.0
                  , parsec >= 3.0 && < 4.0
                  , array
