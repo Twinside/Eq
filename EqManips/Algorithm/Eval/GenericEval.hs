@@ -280,6 +280,27 @@ metaEvaluation :: EvalFun -> MetaOperation -> EvalFun
 metaEvaluation evaluator m f = unTagFormula
               <$> metaEval (taggedEvaluator evaluator) m (Formula f)
 
+--------------------------------------------------
+----            Indexation
+--------------------------------------------------
+indexCompute :: FormulaPrim -> [FormulaPrim] -> EqContext FormulaPrim
+indexCompute a [] = return a
+indexCompute mm@(Matrix _ n m lst) idxs@(CInteger i : CInteger j : rest)
+    | i >= 1 && i <= toInteger n && j >= 1 && j <= toInteger m = 
+        if null rest then return $ lst !! (fromInteger i - 1) !! (fromInteger j - 1)
+                     else return $ indexes (lst !! (fromInteger i - 1) !! (fromInteger j - 1)) rest
+    | otherwise = eqPrimFail (indexes mm idxs) Err.out_of_bound_index
+
+indexCompute m@(Matrix _ n _ lst) idx@[CInteger i]
+    | i >= 1 && i <= toInteger n = return . list $ lst !! (fromInteger i - 1)
+    | otherwise = eqPrimFail (indexes m idx) Err.out_of_bound_index
+
+indexCompute l@(List _ lst) idx@(CInteger i : rest)
+    | i - 1 < toInteger (length lst) = indexCompute (lst !! fromInteger i) rest
+    | otherwise = eqPrimFail (indexes l idx) Err.out_of_bound_index
+
+indexCompute a b = return $ indexes a b
+
 -----------------------------------------------
 ----        General evaluation
 -----------------------------------------------
@@ -380,6 +401,11 @@ eval evaluator (Derivate _ what (Variable s)) = do
 #endif
     derived <- derivateFormula (taggedEvaluator evaluator) s $ Formula what
     return . unTagFormula $ cleanup derived
+
+eval evaluator (Indexes _ what lst) = do
+    what' <- evaluator what
+    lst' <- mapM evaluator lst
+    indexCompute what' lst'
 
 eval _ f@(Derivate _ _ _) =
     eqPrimFail f Err.deriv_bad_var_spec 

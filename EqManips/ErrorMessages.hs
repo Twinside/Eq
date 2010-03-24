@@ -50,6 +50,8 @@ matrix_mul_bad_size = "Error can't multiply matrix, m2 has wrong height"
 matrix_empty = "Matrixes are empty" 
 matrix_diff_size = "Sorry can't apply this operation on matrix of different sizes"
 
+out_of_bound_index = "Your indexes are out of bound"
+
 --------------------------------------------------
 ----            MetaEval
 --------------------------------------------------
