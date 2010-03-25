@@ -289,11 +289,11 @@ indexCompute n@(CInteger _) idx = eqPrimFail (indexes n idx) Err.integer_not_ind
 indexCompute n@(CFloat _) idx = eqPrimFail (indexes n idx) Err.float_not_indexable
 
 indexCompute mm@(Matrix _ 1 m lst) idxs@(CInteger i : rest)
-    | m >= 1 && m <= fromInteger i = indexCompute (lst !! 0 !! (fromInteger i - 1)) rest
+    | i >= 1 && m >= fromInteger i = indexCompute (lst !! (fromInteger i - 1) !! 0) rest
     | otherwise = eqPrimFail (indexes mm idxs) Err.out_of_bound_index
 
 indexCompute mm@(Matrix _ n 1 lst) idxs@(CInteger i : rest)
-    | n >= 1 && n <= fromInteger i = indexCompute (lst !! (fromInteger i - 1) !! 0) rest
+    | i >= 1 && n >= fromInteger i = indexCompute (lst !! 0 !! (fromInteger i - 1)) rest
     | otherwise = eqPrimFail (indexes mm idxs) Err.out_of_bound_index
 
 indexCompute mm@(Matrix _ n m lst) idxs@(CInteger i : CInteger j : rest)

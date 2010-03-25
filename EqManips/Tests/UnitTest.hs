@@ -585,7 +585,7 @@ indexationOperation =
     , indexes (matrix 5 1 [ [ 1, 2, 3, 4, 5 ] ]) [3] ==> 3
     , indexes (matrix 1 5 [ [1], [2], [3], [4], [5] ]) [4] ==> 4
     , indexes (matrix 5 1 [ [ 1, 2, 3, 4, 5 ] ]) [7] ==> errorFormula
-    , indexes (matrix 1 5 [ [1], [2], [3], [4], [5] ]) [5] ==> errorFormula
+    , indexes (matrix 1 5 [ [1], [2], [3], [4], [5] ]) [6] ==> errorFormula
     , indexes (matrix 5 1 [ [ 1, 2, 3, 4, 5 ] ]) [0] ==> errorFormula
     , indexes (matrix 1 5 [ [1], [2], [3], [4], [5] ]) [0] ==> errorFormula
     ]
