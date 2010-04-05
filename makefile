@@ -43,16 +43,16 @@ doc:
 	runhaskell Setup.hs haddock --executables
 
 profiling:
-	runhaskell Setup.hs configure --flags="profiling optimize"
+	runhaskell Setup.hs configure --user --flags="profiling optimize"
 
 debug:
-	runhaskell Setup.hs configure --flags="debug profiling optimize"
+	runhaskell Setup.hs configure --user --flags="debug profiling optimize"
 
 release:
-	runhaskell Setup.hs configure --flags="optimize"
+	runhaskell Setup.hs configure --user --flags="optimize"
 
 conf:
-	runhaskell Setup.hs configure --flags="optimize"
+	runhaskell Setup.hs configure --user --flags="optimize"
 
 test:
 	rm -f *.tix

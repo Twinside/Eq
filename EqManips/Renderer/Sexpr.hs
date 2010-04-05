@@ -85,7 +85,7 @@ sexprS (App _ func args) =
                   . char ')'
 
 sexprS (Matrix _ n m lsts) =
-    str "(matrix " . shows n . char ' ' . shows m
-                   . concatS [concatMapS sexprS lst | lst <- lsts]
+    str "(matrix " . shows n . char ' ' . shows m . char ' '
+                   . concatS [concatMapS (\a -> (' ':) . sexprS a) lst | lst <- lsts]
                    . char ')'
 
