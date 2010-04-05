@@ -7,11 +7,12 @@ module EqManips.FormulaIterator( depthFirstFormula
                                ) where
 
 import Control.Applicative
+import Control.Monad.Identity
 import EqManips.Types
 import Data.Maybe( fromMaybe )
 import Control.Monad( mapM )
+
 import EqManips.EvaluationContext
-import EqManips.Algorithm.EmptyMonad
 
 -- | Depth first traversal of formula.
 -- the function is applied to each subformula when
@@ -120,9 +121,9 @@ topDownTraversal _ b@(Block _ _ _) = b
 --   reached when the traversal go up.
 -- Note : the leaf don't have a pre event, just a
 --        post.
-{-# SPECIALIZE depthPrimTraversal :: (FormulaPrim -> EmptyMonad ())
-                                  -> (FormulaPrim -> EmptyMonad FormulaPrim)
-                                  -> FormulaPrim -> EmptyMonad FormulaPrim #-}
+{-# SPECIALIZE depthPrimTraversal :: (FormulaPrim -> Identity ())
+                                  -> (FormulaPrim -> Identity FormulaPrim)
+                                  -> FormulaPrim -> Identity FormulaPrim #-}
 {-# SPECIALIZE depthPrimTraversal :: (FormulaPrim -> EqContext ())
                                   -> (FormulaPrim -> EqContext FormulaPrim)
                                   -> FormulaPrim -> EqContext FormulaPrim #-}
