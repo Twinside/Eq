@@ -211,6 +211,7 @@ stringOfBinOp OpPow = "<power/>"
 stringOfBinOp OpSub = "<minus/>"
 stringOfBinOp OpAttrib = "<!-- Attrib -->"
 stringOfBinOp OpLazyAttrib = "<!-- LazyAttrib -->"
+stringOfBinOp OpCons = "<!-- Cons -->"
 
 bigOperator :: String -> String -> FormulaPrim -> FormulaPrim -> FormulaPrim
             -> ShowS

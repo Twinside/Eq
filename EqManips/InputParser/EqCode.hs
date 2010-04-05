@@ -107,6 +107,7 @@ operatorDefs =
       ,binary "<" (binop OpLt)  AssocLeft,  binary ">"  (binop OpGt) AssocLeft
       ,binary "<=" (binop OpLe) AssocLeft,  binary ">=" (binop OpGe) AssocLeft]
     , [binary "&" (binop OpAnd) AssocLeft, binary "|" (binop OpOr) AssocLeft]
+    , [binary "::" (binop OpCons) AssocRight]
     , [binary ":>" (binop OpLazyAttrib) AssocRight, binary ":=" (binop OpAttrib) AssocRight]
     ]
 
@@ -141,23 +142,16 @@ variable = Variable <$> identifier
 term :: Parsed st FormulaPrim
 term = try trueConst
     <|> try falseConst
+    <|> try nilConst
     <|> variable
     <|> try (CFloat <$> float)
     <|> CInteger . fromInteger <$> integer
     <|> parens expr
     <|> listParser
     <?> "Term error"
-{-
-atomicterm :: Parsed st FormulaPrim
-atomicterm =  try trueConst
-          <|> try falseConst
-          <|> variable
-          <|> try (CFloat <$> float)
-          <|> CInteger . fromInteger <$> integer
-          <|> parens expr
-          <|> listParser
-          <?> "Atomic term error"
--- -}
+
+nilConst :: Parsed st FormulaPrim
+nilConst = return (list []) <* (string "[]" >> whiteSpace)
 
 trueConst :: Parsed st FormulaPrim
 trueConst = return (Truth True) <* (string "true" >> whiteSpace)

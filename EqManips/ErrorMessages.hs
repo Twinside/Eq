@@ -54,6 +54,8 @@ out_of_bound_index = "Your indexes are out of bound"
 integer_not_indexable = "Numbers cannot be indexed"
 float_not_indexable = "Numbers cannot be indexed"
 
+eval_not_list = "You can only append to a list"
+
 --------------------------------------------------
 ----            MetaEval
 --------------------------------------------------

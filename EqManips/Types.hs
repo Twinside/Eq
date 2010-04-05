@@ -88,6 +88,7 @@ data BinOperator  =
 
     | OpLazyAttrib  -- ^ ':>'
     | OpAttrib      -- ^ ':='
+    | OpCons        -- ^ '::'
     deriving (Eq,Show,Enum)
 
 -- | All `unary` operators are in there. some are mathematical
@@ -485,6 +486,7 @@ instance TypeInfo BinOperator HashCode Word64 where
     propOf OpLe HashCode = 0
     propOf OpLazyAttrib HashCode = 0
     propOf OpAttrib HashCode = 0
+    propOf OpCons HashCode = 0
 
 -----------------------------------------------------------
 --          General operator property
@@ -516,6 +518,7 @@ instance Property BinOperator OpProp BinOperator where
 
     getProps OpPow = []
     getProps OpAttrib = []
+    getProps OpCons = []
     getProps OpLazyAttrib = []
 
     getProps OpSub = [(InverseOp, OpAdd)]
@@ -580,8 +583,9 @@ instance Property UnOperator OperatorText String where
 -- of binary operators
 binopDefs :: [(BinOperator, (Int, String, String))]
 binopDefs =
-    [ (OpAttrib,     (7, ":=", "Attribution operator"))
-    , (OpLazyAttrib, (7, ":>", "Lazy attribution operator"))
+    [ (OpAttrib,     (8, ":=", "Attribution operator"))
+    , (OpLazyAttrib, (8, ":>", "Lazy attribution operator"))
+    , (OpCons,(7,  "::", "List appending operator"))
     , (OpAnd, (6,  "&", "Logical and operator"))
     , (OpOr,  (6,  "|", "Logical or operator"))
     , (OpEq,  (5,  "=", "Equality operator"))

@@ -311,6 +311,14 @@ indexCompute l@(List _ lst) idx@(CInteger i : rest)
 
 indexCompute a b = return $ indexes a b
 
+--------------------------------------------------
+----            Cons evaluation
+--------------------------------------------------
+consEval :: EvalOp
+consEval toAppend (List _ lst) = left $ list (toAppend : lst)
+consEval toAppend l = 
+    eqPrimFail (binOp OpCons [toAppend, l]) Err.eval_not_list >>= left
+
 -----------------------------------------------
 ----        General evaluation
 -----------------------------------------------
@@ -368,6 +376,8 @@ eval evaluator (BinOp _ OpSub fs) =
     binEval OpSub (sub evaluator) (add evaluator) =<< mapM evaluator fs
 eval evaluator (BinOp _ OpMul fs) =
     binEval OpMul (mul evaluator) (mul evaluator) =<< mapM evaluator fs
+eval evaluator (BinOp _ OpCons fs) =
+    binEval OpCons consEval consEval =<< mapM evaluator fs
 
 -- | Todo fix this, it's incorrect
 eval evaluator (BinOp _ OpPow fs) = binEval OpPow power power =<< mapM evaluator fs

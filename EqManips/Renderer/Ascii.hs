@@ -99,7 +99,9 @@ asciiSizer = Dimensioner
             let finalY = max hf (argsBase + argsLeft)
             in ((finalY - hf) `div` 2, (wf + pw, finalY))
 
-    , listSize = \_ (width, base, belowBase) -> (base, (width + 2, base + belowBase))
+    , listSize = \_ (width, base, belowBase) ->
+                        (base, (width + 2, max 1 $ base + belowBase))
+
     , indexesSize = \_ (base, (width, height)) subTrees ->
                             let indexWidth = sum [ w + 1 | (_,(w,_)) <- subTrees ]
                                 indexHeight = maximum [ h | (_,(_,h)) <- subTrees ]
@@ -288,6 +290,10 @@ renderArgs :: Conf -- ^ How to render stuff
            -> Int -- ^ Maximum height for all the arguments
            -> [(FormulaPrim, SizeTree)] -- ^ Arguments to be rendered
            -> (Int, PoserS) -- ^ Width & charList
+renderArgs _ False (x,_) _ _             [] = (x, id)
+renderArgs _ True  (x,y) _ argsMaxHeight [] =
+    (x + 2, renderParens (x , y) (x + 2, argsMaxHeight))
+
 renderArgs conf withParenthesis (x,y) argBase argsMaxHeight mixedList =
     (xla + lastWidth + 2,
             if withParenthesis

@@ -185,7 +185,8 @@ biAssocM f finv lst = assocInner f lst
 -- just combine functions of kind of ShowS.
 -- The function is generalized
 concatS :: [a -> a] -> (a -> a)
-concatS = foldr1 (.)
+concatS []  = id
+concatS lst = foldr1 (.) lst
 
 -- | Work like concatMap, but instead use 
 -- function combination.
