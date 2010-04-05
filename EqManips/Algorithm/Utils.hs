@@ -139,10 +139,18 @@ needParenthesisPrio :: Bool        -- ^ If the node is on the right side of pare
                     -> Int         -- ^ Parent operator priority
                     -> BinOperator -- ^ This node operator
                     -> Bool
-needParenthesisPrio True parentPrio op =
-    (op `obtainProp` Priority) >= parentPrio
-needParenthesisPrio False parentPrio op =
-    (op `obtainProp` Priority) > parentPrio
+-- for right associative operators, it's reversed.
+needParenthesisPrio True parentPrio op
+    | op `obtainProp` AssocSide == OpAssocRight =
+        (op `obtainProp` Priority) > parentPrio
+    | otherwise =
+        (op `obtainProp` Priority) >= parentPrio
+
+needParenthesisPrio False parentPrio op
+    | op `obtainProp` AssocSide == OpAssocRight =
+        (op `obtainProp` Priority) >= parentPrio
+    | otherwise =
+        (op `obtainProp` Priority) > parentPrio
 
 -- | Bi associate operation on a list of elements.
 -- Can be used for reduction of formula.

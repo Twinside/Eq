@@ -88,7 +88,7 @@ data BinOperator  =
 
     | OpLazyAttrib  -- ^ ':>'
     | OpAttrib      -- ^ ':='
-    deriving (Eq,Show,Read)
+    deriving (Eq,Show,Enum)
 
 -- | All `unary` operators are in there. some are mathematical
 -- functions. They're present here, because it's easier to pattern
@@ -103,14 +103,14 @@ data UnOperator =
     | OpLn | OpLog | OpExp
     | OpFactorial
     | OpCeil | OpFloor | OpFrac
-    deriving (Eq, Show, Read)
+    deriving (Eq, Show, Enum)
 
 -- | Some entity which cannot be represented in other mannear
 data Entity =
       Pi
     | Nabla
     | Infinite
-    deriving (Eq, Show, Read, Ord)
+    deriving (Eq, Show, Ord, Enum)
 
 
 data MetaOperation =
@@ -186,7 +186,7 @@ data FormulaPrim =
     -- by the sysem, but that doesn't appear in the
     -- normal output.
     | Meta HashResume MetaOperation FormulaPrim
-    deriving (Eq, Show, Read)
+    deriving (Eq, Show)
 
 --------------------------------------------------
 ----            Hash construction
