@@ -3,10 +3,44 @@ derivaten( f, var, 0 ) :> f;
 derivaten( f, var, 1 ) :> derivate( Force(f), Force(var) );
 derivaten( f, var, n ) :> derivate( Force(derivaten( f, var, n-1 ))
                                   , Force(var) );
+
 -- if( condition (boolean), then, else )
-if( true, a, b )  :> a;
-if( false, a, b ) :> b;
+if(      true, a, b ) :> a;
+if(     false, a, b ) :> b;
 if( otherwise, a, b ) :> undefined;
+
+-- map( function, list )
+map( f,        [] ) :> [];
+map( f,   x :: xs ) :> f( x ) :: map( f, xs );
+map( f, otherwise ) :> undefined;
+
+-- foldl( function :: acc -> elem -> acc, accumulator, list )
+foldl( f, acc,      [] ) :> acc;
+foldl( f, acc, x :: xs ) :> foldl( f, f( acc, x ), xs );
+foldl( a,   b,       c ) :> undefined;
+
+-- foldr( function :: acc -> elem -> acc , accumulator, list )
+foldr( f, acc, []      ) :> acc;
+foldr( f, acc, x :: xs ) :> f( foldr( f, acc, xs ), x );
+foldr( a,   b,       c ) :> undefined;
+
+concat(      [],  y ) :> y;
+concat(       x, [] ) :> x;
+concat( x :: xs,  y ) :> x :: concat( xs, y );
+concat(       a,  b ) :> undefined;
+
+-- Filtering function, remove un-needed stuff
+filter( pred,      [] ) :> [];
+filter( pred, x :: xs ) :> concat( if( pred( x ), [x], [])
+                                 , filter( pred, xs ) );
+filter(    a,       b ) :> undefined;
+
+lengthIntern( acc,      [] ) :> acc;
+lengthIntern( acc, x :: xs ) :> lengthIntern( acc + 1, xs );
+lengthIntern(   a,       b ) :> undefined;
+
+-- length
+length( lst ) :> lengthIntern( 0, lst );
 
 -- well, a max function
 max( a, b ) :> if( a > b, a, b );
@@ -19,7 +53,7 @@ eq( a, a ) :> true;
 eq( a, b ) :> false;
 
 -- modintern( n<p, rest, module )
-modintern( true, rest, num ) :> rest;
+modintern(  true, rest, num ) :> rest;
 modintern( false, rest, num ) :> modintern( rest - num < num, rest - num, num );
 
 -- give the value of n modulo p
