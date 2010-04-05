@@ -35,6 +35,7 @@ binListRepacker op lst = binOpReducer op
           emergeSubOp acc sub = acc . (sub:)
 
 -- | Evaluate a binary operator
+-- Right associative operators are called with arguments reversed!
 binEval :: BinOperator -> EvalOp -> EvalOp -> [FormulaPrim] -> EqContext FormulaPrim
 binEval op f inv formulaList 
     | op `hasProp` Associativ && op `hasProp` Commutativ =
@@ -42,6 +43,12 @@ binEval op f inv formulaList
         addTrace ("Sorting => ", treeIfyFormula . Formula $ binOp op formulaList) >>
 #endif
         binListRepacker op <$> biAssocM f inv (sort formulaList)
+
+    | op `obtainProp` AssocSide == OpAssocRight =
+#ifdef _DEBUG
+        addTrace ("Basic Right Eval=>", treeIfyFormula . Formula $ binOp op formulaList) >>
+#endif
+        binListRepacker op . reverse <$> (biAssocM f inv $ reverse formulaList)
 
     | otherwise =
 #ifdef _DEBUG

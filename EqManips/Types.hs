@@ -426,7 +426,10 @@ data OpAssoc = OpAssocLeft | OpAssocRight
 
 -- | Help to query operator associativity
 instance Property BinOperator AssocSide OpAssoc where
+    getProps OpLazyAttrib = [(AssocSide, OpAssocRight)] 
+    getProps OpAttrib = [(AssocSide, OpAssocRight)] 
     getProps OpEq = [(AssocSide, OpAssocRight)] 
+    getProps OpCons = [(AssocSide, OpAssocRight)] 
     getProps _  = [(AssocSide, OpAssocLeft)]
 
 -- | Token used by the type system to retrieve constant

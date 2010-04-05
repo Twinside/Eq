@@ -124,17 +124,6 @@ listParser = do
     lst <- brackets $ sepBy expr (whiteSpace >> char ',' >> whiteSpace) <* whiteSpace
     return $ list lst
 
-{-
-indiceParser :: Parsed st FormulaPrim
-indiceParser = do
-    t <- term
-    whiteSpace
-    char '_'
-    whiteSpace
-    lst <- parens $ sepBy expr (whiteSpace >> char ',' >> whiteSpace) <* whiteSpace
-    return $ indexes t lst
--- -}
-
 variable :: Parsed st FormulaPrim
 variable = Variable <$> identifier
         <?> "variable"

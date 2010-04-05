@@ -46,7 +46,8 @@ eqUnittests = TestList $
                                                  ++ polynomeTest
                                                  ++ basicManualFunction
                                                  ++ comparisonOperator 
-                                                 ++ indexationOperation ]
+                                                 ++ indexationOperation
+                                                 ++ listCreationOperation ]
 
     ++ [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
        . TestCase
@@ -551,6 +552,15 @@ basicManualFunction =
 
 errorFormula :: FormulaPrim
 errorFormula = Block 1 1 1
+
+listCreationOperation :: [(FormulaPrim, FormulaPrim)]
+listCreationOperation =
+    [ binOp OpCons [2, 3]          ==> errorFormula
+    , binOp OpCons [2, 3, list []] ==> list [2,3]
+    , binOp OpCons [1,
+        binOp OpCons [2,
+            binOp OpCons [3, list [] ]]] ==> list [1,2,3]
+    ]
 
 indexationOperation :: [(FormulaPrim, FormulaPrim)]
 indexationOperation =

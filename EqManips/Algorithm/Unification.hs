@@ -60,6 +60,17 @@ unifyList l1 l2
         in foldM valid True $ zip l1 l2
     | otherwise = return False
 
+-- | Used to unify list and operator "::"
+unifyTill :: [FormulaPrim] -> [FormulaPrim] -> UnificationContext Bool
+unifyTill []     _          = return True
+unifyTill [Variable v] rest = checkSymbol v $ list rest
+unifyTill _      []         = return False
+unifyTill (x:xs) (y:ys)     = do
+    valid <- x =~= y
+    if valid then unifyTill xs ys
+             else return False
+
+
 -- | Real function that implement unification.
 -- origin pattern (function args...), to unify
 unifyFormula :: FormulaPrim -- ^ Pattern
@@ -185,6 +196,9 @@ unifyFormula (CFloat i1) (CFloat i2) =
 unifyFormula (NumEntity e1) (NumEntity e2) =
     return $ e1 == e2
 
+unifyFormula (BinOp _ OpCons l1) (List _ valList) =
+    unifyTill l1 valList
+
 unifyFormula (BinOp _ op1 l1) (BinOp _ op2 l2)
     | op1 == op2 && length l1 == length l2 = unifyList l1 l2
     | otherwise = return False
@@ -192,6 +206,13 @@ unifyFormula (BinOp _ op1 l1) (BinOp _ op2 l2)
 unifyFormula (UnOp _ op1 f1) (UnOp _ op2 f2) =
     (op1 == op2 &&) <$> (f1 =~= f2)
 
+unifyFormula (Indexes _ what l1) (Indexes _ what2 l2)
+    | length l1 == length l2 =
+            (&&) <$> (what =~= what2) <*> unifyList l1 l2
+    | otherwise =
+            return False
+
+unifyFormula (List _ l1) (List _ l2) = unifyList l1 l2
 unifyFormula (Variable v1) f2 = checkSymbol v1 f2
 
 unifyFormula _ _ = return False

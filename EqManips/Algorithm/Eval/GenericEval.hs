@@ -315,8 +315,8 @@ indexCompute a b = return $ indexes a b
 ----            Cons evaluation
 --------------------------------------------------
 consEval :: EvalOp
-consEval toAppend (List _ lst) = left $ list (toAppend : lst)
-consEval toAppend l = 
+consEval (List _ lst) toAppend = left $ list (toAppend : lst)
+consEval l toAppend = 
     eqPrimFail (binOp OpCons [toAppend, l]) Err.eval_not_list >>= left
 
 -----------------------------------------------
@@ -329,7 +329,7 @@ eval _ (NumEntity Pi) = return $ CFloat pi
 eval evaluator (Matrix _ n m mlines) = do
     cells <- sequence [mapM evaluator line | line <- mlines]
     return $ matrix n m cells
-
+eval evaluator (List _ l) = do list <$> mapM evaluator l
 eval _ func@(Lambda _ _) = unTagFormula <$> inject (Formula func)
 eval _ (Variable v) = do
     symbol <- symbolLookup v
