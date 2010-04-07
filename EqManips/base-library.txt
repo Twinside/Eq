@@ -24,6 +24,10 @@ foldr( f, acc, []      ) :> acc;
 foldr( f, acc, x :: xs ) :> f( foldr( f, acc, xs ), x );
 foldr( a,   b,       c ) :> undefined;
 
+cons( a, b ) :> b :: a;
+
+reverse( lst ) :> foldl( cons, [], lst );
+
 concat(      [],  y ) :> y;
 concat(       x, [] ) :> x;
 concat( x :: xs,  y ) :> x :: concat( xs, y );
@@ -34,6 +38,12 @@ filter( pred,      [] ) :> [];
 filter( pred, x :: xs ) :> concat( if( pred( x ), [x], [])
                                  , filter( pred, xs ) );
 filter(    a,       b ) :> undefined;
+
+listFromTo( a, a ) :> [a];
+listFromTo( a, b ) :> a :: listFromTo( a + 1, b );
+
+listFromToBy( a, by, a ) :> [a];
+listFromToBy( a, by, maxi ) :> a :: listFromToBy( a + by, by, maxi );
 
 lengthIntern( acc,      [] ) :> acc;
 lengthIntern( acc, x :: xs ) :> lengthIntern( acc + 1, xs );

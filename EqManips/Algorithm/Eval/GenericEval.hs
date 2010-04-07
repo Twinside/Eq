@@ -280,6 +280,32 @@ metaEvaluation :: EvalFun -> MetaOperation -> EvalFun
 metaEvaluation evaluator m f = unTagFormula
               <$> metaEval (taggedEvaluator evaluator) m (Formula f)
 
+-- | Used to create matrix from lists
+matrixCreate :: [FormulaPrim] -> EqContext FormulaPrim
+matrixCreate [List _ whole@(List _ subList:rest)]
+  | and $ map isAllList rest =
+      pure . matrix rowCount columnsCount $ map subListExtract whole
+    where columnsCount = length subList
+          rowCount = length rest + 1
+
+          isAllList (List _ lst) = length lst == columnsCount
+          isAllList _ = False
+
+          subListExtract (List _ lst) = lst
+          subListExtract _ = error "Extracting sublist of non-list"
+
+matrixCreate [(List _ elems)] = pure $ matrix 1 (length elems) [elems]
+
+matrixCreate [CInteger 1, CInteger m, List _ elems]
+    | length elems == (fromInteger m) =
+        return $ matrix 1 (fromInteger m) [elems]
+
+matrixCreate [CInteger n, CInteger 1, List _ elems]
+    | length elems == (fromInteger n) =
+        return . matrix (fromInteger n) 1 $ map (:[]) elems
+
+matrixCreate args = pure $ app (Variable "matrix") args
+
 --------------------------------------------------
 ----            Indexation
 --------------------------------------------------
@@ -336,6 +362,9 @@ eval _ (Variable v) = do
     case symbol of
          Nothing -> return $ Variable v
          Just (Formula (f)) -> return f
+
+eval evaluator (App _ (Variable "matrix") args) =
+    mapM evaluator args >>= matrixCreate
 
 eval evaluator fullApp@(App _ def var) = do
     redDef <- evaluator def
