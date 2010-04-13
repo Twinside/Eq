@@ -662,7 +662,7 @@ zeroFy a = a
 
 wellFormated :: Formula TreeForm -> Bool
 wellFormated f = latexRender defaultRenderConf f /= ""
-              && formatFormula f /= ""
+              && formatFormula defaultRenderConf f /= ""
               && mathmlRender defaultRenderConf f /= ""
               && sexprRender f /= ""
 

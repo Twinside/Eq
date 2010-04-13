@@ -1,7 +1,8 @@
 module EqManips.Renderer.Ascii where
 
 import EqManips.Types
+import EqManips.Renderer.RenderConf
 
-formulaTextTable :: Formula TreeForm -> [String]
-formatFormula :: Formula TreeForm -> String
+formulaTextTable :: Conf -> Formula TreeForm -> [String]
+formatFormula :: Conf -> Formula TreeForm -> String
 

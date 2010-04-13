@@ -9,6 +9,7 @@ data Conf = Conf
     { mulAsDot :: Bool
     , packNumVarMul :: Bool
     , noBigOpOverSize :: Bool
+    , useUnicode :: Bool
     }
 
 defaultRenderConf :: Conf
@@ -16,6 +17,7 @@ defaultRenderConf = Conf
     { mulAsDot = True
     , packNumVarMul = False
     , noBigOpOverSize = False
+    , useUnicode = False
     }
 
 keyParser :: [(String, Conf -> String -> Conf)]
@@ -23,6 +25,7 @@ keyParser =
     [ ("mulasdot"       , \c v -> c{ mulAsDot = permissiveBool v } )
     , ("packnumvarmul"  , \c v -> c{ packNumVarMul = permissiveBool v} )
     , ("nobigopoversize", \c v -> c{ noBigOpOverSize = permissiveBool v} )
+    , ("use_unicode"    , \c v -> c{ useUnicode = permissiveBool v } )
     ]
 
 trim :: String -> String

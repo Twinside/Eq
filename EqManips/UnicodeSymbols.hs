@@ -1,5 +1,25 @@
 module EqManips.UnicodeSymbols where
 
+varAssoc :: [(String, String)]
+varAssoc = map (\(v, i) -> (v, [toEnum i]))
+    [ ("alpha", alpha)
+    , ("beta",  beta)
+    , ("chi",   chi)
+    , ("gamma", gamma)
+    , ("delta", delta)
+    , ("theta", theta)
+    , ("rho"  , rho)
+    , ("phi",   phi)
+    , ("tau",   tau)
+    , ("omega", omega)
+    , ("lambda", lambda)
+    , ("sigma",  sigma)
+    , ("mu",     mu)
+    , ("psi",    psi)
+    , ("pi",     EqManips.UnicodeSymbols.pi)
+    , ("infinity", infinity)
+    ]
+
 ------------------------------------
 -- Miscellaneou mathematical symbols
 ------------------------------------
@@ -418,7 +438,6 @@ subsetWithNotEqual        = 0x228A {- ⊊ -}
 
 supersetofWithNotEqual :: Int
 supersetofWithNotEqual    = 0x228B {- ⊋ -}
-
 
 -- operators
 multiset :: Int

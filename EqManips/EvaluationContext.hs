@@ -29,6 +29,8 @@ import EqManips.Algorithm.Utils
 
 #ifdef _DEBUG
 import System.IO
+import qualified EqManips.Renderer.RenderConf as RenderConf
+
 import {-# SOURCE #-} EqManips.Renderer.Ascii( formatFormula )
 import {-# SOURCE #-} EqManips.Renderer.Sexpr
 #endif /* _DEBUG */
@@ -122,7 +124,8 @@ printTrace f inf = mapM_ showIt . reverse $ trace inf
               hPutStrLn f "=========================================="
               hPutStrLn f str
               hPutStrLn f $ sexprRender formula
-              hPutStrLn f $ formatFormula formula
+              hPutStrLn f $ formatFormula RenderConf.defaultRenderConf
+                                          formula
 
 traceContext :: EqContext ()
 traceContext = EqContext $ \c ->
@@ -131,7 +134,8 @@ traceContext = EqContext $ \c ->
                   . map Map.toList
                   $ contextStack c
         printContext var = concat $ map (\(a,f) -> a ++ " =\n" 
-                                                ++ formatFormula (treeIfyFormula f)
+                                                ++ formatFormula RenderConf.defaultRenderConf
+                                                                 (treeIfyFormula f)
                                                 ++ "\n")
                                         var
     in

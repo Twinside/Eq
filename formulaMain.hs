@@ -37,6 +37,7 @@ import EqManips.InputParser.EqCode
 data Flag =
       Output
     | Input
+    | Unicode
     | SupportedFunction
     | SupportedOperators
     | SupportedPreprocLanguages
@@ -49,6 +50,7 @@ commonOption :: [OptDescr (Flag, String)]
 commonOption =
     [ Option "o"  ["output"] (ReqArg ((,) Output) "FILE") "output FILE"
     , Option "f"  ["file"] (ReqArg ((,) Input) "FILE") "input FILE, use - for stdin"
+    , Option "u"  ["unicode"] (NoArg (Unicode, "")) "Output with unicode character set"
     ]
 
 askingOption :: [OptDescr (Flag, String)]
@@ -83,10 +85,10 @@ filterCommand :: (String -> String) -> [String] -> IO Bool
 filterCommand transformator args = do
     text <- input
     output <- outputFile
-    putStr text
-    putStr "==========================================\n"
-    hPutStrLn output $ transformator text
-    putStr "==========================================\n\n"
+    Utf8.putStr text
+    Utf8.putStr "==========================================\n"
+    Utf8.hPutStrLn output $ transformator text
+    Utf8.putStr "==========================================\n\n"
     hClose output
     return True
      where (opt, left, _) = getOpt Permute formatOption args
@@ -94,29 +96,30 @@ filterCommand transformator args = do
 
 -- | Command which just format an equation
 -- without affecting it's form.
-formatCommand :: (Formula TreeForm -> String) -> [String] -> IO Bool
+formatCommand :: (Conf -> Formula TreeForm -> String) -> [String] -> IO Bool
 formatCommand formulaFormater args = do
     formulaText <- input
     let formula = perfectParse formulaText
     output <- outputFile
     either (parseErrorPrint output)
            (\formula' -> do 
-                hPutStrLn output . formulaFormater $ treeIfyFormula formula'
+                Utf8.hPutStrLn output . formulaFormater conf $ treeIfyFormula formula'
                 hClose output
                 return True)
            formula
      where (opt, left, _) = getOpt Permute formatOption args
            (input, outputFile) = getInputOutput opt left
+           conf = defaultRenderConf{ useUnicode = Unicode `lookup` opt /= Nothing }
 
 printErrors :: [(Formula TreeForm, String)] -> IO ()
 printErrors =
-    mapM_ (\(f,s) -> do putStrLn s
-                        putStrLn $ formatFormula f) 
+    mapM_ (\(f,s) -> do Utf8.putStrLn s
+                        Utf8.putStrLn $ formatFormula defaultRenderConf f) 
 
 parseErrorPrint :: (Show a) => Handle -> a -> IO Bool
 parseErrorPrint finalFile err = do
-    hPutStr finalFile "Error : "
-    hPutStr finalFile $ show err
+    Utf8.hPutStr finalFile "Error : "
+    Utf8.hPutStr finalFile $ show err
     hClose finalFile
     return False
 
@@ -125,47 +128,47 @@ parseErrorPrint finalFile err = do
 introspect :: [String] -> IO Bool
 introspect args = do
     when ((SupportedFunction, "") `elem` opts)
-         (do putStrLn "Supported functions :"
-             putStrLn "====================="
-             putStrLn "Built-in functions :"
-             putStrLn "--------------------"
-             mapM_ (putStrLn . ('\t':) . fst) $ unaryFunctions ++ metaFunctionList 
-             mapM_ putStrLn
+         (do Utf8.putStrLn "Supported functions :"
+             Utf8.putStrLn "====================="
+             Utf8.putStrLn "Built-in functions :"
+             Utf8.putStrLn "--------------------"
+             mapM_ (Utf8.putStrLn . ('\t':) . fst) $ unaryFunctions ++ metaFunctionList 
+             mapM_ Utf8.putStrLn
                     [ '\t': name ++ '(' : (concat . intersperse ", " $ map fst params) ++ ")"
                                 | (name, (_,_,params,_)) <- multiParamsFunctions]
 
-             putStrLn "\nBase library functions :"
-             putStrLn "------------------------"
-             mapM_ (putStrLn . ('\t':)) $ Map.keys defaultSymbolTable 
+             Utf8.putStrLn "\nBase library functions :"
+             Utf8.putStrLn "------------------------"
+             mapM_ (Utf8.putStrLn . ('\t':)) $ Map.keys defaultSymbolTable 
              )
 
     when ((SupportedOperators, "") `elem` opts)
-         (do putStrLn "Supported operators :   "
-             putStrLn "====================="
+         (do Utf8.putStrLn "Supported operators :   "
+             Utf8.putStrLn "====================="
 
-             putStrLn "\nBinary operators (Priority - name - description)"
-             putStrLn "------------------------------------------------"
+             Utf8.putStrLn "\nBinary operators (Priority - name - description)"
+             Utf8.putStrLn "------------------------------------------------"
              let names = [n | (_,(_,n,_)) <- binopDefs]
                  maxName = maximum $ map length names
                  binFormat (prio, name, descr) = '\t':
                      show prio ++ " - " ++ name
                                ++ replicate (maxName - length name) ' '
                                ++ " - " ++ descr
-             mapM_ (putStrLn . binFormat . snd) binopDefs
+             mapM_ (Utf8.putStrLn . binFormat . snd) binopDefs
 
-             putStrLn "\nUnary operators (name - description)"
-             putStrLn "------------------------------------"
-             mapM_ (putStrLn . (\(_, n, d) -> '\t' : n ++ " - " ++ d)) realUnopOperators)
+             Utf8.putStrLn "\nUnary operators (name - description)"
+             Utf8.putStrLn "------------------------------------"
+             mapM_ (Utf8.putStrLn . (\(_, n, d) -> '\t' : n ++ " - " ++ d)) realUnopOperators)
 
     when ((SupportedPreprocLanguages, "") `elem` opts)
-         (do putStrLn "Supported languages for preprocessing :"
-             putStrLn "======================================="
+         (do Utf8.putStrLn "Supported languages for preprocessing :"
+             Utf8.putStrLn "======================================="
              let maxi = maximum [ length n | (n, _) <- kindAssociation ]
                  preprocFormat (ext, lang) =
                      '\t' : ext ++ replicate (maxi - length ext) ' '
                                 ++ " - "
                                 ++ languageName lang
-             mapM_ (putStrLn . preprocFormat) kindAssociation 
+             mapM_ (Utf8.putStrLn . preprocFormat) kindAssociation 
              )
 
     return True
@@ -178,7 +181,7 @@ preprocessCommand args =
                return False
        else do
            outFile <- processFile inName
-           writeFile outName outFile
+           Utf8.writeFile outName outFile
            return True
      where (opts, _, _) = getOpt Permute preprocOptions args
            inName = fromMaybe "" (lookup Input opts)
@@ -193,21 +196,21 @@ transformParseFormula operation args = do
     either (parseErrorPrint finalFile)
            (\formulal -> do
 #ifdef _DEBUG
-               mapM_ (\a-> do hPutStr finalFile $ sexprRender a
-                              hPutStr finalFile "\n") formulal
+               mapM_ (\a-> do Utf8.hPutStr finalFile $ sexprRender a
+                              Utf8.hPutStr finalFile "\n") formulal
                hFlush finalFile
 #endif
                let rez = performLastTransformationWithContext defaultSymbolTable
                        $ mapM operation formulal
 #ifdef _DEBUG
-               hPutStrLn finalFile "\n####### <TRACE> #########"
+               Utf8.hPutStrLn finalFile "\n####### <TRACE> #########"
                printTrace finalFile rez
-               hPutStrLn finalFile "####### </TRACE> #########\n"
-               hPutStrLn finalFile . show $ result rez
-               hPutStrLn finalFile . sexprRender $ result rez
+               Utf8.hPutStrLn finalFile "####### </TRACE> #########\n"
+               Utf8.hPutStrLn finalFile . show $ result rez
+               Utf8.hPutStrLn finalFile . sexprRender $ result rez
 #endif
                printErrors $ errorList rez
-               hPutStr finalFile . formatFormula . treeIfyFormula $ result rez
+               Utf8.hPutStr finalFile . formatFormula conf . treeIfyFormula $ result rez
                hClose finalFile
 
                return . null $ errorList rez)
@@ -215,31 +218,32 @@ transformParseFormula operation args = do
 
      where (opt, left, _) = getOpt Permute formatOption args
            (input, outputFile) = getInputOutput opt left
+           conf = defaultRenderConf{ useUnicode = Unicode `lookup` opt /= Nothing }
 
 printVer :: IO ()
 printVer = 
-    putStrLn $ "EqManips " ++ version ++ " command list"
+    Utf8.putStrLn $ "EqManips " ++ version ++ " command list"
 
 helpCommand :: [String] -> IO Bool
 helpCommand [] = do
     printVer
-    putStrLn ""
+    Utf8.putStrLn ""
     mapM_ printCommand commandList
-    putStrLn ""
+    Utf8.putStrLn ""
     return True
     where maxCommandLen = 4 + maximum [ length c | (c,_,_,_) <- commandList ]
           spaces = repeat ' '
           printCommand (com, hlp, _, _) =
-              putStrLn $ ' ' : com 
-                      ++ take (maxCommandLen - length com) spaces 
-                      ++ hlp
+              Utf8.putStrLn $ ' ' : com 
+                           ++ take (maxCommandLen - length com) spaces 
+                           ++ hlp
 
 helpCommand (x:_) = case find (\(x',_,_,_) -> x' == x) commandList of
      Just (_, hlp, _, options) -> do
          printVer
-         putStrLn $ usageInfo hlp options
+         Utf8.putStrLn $ usageInfo hlp options
          return True
-     Nothing -> do putStrLn $ "Unknown command " ++ x
+     Nothing -> do Utf8.putStrLn $ "Unknown command " ++ x
                    return False
 
 #ifdef _GHCI_DEBUG
@@ -254,13 +258,13 @@ transformParseDebug operation formulaText = do
 #ifdef _DEBUG
                mapM (\a-> do hPutStr stdout $ sexprRender a
                              hPutStr stdout "\n") formulal
-               hPutStrLn stdout "\n####### <TRACE> #########"
+               Utf8.hPutStrLn stdout "\n####### <TRACE> #########"
                printTrace stdout rez
-               hPutStrLn stdout "####### </TRACE> #########\n"
-               hPutStrLn stdout . sexprRender $ result rez
+               Utf8.hPutStrLn stdout "####### </TRACE> #########\n"
+               Utf8.hPutStrLn stdout . sexprRender $ result rez
 #endif
                printErrors $ errorList rez
-               hPutStr stdout . formatFormula . treeIfyFormula $ result rez
+               Utf8.hPutStr stdout . formatFormula . treeIfyFormula $ result rez
                return True
                )
            formulaList
@@ -280,11 +284,11 @@ commandList =
     , ("format", "Load and display the formula in ASCII Art"
             , formatCommand formatFormula, commonOption)
     , ("latexify", "Translate the formula into latex"
-            , formatCommand $ latexRender defaultRenderConf, commonOption)
+            , formatCommand latexRender, commonOption)
     , ("mathmlify", "Translate the formula into MathML"
-            , formatCommand $ mathmlRender defaultRenderConf, commonOption)
+            , formatCommand mathmlRender, commonOption)
     , ("toraw", "Show internal representation of formula"
-            , formatCommand show, commonOption)
+            , formatCommand $ const show, commonOption)
     , ("help", "Ask specific help for a command, or this"
             , helpCommand, [])
     , ("preprocess", "Parse a source file and apply inline action in it"

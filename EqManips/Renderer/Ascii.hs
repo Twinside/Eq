@@ -7,6 +7,7 @@ module EqManips.Renderer.Ascii( renderFormula
 
 import Data.List( foldl' )
 import Data.Array.Unboxed
+import Data.Maybe( fromMaybe )
 import Data.Ratio
 import EqManips.Types
 import EqManips.Renderer.Placer
@@ -14,6 +15,8 @@ import EqManips.Algorithm.Utils
 import EqManips.Propreties
 import EqManips.Polynome
 import EqManips.Renderer.RenderConf
+
+import qualified EqManips.UnicodeSymbols as Unicode
 
 import CharArray
 type Pos = (Int, Int)
@@ -43,7 +46,7 @@ asciiSizer = Dimensioner
                            Nothing -> error "Unknown operator name"
         in s op
 
-    , varSize = \_ s -> (0, (length s, 1))
+    , varSize = sizeOfVar
     , intSize = \_ i -> (0, (length $ show i,1))
     , truthSize = \_ v -> if v then (0, (length "true", 1))
                              else (0, (length "false", 1))
@@ -90,7 +93,7 @@ asciiSizer = Dimensioner
         (he, (max we wv + 3, he + hv + 1))
 
     , blockSize = \_ (i1,i2,i3) -> (i1, (i2,i3))
-    , entitySize = \_ -> fst . textOfEntity
+    , entitySize = sizeOfEntity
 
     , argSize = \_ (wa, argBase, lower) (nodeBase, (w,h)) ->
                   (wa + w + 2, max argBase nodeBase, max lower (h-nodeBase))
@@ -148,22 +151,41 @@ binopSize _ op (bl,(w1,h1)) (br,(w2,h2)) = (base, (w1 + w2 + 2 + oplength, nodeS
             oplength = length $ binopString op
             nodeSize = base + max (h1 - bl) (h2 - br)
 
+sizeOfVar :: Conf -> String -> RelativePlacement
+sizeOfVar conf s
+    | useUnicode conf && s `lookup` Unicode.varAssoc /= Nothing = (0, (1,1))
+    | otherwise = (0, (length s, 1))
+
+sizeOfEntity :: Conf -> Entity -> RelativePlacement
+sizeOfEntity c = fst . textOfEntity c
+
 -- | Convert entity to text, not much entity for
 -- the moment
-textOfEntity :: Entity -> ((Int,(Int,Int)), [String])
-textOfEntity Pi = ((0,(2,1)),["pi"])
-textOfEntity Infinite = ((0,(length "infinite",1)), ["infinite"])
-textOfEntity Nabla = ((1,(2,1)), [" _ ","\\/"])
+textOfEntity :: Conf -> Entity -> ((Int,(Int,Int)), [String])
+textOfEntity conf Pi 
+    | useUnicode conf = ((0,(1,1)), [[toEnum Unicode.pi]])
+    | otherwise = ((0,(2,1)),["pi"])
+textOfEntity conf Infinite 
+    | useUnicode conf = ((0,(1,1)), [[toEnum Unicode.infinity]])
+    | otherwise = ((0,(length "infinite",1)), ["infinite"])
+textOfEntity _ Nabla = ((1,(2,1)), [" _ ","\\/"])
+
+-- | Convert a variable to it's possible unicode representation
+textOfVariable :: Conf -> String -> String
+textOfVariable conf var
+    | useUnicode conf =
+        fromMaybe var $ var `lookup` Unicode.varAssoc
+    | otherwise = var
 
 -- | Little helper for ready to parse string
-formatFormula :: Formula TreeForm -> String
-formatFormula = unlines . formulaTextTable
+formatFormula :: Conf -> Formula TreeForm -> String
+formatFormula conf = unlines . formulaTextTable conf
 
 -- | The function to call to render a formula.
 -- Return a list of lines containing the formula.
 -- You can indent the lines do whatever you want with it.
-formulaTextTable :: Formula TreeForm -> [String]
-formulaTextTable = linesOfArray . fst . renderFormula defaultRenderConf
+formulaTextTable :: Conf -> Formula TreeForm -> [String]
+formulaTextTable conf = linesOfArray . fst . renderFormula conf
 
 -------------------------------------------------------------
 ----                     Rendering                       ----
@@ -355,12 +377,15 @@ renderF conf node (SizeNodeList True (base, dim) abase stl) (x,y) =
 -- Here we make the "simple" rendering, just a conversion.
 renderF _ (Block _ w h) _ (x,y) =
     (++) [ ((xw, yh), '#') | xw <- [x .. x + w - 1], yh <- [y .. y + h - 1]]
-renderF _ (Variable s) _ (x,y) = (++) . map (\(idx,a) -> ((idx,y), a)) $ zip [x..] s
 renderF _ (CInteger i) _ (x,y) = (++) . map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show i)
 renderF _ (CFloat d)   _ (x,y) = (++) . map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show d)
-renderF _ (NumEntity e) _ (x,y) = (++) . concat $
+
+renderF conf  (Variable s) _ (x,y) = (++) . map (\(idx,a) -> ((idx,y), a)) . zip [x..]
+                                   $ textOfVariable conf s
+
+renderF conf (NumEntity e) _ (x,y) = (++) . concat $
     [ [((x + xi,y + yi),c) | (xi, c) <- zip [0..] elines]
-        | (yi, elines) <- zip [0..] $ snd $ textOfEntity e]
+        | (yi, elines) <- zip [0..] $ snd $ textOfEntity conf e]
 renderF _ (Truth True) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "true"
 renderF _ (Truth False) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "false"
 renderF _ (BinOp _ _ []) _ _ = error "renderF conf - rendering BinOp with no operand."

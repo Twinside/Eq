@@ -15,6 +15,7 @@ import EqManips.Renderer.Ascii
 import EqManips.Renderer.Cpp
 import EqManips.EvaluationContext
 import EqManips.Types
+import EqManips.Renderer.RenderConf
 
 data LangDef = LangDef {
           initComm :: String
@@ -29,7 +30,7 @@ voidLang = LangDef
     { initComm = ""
     , endLineComm = ""
     , languageName = ""
-    , formater = formulaTextTable
+    , formater = formulaTextTable defaultRenderConf
     }
 
 shellLang, cppLang, cLang, ocamlLang, haskellLang :: LangDef
@@ -216,7 +217,7 @@ produce lang (initSpace, command, eqData) =
 
           printResult =
               reverse . map (\l -> commentLine ++ l ++ commentEnd)
-                      . formulaTextTable
+                      . formulaTextTable defaultRenderConf
                       
 
 
