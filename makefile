@@ -64,27 +64,12 @@ hlint:
 coverage:
 	hpc markup --destdir coverageReport $(EQTEST)
 
-# This really complicated build target is there to overcome
-# a GHC bug (at least in GHC 6.10.4) when linking in static.
-# The compiler doesn't call the linker with a good library order.
-# GHC rely on collect2 --start-gtoup & --end-group feature to
-# put the most important lib first, but forget to put
-# lpthread. So the idea to build, is to make as if we build
-# for real (creating .o & all), let the linking crash in
-# verbose mode, get back the command line, patch it
-# and finaly run it again.
-#
 # With all this work, we add a little stripping/compression,
 # just to be clean.
 staticrelease: EqManips/BaseLibrary.hs
 	- [ -e dist ] && rm -Rf dist
-	runhaskell Setup.hs configure --flags="StaticLinking"
-	- runhaskell Setup.hs build -v >> outLogFile 2>&1
-	echo \#!/bin/sh > futureScript.sh
-	cat outLogFile | grep collect2 | head -n 1 | sed 's/--start-group/--start-group -lpthread/' >> futureScript.sh
-	chmod 700 futureScript.sh
-	./futureScript.sh
-	rm futureScript.sh outLogFile
+	runhaskell Setup.hs configure --user --flags="optimize StaticLinking"
+	- runhaskell Setup.hs build
 	cp dist/build/eq/eq$(EXEEXT) .
 	strip eq$(EXEEXT)
 	upx --best eq$(EXEEXT)

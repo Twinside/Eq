@@ -36,7 +36,7 @@ Executable eq
     -- Special static linking only required
     -- in linux so far.
     if !os(darwin) && !os(windows) && flag(StaticLinking)
-        Ghc-options:-static -optl-static
+        Ghc-options:-static -optl-static -optl-pthread
 
     -- If we profile the execution
     if flag(profiling)
