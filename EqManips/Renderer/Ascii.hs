@@ -432,8 +432,8 @@ renderF conf (BinOp _ OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
               leftBegin = x + (w - lw) `div` 2
               rightBegin = x + (w - rw) `div` 2
 
-renderF conf (BinOp _ OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y)
-    | mulAsDot conf = leftRender . rightRender . (:) ((x + lw, y + base), '.')
+renderF conf (BinOp _ OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
+  leftRender . rightRender . (:) ((x + lw, y + base), mulChar)
     where (lw, _) = sizeOfTree t1
           leftBase = baseLineOfTree t1
           rightBase = baseLineOfTree t2
@@ -442,6 +442,12 @@ renderF conf (BinOp _ OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y)
               if leftBase > rightBase
                  then (y, y + leftBase - rightBase)
                  else (y + rightBase - leftBase, y)
+
+          mulChar = case (mulAsDot conf, useUnicode conf) of
+                (True, True)  -> toEnum Unicode.bullet
+                (True, False) -> '.'
+                (False, True) -> toEnum Unicode.multiplicationSign
+                (False, False) -> '*'
 
           leftRender = renderF conf f1 t1 (x, leftTop)
           rightRender = renderF conf f2 t2 (x + lw + 1, rightTop)

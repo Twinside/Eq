@@ -53,6 +53,7 @@ import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
 import qualified EqManips.ErrorMessages as Err
 
+import Data.Bits
 import Data.Word
 import Data.Ratio
 import Data.List( foldl', foldl1' )
@@ -125,7 +126,7 @@ data MetaOperation =
     | Cleanup   -- ^ trigger a basic formula cleanup
     | LambdaBuild -- ^ To generate a full blown Lambda
     | Sort      -- ^ To sort the formula
-    deriving (Eq, Show, Read)
+    deriving (Eq, Show, Read, Enum)
 
 type FloatingValue = Double
 type HashResume = Int
@@ -192,48 +193,107 @@ data FormulaPrim =
 --------------------------------------------------
 ----            Hash construction
 --------------------------------------------------
+hashOfFormula :: FormulaPrim -> HashResume
+hashOfFormula (CInteger i) = fromIntegral i
+hashOfFormula (Variable s) = sum $ map fromEnum s
+hashOfFormula (NumEntity e) = fromEnum e
+hashOfFormula (Truth True) = maxBound
+hashOfFormula (Truth False) = minBound
+hashOfFormula (CFloat f) = fromEnum f
+hashOfFormula (Fraction frac) = fromIntegral (numerator frac)
+                              + fromIntegral (denominator frac)
+
+hashOfFormula (Complex hash _) = hash
+hashOfFormula (Indexes hash _ _) = hash
+hashOfFormula (List hash _) = hash
+hashOfFormula (App hash _ _) = hash
+hashOfFormula (Sum hash _ _ _) = hash
+hashOfFormula (Product hash _ _ _) = hash
+hashOfFormula (Derivate hash _ _) = hash
+hashOfFormula (Integrate hash _ _ _ _) = hash
+hashOfFormula (UnOp hash _ _) = hash
+hashOfFormula (Lambda hash _) = hash
+hashOfFormula (BinOp hash _ _) = hash
+hashOfFormula (Matrix hash _ _ _) = hash
+hashOfFormula (Poly hash _) = hash
+hashOfFormula (Block _ _ _) = 0
+hashOfFormula (Meta hash _ _) = hash
+
+listHasher :: [FormulaPrim] -> HashResume
+listHasher = sum . map hashOfFormula
+
 app :: FormulaPrim -> [FormulaPrim] -> FormulaPrim 
-app = App 0
+app what lst = App hash what lst
+    where hash = (1 `shiftL` 3) `xor` (wHash `rotateL` 4) `xor` hashLst
+          wHash = hashOfFormula what
+          hashLst = listHasher lst
 
 summ :: FormulaPrim -> FormulaPrim -> FormulaPrim -> FormulaPrim
-summ = Sum 0
+summ a b c = Sum hash a b c
+    where hash = (0xFF `shiftL` 15) + listHasher [a, b, c]
 
 productt :: FormulaPrim -> FormulaPrim -> FormulaPrim -> FormulaPrim
-productt = Product 0
+productt a b c = Product hash a b c
+    where hash = (0xFF `shiftL` 25) + listHasher [a, b, c]
 
 derivate :: FormulaPrim -> FormulaPrim -> FormulaPrim
-derivate = Derivate 0
+derivate what v = Derivate hash what v
+    where hash = (0xCA03 `shiftL` 10) + (hashWhat `rotateL` 16) + hashVar
+          hashWhat = hashOfFormula what
+          hashVar = hashOfFormula v
 
 integrate :: FormulaPrim -> FormulaPrim -> FormulaPrim -> FormulaPrim -> FormulaPrim 
-integrate = Integrate 0
+integrate beg end what var = Integrate hash beg end what var
+    where hash = 0xF00000F00 + hashSub
+          hashSub = listHasher [beg, end, what, var]
 
 lambda :: [([FormulaPrim], FormulaPrim)] -> FormulaPrim
-lambda = Lambda 0
+lambda clauses = Lambda hash clauses
+    where hash = xor 14
+               $ foldr (\x acc -> (acc `rotateL` 2) + x) 0
+                       [listHasher subs + hashOfFormula ap | (subs, ap) <- clauses]
 
 matrix :: Int -> Int -> [[FormulaPrim]] -> FormulaPrim
-matrix = Matrix 0
+matrix n m mlines = Matrix hash n m mlines
+    where hash = ((n * m) `shiftL` 4) + 0xFF + subHash
+          subHash = sum $ map listHasher mlines
 
 poly :: Polynome -> FormulaPrim
-poly = Poly 0
+poly poly = Poly (polynomeHash poly) poly
 
 binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
-binOp = BinOp 0
+binOp op lst = BinOp hash op lst
+    where hash = (4 `xor` (hashOp `shiftL` 2)) + listHasher lst
+          hashOp = fromEnum op
 
 unOp :: UnOperator -> FormulaPrim -> FormulaPrim
-unOp = UnOp 0
+unOp op sub = UnOp hash op sub
+    where hash = (5 `xor` (hashOp `shiftL` 4)) + subHash
+          subHash = hashOfFormula sub
+          hashOp = fromEnum op
 
 complex :: (FormulaPrim, FormulaPrim) -> FormulaPrim
-complex = Complex 0
+complex (re, im) = Complex hash (re, im)
+    where hash = 7 + reHash + imHash `rotateR` 4
+          reHash = hashOfFormula re
+          imHash = hashOfFormula im
 
 meta :: MetaOperation -> FormulaPrim -> FormulaPrim
-meta = Meta 0
+meta op sub = Meta hash op sub
+    where hash = (6 `xor` (opHash `shiftL` 8)) + (subHash `rotateR` 4)
+          subHash = hashOfFormula sub
+          opHash = fromEnum op
 
 indexes :: FormulaPrim -> [FormulaPrim] -> FormulaPrim
-indexes (Indexes _ a b) lst = Indexes 0 a $ b ++ lst
-indexes a b = Indexes 0 a b
+indexes (Indexes initHash a b) lst = Indexes hash a $ b ++ lst
+    where hash = 0xAAAAAA `xor` (listHasher $ b ++ lst)
+
+indexes a b = Indexes hash a b
+    where hash = 0xAAAAAA `xor` (listHasher b)
 
 list :: [FormulaPrim] -> FormulaPrim
-list = List 0
+list lst = List hash lst
+    where hash = 0xBBBBBB `xor` listHasher lst
 
 -- | Special binOp declaration used to merge two previous binary
 -- operators. Update the hash rather than perform full recalculation.
