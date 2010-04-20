@@ -220,7 +220,25 @@ hashOfFormula (Block _ _ _) = 0
 hashOfFormula (Meta hash _ _) = hash
 
 listHasher :: [FormulaPrim] -> HashResume
-listHasher = sum . map hashOfFormula
+listHasher = foldl' hasher 0
+    where hasher acc formula =
+              (acc `rotateL` 3) `xor` hashOfFormula formula
+
+
+polyCoeffHash :: PolyCoeff -> HashResume
+polyCoeffHash (CoeffFloat f) = truncate $ 1000 * f
+polyCoeffHash (CoeffInt i) = fromInteger i
+polyCoeffHash (CoeffRatio r) = 100 * (fromInteger $ numerator r)
+                             + (fromInteger $ denominator r)
+
+polynomeHash :: Polynome -> HashResume
+polynomeHash (PolyRest p) = polyCoeffHash p
+polynomeHash (Polynome var coeffList) = varHash + coeffHash
+    where varHash = sum $ map fromEnum var
+          hasher acc (coeff, subPoly) =
+              (acc `rotateR` 2) `xor` ( polyCoeffHash coeff
+                                      + polynomeHash subPoly )
+          coeffHash = foldl' hasher 0 coeffList
 
 app :: FormulaPrim -> [FormulaPrim] -> FormulaPrim 
 app what lst = App hash what lst
@@ -259,7 +277,7 @@ matrix n m mlines = Matrix hash n m mlines
           subHash = sum $ map listHasher mlines
 
 poly :: Polynome -> FormulaPrim
-poly poly = Poly (polynomeHash poly) poly
+poly createdPoly = Poly (polynomeHash createdPoly) createdPoly
 
 binOp :: BinOperator -> [FormulaPrim] -> FormulaPrim
 binOp op lst = BinOp hash op lst
@@ -285,7 +303,7 @@ meta op sub = Meta hash op sub
           opHash = fromEnum op
 
 indexes :: FormulaPrim -> [FormulaPrim] -> FormulaPrim
-indexes (Indexes initHash a b) lst = Indexes hash a $ b ++ lst
+indexes (Indexes _initHash a b) lst = Indexes hash a $ b ++ lst
     where hash = 0xAAAAAA `xor` (listHasher $ b ++ lst)
 
 indexes a b = Indexes hash a b
