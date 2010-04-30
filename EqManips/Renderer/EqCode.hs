@@ -48,6 +48,7 @@ deparse _ _ (NumEntity e) = (en e ++)
     where en Pi = "pi"
           en Nabla = "nabla"
           en Infinite = "infinite"
+          en Ellipsis = "..."
 deparse _ _ (CInteger i) = shows i
 deparse _ _ (CFloat d) = shows d
 deparse _ _ (List _ l) = ('[':) . argListToString l . (']':)

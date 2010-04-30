@@ -169,6 +169,12 @@ textOfEntity conf Infinite
     | useUnicode conf = ((0,(1,1)), [[toEnum Unicode.infinity]])
     | otherwise = ((0,(length "infinite",1)), ["infinite"])
 textOfEntity _ Nabla = ((1,(2,1)), [" _ ","\\/"])
+textOfEntity _ Ellipsis = ((0,(3,1)), ["..."])
+{-
+    | useUnicode conf = ((0, (1,1)), [[toEnum Unicode.midlineDots ]])
+    | otherwise 
+    -}
+        
 
 -- | Convert a variable to it's possible unicode representation
 textOfVariable :: Conf -> String -> String

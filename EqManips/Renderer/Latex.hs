@@ -27,6 +27,7 @@ latexOfEntity :: Entity -> String
 latexOfEntity Pi = "\\pi "
 latexOfEntity Nabla = "\\nabla "
 latexOfEntity Infinite = "\\infty "
+latexOfEntity Ellipsis = "\\cdots"
 
 stringOfUnOp :: UnOperator -> String
 stringOfUnOp OpSin = "\\sin "

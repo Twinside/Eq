@@ -54,7 +54,6 @@ import qualified Data.Monoid as Monoid
 import qualified EqManips.ErrorMessages as Err
 
 import Data.Bits
-import Data.Word
 import Data.Ratio
 import Data.List( foldl', foldl1' )
 import Data.Maybe( fromJust )
@@ -112,6 +111,7 @@ data Entity =
       Pi
     | Nabla
     | Infinite
+    | Ellipsis  -- ^ ... no value can be bound to it
     deriving (Eq, Show, Ord, Enum)
 
 
@@ -509,65 +509,6 @@ instance Property BinOperator AssocSide OpAssoc where
     getProps OpEq = [(AssocSide, OpAssocRight)] 
     getProps OpCons = [(AssocSide, OpAssocRight)] 
     getProps _  = [(AssocSide, OpAssocLeft)]
-
--- | Token used by the type system to retrieve constant
--- associated to binary/unary operators
-data HashCode = HashCode
-
-instance TypeInfo Entity HashCode Word64 where
-    propOf Pi HashCode = 0
-    propOf Nabla HashCode = 0
-    propOf Infinite HashCode = 0
-
-instance TypeInfo MetaOperation HashCode Word64 where
-    propOf Hold HashCode = 0
-    propOf Force HashCode = 0
-    propOf Expand HashCode = 0
-    propOf Cleanup HashCode = 0
-    propOf LambdaBuild HashCode = 0
-    propOf Sort HashCode = 0
-
-instance TypeInfo UnOperator HashCode Word64 where
-    propOf OpNegate HashCode = 0
-    propOf OpAbs HashCode = 0
-    propOf OpSqrt HashCode = 0
-    propOf OpSin HashCode = 0
-    propOf OpSinh HashCode = 0
-    propOf OpASin HashCode = 0
-    propOf OpASinh HashCode = 0
-    propOf OpCos HashCode = 0
-    propOf OpCosh HashCode = 0
-    propOf OpACos HashCode = 0
-    propOf OpACosh HashCode = 0
-    propOf OpTan HashCode = 0
-    propOf OpTanh HashCode = 0
-    propOf OpATan HashCode = 0
-    propOf OpATanh HashCode = 0
-    propOf OpLn HashCode = 0
-    propOf OpLog HashCode = 0
-    propOf OpExp HashCode = 0
-    propOf OpFactorial HashCode = 0
-    propOf OpCeil HashCode = 0
-    propOf OpFloor HashCode = 0
-    propOf OpFrac HashCode = 0
-
-instance TypeInfo BinOperator HashCode Word64 where
-    propOf OpAdd HashCode = 0
-    propOf OpSub HashCode = 0
-    propOf OpMul HashCode = 0
-    propOf OpDiv HashCode = 0
-    propOf OpPow HashCode = 0
-    propOf OpAnd HashCode = 0
-    propOf OpOr HashCode = 0
-    propOf OpEq HashCode = 0
-    propOf OpNe HashCode = 0
-    propOf OpLt HashCode = 0
-    propOf OpGt HashCode = 0
-    propOf OpGe HashCode = 0
-    propOf OpLe HashCode = 0
-    propOf OpLazyAttrib HashCode = 0
-    propOf OpAttrib HashCode = 0
-    propOf OpCons HashCode = 0
 
 -----------------------------------------------------------
 --          General operator property

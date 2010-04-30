@@ -19,6 +19,8 @@ varAssoc = map (\(v, i) -> (v, [toEnum i]))
     , ("pi",     EqManips.UnicodeSymbols.pi)
     , ("infinity", infinity)
     ]
+midlineDots :: Int
+midlineDots = 0x22EF {- ⋯ -}
 
 ------------------------------------
 -- Miscellaneou mathematical symbols

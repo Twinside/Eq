@@ -34,6 +34,7 @@ mathMlOfEntity :: Entity -> String
 mathMlOfEntity Pi = "<pi/>"
 mathMlOfEntity Nabla = "<grad/>"
 mathMlOfEntity Infinite = "<infinity/>"
+mathMlOfEntity Ellipsis = "&ctdot;"
 
 tagger :: String -> ShowS -> ShowS
 tagger tag f = str ('<': tag ++ ">") . f . str ("</" ++ tag ++ ">")

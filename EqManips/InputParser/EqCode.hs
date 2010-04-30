@@ -133,11 +133,15 @@ term = try trueConst
     <|> try falseConst
     <|> try nilConst
     <|> variable
+    <|> ellipses
     <|> try (CFloat <$> float)
     <|> CInteger . fromInteger <$> integer
     <|> parens expr
     <|> listParser
     <?> "Term error"
+
+ellipses :: Parsed st FormulaPrim
+ellipses = return (NumEntity Ellipsis) <* (string "..." >> whiteSpace)
 
 nilConst :: Parsed st FormulaPrim
 nilConst = return (list []) <* (string "[]" >> whiteSpace)
