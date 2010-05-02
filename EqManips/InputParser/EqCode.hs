@@ -133,7 +133,7 @@ term = try trueConst
     <|> try falseConst
     <|> try nilConst
     <|> variable
-    <|> ellipses
+    <|> try ellipses
     <|> try (CFloat <$> float)
     <|> CInteger . fromInteger <$> integer
     <|> parens expr

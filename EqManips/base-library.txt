@@ -24,10 +24,14 @@ foldr( f, acc, []      ) :> acc;
 foldr( f, acc, x :: xs ) :> f( foldr( f, acc, xs ), x );
 foldr( a,   b,       c ) :> undefined;
 
+-- just to provide a function englobing list appending
+-- operator
 cons( a, b ) :> b :: a;
 
+-- list reversal.
 reverse( lst ) :> foldl( cons, [], lst );
 
+-- concatenate two lists.
 concat(      [],  y ) :> y;
 concat(       x, [] ) :> x;
 concat( x :: xs,  y ) :> x :: concat( xs, y );

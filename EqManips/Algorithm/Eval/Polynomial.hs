@@ -95,7 +95,17 @@ polyEvalRules _ (BinOp _ OpSub fs) = binEval OpSub sub add fs
 polyEvalRules _ (BinOp _ OpMul fs) = binEval OpMul mul mul fs
 polyEvalRules _ (BinOp _ OpDiv fs) = binEval OpDiv division mul fs
 polyEvalRules evaluator p@(Poly _ pol@(Polynome var _)) =
-    symbolLookup var >>= maybe (return p) (substitutePolynome evaluator pol)
+ symbolLookup var >>= substituer
+    where substituer Nothing = do
+#ifdef _DEBUG
+                addTrace ("Poly subst FAIL | " ++ var, treeIfyFormula $ Formula p)
+#endif
+                return p
+          substituer (Just def) = do
+#ifdef _DEBUG
+                addTrace ("Poly subst | " ++ show def, Formula p)
+#endif
+                substitutePolynome evaluator pol def
 
 polyEvalRules _ end = return end
 

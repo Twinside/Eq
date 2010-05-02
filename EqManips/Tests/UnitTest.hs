@@ -47,7 +47,8 @@ eqUnittests = TestList $
                                                  ++ basicManualFunction
                                                  ++ comparisonOperator 
                                                  ++ indexationOperation
-                                                 ++ listCreationOperation ]
+                                                 ++ listCreationOperation 
+                                                 ++ functionalValidation ]
 
     ++ [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
        . TestCase
@@ -560,6 +561,28 @@ listCreationOperation =
     , binOp OpCons [1,
         binOp OpCons [2,
             binOp OpCons [3, list [] ]]] ==> list [1,2,3]
+    ]
+
+functionalValidation :: [(FormulaPrim, FormulaPrim)]
+functionalValidation =
+    [ app (lambda [([list [Variable "x"]], list [Variable "x" + 3])])
+          [list [Variable "inoutput"]] ==> list [Variable "inoutput" + 3]
+
+    , app (lambda [([list [Variable "x"]], Variable "x" + 3)])
+          [list [Variable "inoutput"]] ==> Variable "inoutput" + 3
+
+    , app (lambda [([list [Variable "x"]], Variable "x")])
+          [list [Variable "inoutput"]] ==> Variable "inoutput"
+
+    , app (lambda [([Variable "x"], list [Variable "x" + 3])])
+          [Variable "inoutput"] ==> list [Variable "inoutput" + 3]
+
+    , app (lambda [([Variable "x"], Variable "x" + 3)])
+          [Variable "inoutput"] ==> Variable "inoutput" + 3
+
+    , app (lambda [([Variable "x"], Variable "x")])
+          [Variable "inoutput"] ==> Variable "inoutput"
+
     ]
 
 indexationOperation :: [(FormulaPrim, FormulaPrim)]
