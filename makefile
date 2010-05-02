@@ -27,7 +27,7 @@ clean:
 	runhaskell Setup.hs clean
 
 # only way to get this shit working on unix...
-EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.txt
+EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.eq
 	ghc -package $(PARSECVER) --make -cpp -o libMaker EqManips/libMaker.hs
 	./libMaker
 	$(FIND) EqManips -name "*.o" | xargs rm

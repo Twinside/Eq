@@ -12,7 +12,7 @@ import System.IO
 -- haskell file for further use
 main :: IO ()
 main = do
-	eqLib <- readFile "EqManips/base-library.txt"
+	eqLib <- readFile "EqManips/base-library.eq"
 	let formulaList = parseProgramm eqLib
 	either (error "Error") (\formulal ->
 	    let rez = performLastTransformation $
