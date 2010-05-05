@@ -85,6 +85,16 @@ substitutePolynome evaluator (Polynome _var coefs) (Formula subst) =
               formulize (PolyRest coeff) = coefToFormula coeff
               formulize normalPolynome = poly normalPolynome
 
+checkPolynomeBinding :: Polynome -> EqContext (Either Polynome FormulaPrim)
+checkPolynomeBinding p(PolyRest _) = return $ Left p
+checkPolynomeBinding (Polynome var _) = do
+    varBound <- symbolLookup var
+    case varBound of
+         Just (Poly _ _) -> return ()
+         Just (Variable _) -> return ()
+         Just bound -> return . Right $ substitutePolynome evaluator pol
+         Nothing -> return p -- TODO : recurse here
+
 -----------------------------------------------
 ----        General evaluation
 -----------------------------------------------
@@ -95,17 +105,8 @@ polyEvalRules _ (BinOp _ OpSub fs) = binEval OpSub sub add fs
 polyEvalRules _ (BinOp _ OpMul fs) = binEval OpMul mul mul fs
 polyEvalRules _ (BinOp _ OpDiv fs) = binEval OpDiv division mul fs
 polyEvalRules evaluator p@(Poly _ pol@(Polynome var _)) =
- symbolLookup var >>= substituer
-    where substituer Nothing = do
-#ifdef _DEBUG
-                addTrace ("Poly subst FAIL | " ++ var, treeIfyFormula $ Formula p)
-#endif
-                return p
-          substituer (Just def) = do
-#ifdef _DEBUG
-                addTrace ("Poly subst | " ++ show def, Formula p)
-#endif
-                substitutePolynome evaluator pol def
+    -- Must go Deep
+    symbolLookup var >>= maybe (return p) (substitutePolynome evaluator pol)
 
 polyEvalRules _ end = return end
 
