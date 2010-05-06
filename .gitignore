@@ -1,5 +1,7 @@
 *.swp
 *.o
+*.o-boot
+*.hi-boot
 *.obj
 *.hi
 .svn
