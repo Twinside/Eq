@@ -47,6 +47,7 @@ eqUnittests = TestList $
                                                  ++ comparisonOperator 
                                                  ++ indexationOperation
                                                  ++ lambdaBindingTest 
+                                                 ++ polyDivTest 
                                                  ++ listCreationOperation ]
 
     ++ [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
@@ -552,6 +553,15 @@ basicManualFunction =
 
 errorFormula :: FormulaPrim
 errorFormula = Block 1 1 1
+
+polyDivTest :: [(FormulaPrim, FormulaPrim)]
+polyDivTest =
+    [ ( simPoly [(0, -42), (2, -12), (3,1)]
+      / simPoly [(0, -3), (1, 1)])
+     ==> (simPoly [(0, -27), (1, -9), (2, 1)]
+         - 123 / simPoly [(0, -3), (1,1)])
+    ]
+    where simPoly = poly . Polynome "x" . map (\(a,b) -> (a, PolyRest $ b))
 
 lambdaBindingTest :: [(FormulaPrim, FormulaPrim)]
 lambdaBindingTest =
