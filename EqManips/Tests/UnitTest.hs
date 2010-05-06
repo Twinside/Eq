@@ -6,7 +6,6 @@ import System.FilePath
 import Data.Ratio
 
 import Test.HUnit
-import Test.HUnit.Text
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Renderer.Ascii
@@ -47,8 +46,10 @@ eqUnittests = TestList $
                                                  ++ basicManualFunction
                                                  ++ comparisonOperator 
                                                  ++ indexationOperation
-                                                 ++ listCreationOperation 
-                                                 ++ functionalValidation ]
+                                                 ++ functionalValidation
+                                                 ++ lambdaBindingTest 
+                                                 ++ polyDivTest 
+                                                 ++ listCreationOperation ]
 
     ++ [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
        . TestCase
@@ -553,6 +554,42 @@ basicManualFunction =
 
 errorFormula :: FormulaPrim
 errorFormula = Block 1 1 1
+
+polyDivTest :: [(FormulaPrim, FormulaPrim)]
+polyDivTest =
+    [ ( simPoly [(0, -42), (2, -12), (3,1)]
+      / simPoly [(0, -3), (1, 1)])
+     ==> (simPoly [(0, -27), (1, -9), (2, 1)]
+         + (-123) / simPoly [(0, -3), (1,1)])
+
+    , ( simPoly [(1, -2), (2, 3), (3, -1), (4,-1), (5,1)]
+      / simPoly [(0, 1), (1, -1), (2, 1)])
+      ==> ( simPoly [(0, 1), (1, -2), (3, 1)] 
+          + (simPoly [(0, -1), (1,1)]) / simPoly [(0, 1), (1, -1), (2, 1)])
+
+    ,  ( simPoly [(0, -42), (2, -12), (3,1)]
+       / simPoly [(0, -3), (1, 1), (2, 1)])
+     ==> (simPoly [(0, -13), (1, 1)]
+         + simPoly [(0, -81), (1,16)] / simPoly [(0, -3), (1,1), (2,1)])
+
+    , ( simPoly [(0,1), (1,3), (2,2), (3, -7)]
+      / simPoly [(0,1), (1,1), (2,-2)])
+          ==> ( simPoly [(0, 1), (1,2), (2,2), (3, -5)]
+              + simPoly [(4,9), (5,-10)] / simPoly [(0,1), (1,1), (2,-2)])
+    ]
+    where simPoly = poly . Polynome "x" . map (\(a,b) -> (a, PolyRest $ b))
+
+lambdaBindingTest :: [(FormulaPrim, FormulaPrim)]
+lambdaBindingTest =
+    [ app (lambdaX (poly $ monoPoly "radius" (monoPoly "x" $ polyc 1))) [3]
+      ==> (poly $ monoPoly "radius" (polyc 3))
+    , app (lambdaX (poly $ monoPoly "x" (polyc 3))) [3]
+      ==> 9
+
+    ]
+    where lambdaX body = lambda [([Variable "x"], body)]
+          monoPoly v sub = Polynome v [(CoeffInt 1,sub)]
+          polyc = PolyRest . CoeffInt
 
 listCreationOperation :: [(FormulaPrim, FormulaPrim)]
 listCreationOperation =

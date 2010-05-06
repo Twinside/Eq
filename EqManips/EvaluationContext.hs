@@ -19,7 +19,6 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
 #endif /* _DEBUG */
                                  ) where
 
-import Data.List
 import Data.Map (Map)
 import Control.Applicative
 import qualified Data.Map as Map
