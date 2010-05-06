@@ -1,7 +1,6 @@
 {-# LANGUAGE Rank2Types #-}
 module EqManips.Algorithm.Eval.GenericEval ( eval ) where
 
-import Data.Maybe
 import Data.Ratio
 
 import qualified EqManips.ErrorMessages as Err
@@ -35,10 +34,10 @@ add _ (UnOp _ OpNegate (CInteger i1)) (UnOp _ OpNegate (CInteger i2)) =
 add evaluator f1@(Matrix _ _ _ _) f2@(Matrix _ _ _ _) =
     matrixMatrixSimple evaluator (+) f1 f2
 add _ f1@(Matrix _ _ _ _) f2 = do
-    eqPrimFail (f1+f2) Err.add_matrix
+    _ <- eqPrimFail (f1+f2) Err.add_matrix
     right (f1, f2)
 add _ f1 f2@(Matrix _ _ _ _) = do
-    eqPrimFail (f1+f2) Err.add_matrix
+    _ <- eqPrimFail (f1+f2) Err.add_matrix
     right (f1, f2)
 add _ e e' = right (e, e')
 
@@ -54,10 +53,10 @@ sub _ (UnOp _ OpNegate (CInteger i1)) (UnOp _ OpNegate (CInteger i2)) =
 sub evaluator f1@(Matrix _ _ _ _) f2@(Matrix _ _ _ _) =
     matrixMatrixSimple evaluator (-) f1 f2
 sub _ f1@(Matrix _ _ _ _) f2 = do
-    eqPrimFail (f1-f2) Err.sub_matrix
+    _ <- eqPrimFail (f1-f2) Err.sub_matrix
     right (f1, f2)
 sub _ f1 f2@(Matrix _ _ _ _) = do
-    eqPrimFail (f1-f2) Err.sub_matrix
+    _ <- eqPrimFail (f1-f2) Err.sub_matrix
     right (f1, f2)
 sub _ e e' = right (e,e')
 
@@ -82,15 +81,15 @@ mul _ e e' = right (e, e')
 -- of division by 0.
 division :: EvalFun -> EvalOp
 division _ l@(Matrix _ _ _ _) r@(Matrix _ _ _ _) = do
-    eqPrimFail (l / r) Err.div_undefined_matrixes
+    _ <- eqPrimFail (l / r) Err.div_undefined_matrixes
     left $ Block 1 1 1
 
 division _ f1 f2@(CInteger 0) = do
-    eqPrimFail (f1 / f2) Err.div_by_0
+    _ <- eqPrimFail (f1 / f2) Err.div_by_0
     left $ Block 1 1 1
 
 division _ f1 f2@(CFloat 0) = do
-    eqPrimFail (f1 / f2) Err.div_by_0
+    _ <- eqPrimFail (f1 / f2) Err.div_by_0
     left $ Block 1 1 1
 
 division _ (CInteger i1) (CInteger i2)
@@ -518,7 +517,7 @@ matrixScalar _ _ _ _ = error Err.matrixScalar_badop
 -- | Multiplication between two matrix. Check for matrix sizes.
 matrixMatrixMul :: EvalFun -> EvalOp
 matrixMatrixMul evaluator m1@(Matrix _ n _ mlines) m2@(Matrix _ n' m' mlines')
-    | n /= m' = do eqFail (Formula $ binOp OpMul [m1, m2]) Err.matrix_mul_bad_size
+    | n /= m' = do _ <- eqFail (Formula $ binOp OpMul [m1, m2]) Err.matrix_mul_bad_size
                    right (m1, m2)
     | otherwise = cellLine >>= left . matrix n n'
         where cellLine = sequence
@@ -540,7 +539,7 @@ matrixMatrixSimple :: EvalFun
                    -> EqContext (Either FormulaPrim (FormulaPrim,FormulaPrim))
 matrixMatrixSimple evaluator op m1@(Matrix _ n m mlines) m2@(Matrix _ n' m' mlines')
     | n /= n' || m /= m' = do
-        eqFail (Formula $ m1 `op` m2) Err.matrix_diff_size
+        _ <- eqFail (Formula $ m1 `op` m2) Err.matrix_diff_size
         return $ Right (m1, m2)
     | otherwise = Left . matrix n m <$> newCells
         where dop (e1, e2) = evaluator $ e1 `op`e2

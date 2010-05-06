@@ -1,5 +1,7 @@
 module EqManips.Algorithm.Eval.Polynomial( polyEvalRules ) where
 
+import Data.Either( partitionEithers )
+
 import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.Polynome
@@ -85,15 +87,32 @@ substitutePolynome evaluator (Polynome _var coefs) (Formula subst) =
               formulize (PolyRest coeff) = coefToFormula coeff
               formulize normalPolynome = poly normalPolynome
 
-checkPolynomeBinding :: Polynome -> EqContext (Either Polynome FormulaPrim)
-checkPolynomeBinding p(PolyRest _) = return $ Left p
-checkPolynomeBinding (Polynome var _) = do
+checkPolynomeBinding :: EvalFun -> Polynome -> EqContext (Either Polynome FormulaPrim)
+checkPolynomeBinding _           p@(PolyRest _) = return $ Left p
+checkPolynomeBinding evaluator pol@(Polynome var coefList) = do
     varBound <- symbolLookup var
     case varBound of
-         Just (Poly _ _) -> return ()
-         Just (Variable _) -> return ()
-         Just bound -> return . Right $ substitutePolynome evaluator pol
-         Nothing -> return p -- TODO : recurse here
+         Just bound ->
+             substitutePolynome evaluator pol bound >>= (return . Right)
+         Nothing -> do
+            subs <- mapM (\(coeff,p) -> do
+                subPoly <- checkPolynomeBinding evaluator p
+                case subPoly of
+                     Left filteredPoly -> return . Left $ (coeff, filteredPoly)
+                     Right formu -> return . Right $
+                         formu * poly (Polynome var [( coeff
+                                                     , PolyRest $ CoeffInt 1)])
+                ) coefList
+            case  partitionEithers subs of
+                ([], []) -> error "Impossible case"
+                ([], formulas) ->
+                    return . Right $ binOp OpAdd formulas
+                (polys, []) ->
+                    return . Left $ Polynome var polys
+                (polys, formulas) ->
+                    return . Right .  binOp OpAdd
+                        $ poly (Polynome var polys) : formulas
+                        
 
 -----------------------------------------------
 ----        General evaluation
