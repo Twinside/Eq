@@ -6,7 +6,6 @@ import System.FilePath
 import Data.Ratio
 
 import Test.HUnit
-import Test.HUnit.Text
 import EqManips.Types
 import EqManips.EvaluationContext
 import EqManips.Renderer.Ascii
@@ -47,6 +46,7 @@ eqUnittests = TestList $
                                                  ++ basicManualFunction
                                                  ++ comparisonOperator 
                                                  ++ indexationOperation
+                                                 ++ lambdaBindingTest 
                                                  ++ listCreationOperation ]
 
     ++ [ TestLabel (sexprRender (Formula $ binOp OpEq [toEval, rez]) ++ " ")
@@ -552,6 +552,18 @@ basicManualFunction =
 
 errorFormula :: FormulaPrim
 errorFormula = Block 1 1 1
+
+lambdaBindingTest :: [(FormulaPrim, FormulaPrim)]
+lambdaBindingTest =
+    [ app (lambdaX (poly $ monoPoly "radius" (monoPoly "x" $ polyc 1))) [3]
+      ==> (poly $ monoPoly "radius" (polyc 3))
+    , app (lambdaX (poly $ monoPoly "x" (polyc 3))) [3]
+      ==> 9
+
+    ]
+    where lambdaX body = lambda [([Variable "x"], body)]
+          monoPoly v sub = Polynome v [(CoeffInt 1,sub)]
+          polyc = PolyRest . CoeffInt
 
 listCreationOperation :: [(FormulaPrim, FormulaPrim)]
 listCreationOperation =

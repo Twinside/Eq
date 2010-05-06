@@ -123,9 +123,8 @@ polyEvalRules _ (BinOp _ OpAdd fs) = binEval OpAdd add add fs
 polyEvalRules _ (BinOp _ OpSub fs) = binEval OpSub sub add fs
 polyEvalRules _ (BinOp _ OpMul fs) = binEval OpMul mul mul fs
 polyEvalRules _ (BinOp _ OpDiv fs) = binEval OpDiv division mul fs
-polyEvalRules evaluator p@(Poly _ pol@(Polynome var _)) =
-    -- Must go Deep
-    symbolLookup var >>= maybe (return p) (substitutePolynome evaluator pol)
+polyEvalRules evaluator (Poly _ pol@(Polynome _ _)) = do
+    checkPolynomeBinding evaluator pol >>= either (return . poly) return 
 
 polyEvalRules _ end = return end
 
