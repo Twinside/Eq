@@ -11,6 +11,7 @@ module EqManips.Polynome( convertToPolynome
                         , isCoeffNull 
                         , prepareFormula 
                         , syntheticDiv 
+                        , polyAsFormula 
 
                         -- | Pack/simplify polynome with only one coefficient
                         -- and/or null coef.
@@ -40,6 +41,11 @@ simplifyPolynome (Polynome v p@[(lastCoeff, subPoly)])
     | isCoeffNull lastCoeff = subPoly
     | otherwise = Polynome v p
 simplifyPolynome a = a
+
+polyAsFormula :: Polynome -> FormulaPrim
+polyAsFormula (PolyRest coeff) = coefToFormula coeff
+polyAsFormula (Polynome _ [(0, a)]) = polyAsFormula a
+polyAsFormula p = poly p
 
 -- | Given a formula, it'll try to convert it to a polynome.
 -- Formula should be expanded and in list form to get this

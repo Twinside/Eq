@@ -70,11 +70,15 @@ mul e e' = right (e, e')
 division :: EvalOp
 division v1 (Poly _ p) | isFormulaScalar v1 = left . poly $ polyCoeffMap (scalarToCoeff v1 /) p
 division (Poly _ p) v2 | isFormulaScalar v2 = left . poly $ polyCoeffMap (/ scalarToCoeff v2) p
-division (Poly _ p) (Poly _ p2) = case syntheticDiv p p2 of
-        (Nothing, Nothing) -> right (poly p, poly p2)
-        (Nothing, Just _) -> right (poly p, poly p2)
-        (Just quotient, Nothing) -> left $ poly quotient
-        (Just quotient, Just rest) -> left $ poly quotient + (poly rest / poly p2)
+division p1@(Poly _ p) p2f@(Poly _ p2) = 
+    let unconstruct = unTagFormula  . cleanupRules . Formula . polyAsFormula
+    in case syntheticDiv p p2 of
+        (Nothing, Nothing) -> right (p1, p2f)
+        (Nothing, Just _) -> right (p1, p2f)
+        (Just quotient, Nothing) -> left $ unconstruct quotient
+        (Just quotient, Just rest) -> left $ unconstruct quotient
+                                           + ( unconstruct rest 
+                                             / unconstruct p2)
 division f1 f2 = right (f1, f2)
 
 -- | If a polynome's variable is bound, replace it by the real
@@ -124,7 +128,7 @@ polyEvalRules _ (BinOp _ OpSub fs) = binEval OpSub sub add fs
 polyEvalRules _ (BinOp _ OpMul fs) = binEval OpMul mul mul fs
 polyEvalRules _ (BinOp _ OpDiv fs) = binEval OpDiv division mul fs
 polyEvalRules evaluator (Poly _ pol@(Polynome _ _)) = do
-    checkPolynomeBinding evaluator pol >>= either (return . poly) return 
-
+    checkPolynomeBinding evaluator pol 
+    >>= either (return . poly) return
 polyEvalRules _ end = return end
 
