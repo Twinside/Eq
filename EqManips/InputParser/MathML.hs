@@ -3,7 +3,6 @@ module EqManips.InputParser.MathML ( mathMlToEqLang
                                    , mathMlToEqLang'
                                    ) where
 
-import Data.Either
 import Control.Applicative
 import EqManips.Algorithm.Utils
 import qualified EqManips.UnicodeSymbols as Uni

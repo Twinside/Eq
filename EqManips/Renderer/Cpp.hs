@@ -3,7 +3,6 @@ module EqManips.Renderer.Cpp( convertToCpp, convertToCppS ) where
 
 import Control.Monad.State.Lazy
 import Control.Applicative
-import Data.Maybe
 import Data.Ratio
 
 import EqManips.Types

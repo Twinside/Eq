@@ -17,14 +17,14 @@ addLambda varName args body = do
       Just (Formula (Lambda _ clauses@((prevArg,_):_))) ->
           if length prevArg /= length args
             then do
-             eqFail (Formula $ Variable varName) Err.def_diff_argcount
+             _ <- eqFail (Formula $ Variable varName) Err.def_diff_argcount
              return ()
             else updateSymbol varName . Formula . lambda 
                             $ clauses ++ [(map unTagFormula args
                                           , unTagFormula body)]
           
       Just _ -> do
-         eqFail (Formula $ Variable varName) $ Err.def_not_lambda varName
+         _ <- eqFail (Formula $ Variable varName) $ Err.def_not_lambda varName
          return ()
 
 -- | Add a "value" into the symbol table
@@ -34,7 +34,7 @@ addVar varName body = do
     case symb of
       Nothing -> addSymbol varName body
       Just _ -> do
-         eqFail (Formula $ Variable varName) $ Err.def_already varName
+         _ <- eqFail (Formula $ Variable varName) $ Err.def_already varName
          return ()
 
 -- | Evaluate top level declarations

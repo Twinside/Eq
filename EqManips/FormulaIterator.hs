@@ -10,7 +10,6 @@ import Control.Applicative
 import Control.Monad.Identity
 import EqManips.Types
 import Data.Maybe( fromMaybe )
-import Control.Monad( mapM )
 
 import EqManips.EvaluationContext
 
