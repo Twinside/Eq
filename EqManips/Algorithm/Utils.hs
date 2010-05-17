@@ -256,9 +256,17 @@ isFormulaScalar _ = False
 -- Perform mandatory simplification
 complexTranslate :: (FormulaPrim, FormulaPrim) -> FormulaPrim
 complexTranslate (a,b)
-    | b == CInteger 0 || b == CFloat 0.0 = a
-    | a == CInteger 0 || a == CFloat 0.0 = Variable "i" * b
+    | isZero b = a
+    | isZero a && isOne b = Variable "i"
+    | isZero a = Variable "i" * b
     | otherwise = a + Variable "i" * b
+    where isZero (CInteger 0) = True
+          isZero (CFloat 0.0) = True
+          isZero _ = False
+
+          isOne (CInteger 1) = True
+          isOne (CFloat 1.0) = True
+          isOne _            = False
 
 -- | Tell if a formula can be reduced to a scalar somehow
 isFormulaConstant :: FormulaPrim -> Bool
