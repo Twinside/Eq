@@ -71,7 +71,10 @@ formatOption = commonOption
 
 -- | Helper function to get file names for input/output
 getInputOutput :: [(Flag, String)] -> [String] -> (IO String, IO Handle)
-getInputOutput opts args = (inputFile, outputFile)
+getInputOutput opts args = ( inputFile
+                           , do o <- outputFile 
+                                hSetEncoding o utf8
+                                return o)
    where outputFile = maybe (return stdout) (flip openFile WriteMode)
                             (lookup Output opts)
 
@@ -192,6 +195,7 @@ transformParseFormula :: (Formula ListForm -> EqContext (Formula ListForm)) -> [
 transformParseFormula operation args = do
     formulaText <- input
     finalFile <- outputFile
+
     let formulaList = parseProgramm formulaText
     either (parseErrorPrint finalFile)
            (\formulal -> do
