@@ -57,7 +57,6 @@ Executable eq
                  , mtl
                  , containers
                  , filepath
-                 , utf8-string >= 0.3.5
 
 Executable eqtestsuite
     Main-Is: EqManips/Tests/iotestSuite.hs
