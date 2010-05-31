@@ -14,12 +14,14 @@ import Control.Monad
 import System.Environment
 import System.Exit
 import System.IO
+--import qualified System.IO.UTF8 as Utf8
+import qualified System.IO as Utf8
+
 import System.Console.GetOpt
 
 import Data.List( find, intersperse )
 import Data.Maybe( fromMaybe )
 
-import qualified System.IO.UTF8 as Utf8
 import qualified Data.Map as Map
 
 -- Just to be able to compile...
