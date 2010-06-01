@@ -50,6 +50,13 @@ addSimplification a b
 
 -- | '-' operator simplification
 subSimplification :: EvalOp
+subSimplification first@(BinOp _ OpMul [a, c]) b
+    | hashOfFormula c == hashOfFormula b 
+        && b == c = 
+#ifdef _DEBUG
+        tracer "Triggered '-' simplification" OpSub first b >>
+#endif
+        left ((a - 1) * c)
 subSimplification a b
     | hashOfFormula a == hashOfFormula b
         && a == b = 
@@ -77,8 +84,8 @@ simplifyFormula :: FormulaPrim
 simplifyFormula (BinOp _ OpAdd lst) =
     binEval OpAdd addSimplification addSimplification lst
 simplifyFormula (BinOp _ OpSub lst) =
-    binEval OpAdd subSimplification addSimplification lst
+    binEval OpSub subSimplification addSimplification lst
 simplifyFormula (BinOp _ OpMul lst) =
-    binEval OpAdd mulSimplification mulSimplification lst
+    binEval OpMul mulSimplification mulSimplification lst
 simplifyFormula f = pure f
 

@@ -48,6 +48,7 @@ eqUnittests = TestList $
                                                  ++ indexationOperation
                                                  ++ functionalValidation
                                                  ++ lambdaBindingTest 
+                                                 ++ simplifyOperation 
                                                  ++ polyDivTest 
                                                  ++ listCreationOperation ]
 
@@ -622,6 +623,24 @@ functionalValidation =
     , app (lambda [([Variable "x"], Variable "x")])
           [Variable "inoutput"] ==> Variable "inoutput"
 
+    ]
+
+simplifyOperation :: [(FormulaPrim, FormulaPrim)]
+simplifyOperation =
+    [ sin (Variable "x") + sin (Variable "x") 
+        ==> 2 * sin (Variable "x")
+    , 2 * sin (Variable "x") + sin (Variable "x")
+        ==> 3 * sin (Variable "x")
+    , 2 * sin (Variable "x") + sin (Variable "y") 
+        ==> 2 * sin (Variable "x") + sin (Variable "y")
+
+
+    , sin (Variable "x") - sin (Variable "x")
+        ==> 0
+    , sin (Variable "x") - sin (Variable "y")
+        ==> sin (Variable "x") - sin (Variable "y") 
+    , 2 * sin (Variable "x") - sin (Variable "y") 
+        ==> 2 * sin (Variable "x") - sin (Variable "y")
     ]
 
 indexationOperation :: [(FormulaPrim, FormulaPrim)]
