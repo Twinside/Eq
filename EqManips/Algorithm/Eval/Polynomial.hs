@@ -36,7 +36,14 @@ add e e' = right (e, e')
 ----            '-'
 -----------------------------------------------
 sub :: EvalOp
-sub (Poly _ p1) (Poly _ p2) = leftclean . poly $ p1 - p2
+sub leftArg@(Poly _ p1) rightArg@(Poly _ p2) = 
+#ifdef _DEBUG
+  addTrace ( "Polynome/Polynome '-'"
+           , treeIfyFormula . Formula 
+                            $ leftArg - rightArg) >>
+#endif
+    leftclean (poly $ p1 - p2)
+
 sub v1 (Poly _ p) | isFormulaScalar v1 = leftclean . poly $ (PolyRest $ scalarToCoeff v1) - p
 sub (Poly _ p) v2 | isFormulaScalar v2 = leftclean . poly $ p - (PolyRest $ scalarToCoeff v2)
 sub (Variable v) (Poly _ p) = leftclean . poly $ Polynome v [(CoeffInt 1, PolyRest $ CoeffInt 1)] - p

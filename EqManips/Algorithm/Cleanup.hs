@@ -177,6 +177,7 @@ polyclean p = resulter $ pclean p
           reducer a acc = a : acc
 
           packPoly (Polynome _ [(deg, rest@(PolyRest _))]) | isCoeffNull deg = rest
+          packPoly (Polynome _ []) = 0
           packPoly a = a
 
           resulter (PolyRest c) = coefToFormula c

@@ -419,18 +419,26 @@ polySimpleOp op left@(PolyRest c1) (Polynome v1 as@((coeff, def):xs))
 
 polySimpleOp op (Polynome v1 as@((coeff, def):xs)) right@(PolyRest c1)
     | isCoeffNull coeff = case def of
-        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1) : map (coeffPropagator $ flip op) xs
-        _          -> Polynome v1 $ (coeff,polySimpleOp op def right) : map (coeffPropagator $ flip op) xs
+        PolyRest a -> Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op a c1) 
+                                  : map (coeffPropagator $ flip op) xs
+        _          -> Polynome v1 $ (coeff,polySimpleOp op def right) 
+                                  : map (coeffPropagator $ flip op) xs
     | otherwise = 
-        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1) : as
+        Polynome v1 $ (CoeffInt 0, PolyRest $ coeffOp op (CoeffInt 0) c1) 
+                    : as
 
 polySimpleOp op (Polynome v1 as@((c, d1):rest)) right@(Polynome v2 bs)
     | v1 > v2 = polySimpleOp (flip op) (Polynome v2 bs) (Polynome v1 as)
-    | v1 == v2 = Polynome v1 $ lockStep op as bs
+    | v1 == v2 =
+        let computedCoefs = lockStep op as bs
+        in if null computedCoefs then PolyRest 0
+                                 else Polynome v1 computedCoefs 
     | isCoeffNull c = 
         Polynome v1 $ (c, polySimpleOp op d1 right) : map (coeffPropagator $ flip op) rest
+
     | otherwise = 
-        Polynome v1 $ (CoeffInt 0, polySimpleOp op (PolyRest $ CoeffInt 0) right) : map (coeffPropagator $ flip op) as
+        Polynome v1 $ (CoeffInt 0, polySimpleOp op (PolyRest $ CoeffInt 0) right)
+                    : map (coeffPropagator $ flip op) as
 
 
 -- | Multiply two polynomials between them using the brute force
