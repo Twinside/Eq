@@ -17,6 +17,8 @@ import EqManips.Algorithm.Eval.Ratio
 import EqManips.Algorithm.Eval.Complex
 import EqManips.Algorithm.Eval.Types
 
+import EqManips.Algorithm.Simplify
+
 evalGlobalLossyStatement, evalGlobalLosslessStatement :: FormulaEvaluator
 evalGlobalLossyStatement = evalGlobalStatement reduce'
 evalGlobalLosslessStatement = evalGlobalStatement exactReduce'
@@ -32,6 +34,7 @@ reduce' f = eval reduce' (cleaner f)
         >>= complexEvalRules reduce'
         >>= polyEvalRules reduce' . cleaner
         >>= floatEvalRules . cleaner
+        >>= simplifyFormula 
         >>= return . cleaner
     where cleaner = unTagFormula . cleanupRules . Formula
 
@@ -45,5 +48,6 @@ exactReduce' f = eval exactReduce' (cleaner f)
              >>= ratioEvalRules
              >>= complexEvalRules exactReduce'
              >>= polyEvalRules exactReduce' . cleaner
+             >>= simplifyFormula 
     where cleaner = unTagFormula . cleanupRules . Formula
 

@@ -11,6 +11,7 @@ module EqManips.Types
          -- | Tell that formula is in form Binop op [a,b]
          , TreeForm
 
+         , hashOfFormula   
          , BinOperator( .. )
          , UnOperator( .. )
          , Entity( .. )

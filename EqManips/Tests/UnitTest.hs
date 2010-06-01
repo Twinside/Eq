@@ -446,6 +446,8 @@ polynomeTest = [
     , poly (Polynome "x" [(0, PolyRest 2) ,(3, PolyRest 4)]) - var "x" ** 3 ==>
         poly (Polynome "x" [(0, PolyRest 2) ,(3, PolyRest 3)])
 
+    , poly (Polynome "x" [ (1, PolyRest 2) ]) -
+        poly (Polynome "x" [ (1, PolyRest 2) ]) ==> 0
     -- With /= variable
     {-
     , var "y" * poly (Polynome "x" [(0, PolyRest 1) ,(1, PolyRest 2) ,(3, PolyRest 4)]) ==>
