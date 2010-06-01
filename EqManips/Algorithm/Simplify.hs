@@ -24,22 +24,25 @@ tracer str op f1 f2 =
 -- | '+' operator simplification.
 -- Some propreties which should work for the addition
 -- operation.
-addSimplification :: EvalOp
-addSimplification a second@(BinOp _ OpMul [b, c])
+addSimplification :: EvalFun -> EvalOp
+addSimplification eval a second@(BinOp _ OpMul [b, c])
     | hashOfFormula a == hashOfFormula c 
-        && a == c = 
+        && a == c = do
 #ifdef _DEBUG
-        tracer "Triggered '+' simplification" OpAdd a second >>
+        tracer "Triggered '+' simplification" OpAdd a second
 #endif
-            left ((b + 1) * c)
-addSimplification first@(BinOp _ OpMul [a, c]) b
+        subCoeff <- eval $ b + 1
+        left $ subCoeff * c
+
+addSimplification eval first@(BinOp _ OpMul [a, c]) b
     | hashOfFormula c == hashOfFormula b 
-        && b == c = 
+        && b == c = do
 #ifdef _DEBUG
-        tracer "Triggered '+' simplification" OpAdd first b >>
+        tracer "Triggered '+' simplification" OpAdd first b
 #endif
-        left ((a + 1) * c)
-addSimplification a b
+        subCoeff <- eval $ a + 1
+        left $ subCoeff * c
+addSimplification _ a b
     | hashOfFormula a == hashOfFormula b
         && a == b = 
 #ifdef _DEBUG
@@ -49,15 +52,17 @@ addSimplification a b
     | otherwise = right $ (a,b)
 
 -- | '-' operator simplification
-subSimplification :: EvalOp
-subSimplification first@(BinOp _ OpMul [a, c]) b
+subSimplification :: EvalFun -> EvalOp
+subSimplification eval first@(BinOp _ OpMul [a, c]) b
     | hashOfFormula c == hashOfFormula b 
-        && b == c = 
+        && b == c = do
 #ifdef _DEBUG
-        tracer "Triggered '-' simplification" OpSub first b >>
+        tracer "Triggered '-' simplification" OpSub first b
 #endif
-        left ((a - 1) * c)
-subSimplification a b
+        subCoeff <- eval (a - 1)
+        left (subCoeff * c)
+
+subSimplification _ a b
     | hashOfFormula a == hashOfFormula b
         && a == b = 
 #ifdef _DEBUG
@@ -66,10 +71,10 @@ subSimplification a b
         left 0
     | otherwise = right (a,b)
 
-mulSimplification :: EvalOp
-mulSimplification a b
+mulSimplification :: EvalFun -> EvalOp
+mulSimplification _ a b
     | hashOfFormula a == hashOfFormula b
-        && a == b = 
+        && a == b =
 #ifdef _DEBUG
         tracer "Triggered '*' simplification" OpMul a b >>
 #endif
@@ -79,13 +84,13 @@ mulSimplification a b
 --------------------------------------------------
 ----            Main Function
 --------------------------------------------------
-simplifyFormula :: FormulaPrim
+simplifyFormula :: EvalFun -> FormulaPrim
                 -> EqContext FormulaPrim
-simplifyFormula (BinOp _ OpAdd lst) =
-    binEval OpAdd addSimplification addSimplification lst
-simplifyFormula (BinOp _ OpSub lst) =
-    binEval OpSub subSimplification addSimplification lst
-simplifyFormula (BinOp _ OpMul lst) =
-    binEval OpMul mulSimplification mulSimplification lst
-simplifyFormula f = pure f
+simplifyFormula f (BinOp _ OpAdd lst) =
+    binEval OpAdd (addSimplification f) (addSimplification f) lst
+simplifyFormula f (BinOp _ OpSub lst) =
+    binEval OpSub (subSimplification f) (addSimplification f) lst
+simplifyFormula f (BinOp _ OpMul lst) =
+    binEval OpMul (mulSimplification f) (mulSimplification f) lst
+simplifyFormula _ formu = pure formu
 

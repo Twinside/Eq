@@ -34,7 +34,7 @@ reduce' f = eval reduce' (cleaner f)
         >>= complexEvalRules reduce'
         >>= polyEvalRules reduce' . cleaner
         >>= floatEvalRules . cleaner
-        >>= simplifyFormula 
+        >>= simplifyFormula reduce'
         >>= return . cleaner
     where cleaner = unTagFormula . cleanupRules . Formula
 
@@ -48,6 +48,6 @@ exactReduce' f = eval exactReduce' (cleaner f)
              >>= ratioEvalRules
              >>= complexEvalRules exactReduce'
              >>= polyEvalRules exactReduce' . cleaner
-             >>= simplifyFormula 
+             >>= simplifyFormula reduce'
     where cleaner = unTagFormula . cleanupRules . Formula
 
