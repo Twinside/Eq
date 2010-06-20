@@ -577,8 +577,12 @@ polyDivTest =
 
     , ( simPoly [(0,1), (1,3), (2,2), (3, -7)]
       / simPoly [(0,1), (1,1), (2,-2)])
-          ==> ( simPoly [(0, 1), (1,2), (2,2), (3, -5)]
-              + simPoly [(4,9), (5,-10)] / simPoly [(0,1), (1,1), (2,-2)])
+          ==> ( simPoly [ (0, CoeffRatio $ 3 % 4)
+                        , (1, CoeffRatio $ 7 % 2)]
+              + simPoly [ (0, CoeffRatio $ 1 % 4)
+                        , (1, CoeffRatio $ (-5) % 4)] 
+               / simPoly [(0,1), (1,1), (2,-2)])
+
     , ( simPoly [(0,-7), (2,5), (3,6) ]
       / simPoly [(0,-1), (1,-2), (2, 3)])
           ==> (simPoly [(0, 3), (1, 2)]
