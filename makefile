@@ -74,4 +74,6 @@ staticrelease: EqManips/BaseLibrary.hs
 	strip eq$(EXEEXT)
 	upx --best eq$(EXEEXT)
 
+run:
+	./eq eval "(1 + 3 * x + 2 * x^2 - 7 * x ^3) / (1 + x - 2 * x ^2)"
 

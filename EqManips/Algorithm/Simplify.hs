@@ -71,6 +71,9 @@ subSimplification _ a b
         left 0
     | otherwise = right (a,b)
 
+--------------------------------------------------
+----            '*' simplification
+--------------------------------------------------
 mulSimplification :: EvalFun -> EvalOp
 mulSimplification _ a b
     | hashOfFormula a == hashOfFormula b

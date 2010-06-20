@@ -502,33 +502,33 @@ syntheticDiv :: Polynome -> Polynome -> (Maybe Polynome, Maybe Polynome)
 syntheticDiv polyn@(Polynome var lst1) divisor@(Polynome var' lst2)
     | var == var'
     && isPolyMonovariate polyn && isPolyMonovariate divisor
-    && fst (last lst1) > fst (last lst2)=
-        (finalize . packCoeffs *** finalize . packCoeffs)
+    && fst (last lst1) > fst (last lst2) =
+
+        (finalize . packCoeffs . map (/ normalizingCoeff)
+            *** finalize . packCoeffs)
+
       . splitAt (length coefList + 1 - length divCoeff)
-      {-
-      . (\a -> unsafePerformIO (do
-                print "Expanded Poly =>"
-                print $ (firstCoeff:coefList)
-                print "Expanded Divisor =>"
-                print divCoeff
-                print "Divided =>"
-                print a
-                ) `seq` a) -}
       $ firstCoeff : syntheticInnerDiv divCoeff firstCoeff coefList
+
     where Just (firstCoeff: coefList) = expandCoeff polyn
-          Just (_:divCoeff) = map negate <$> expandCoeff divisor
+          Just (firstDivCoeff:divCoeff) = map negate <$> expandCoeff divisor
+
+          normalizingCoeff = negate firstDivCoeff
 
           finalize [] = Nothing
           finalize lst = Just $ Polynome var lst
 
-          syntheticInnerDiv :: (Num n) => [n] -> n -> [n] -> [n]
+          syntheticInnerDiv :: [PolyCoeff]
+                            -> PolyCoeff -> [PolyCoeff] -> [PolyCoeff]
           syntheticInnerDiv         _         _        [] = []
           syntheticInnerDiv diviCoeff prevCoeff polyCoeff =
             case endCoeffs of
                    Just [] -> error "syntheticDiv - empty rest, impossible"
                    Just (x:xs) -> x : syntheticInnerDiv diviCoeff x xs
                    Nothing -> polyCoeff
-              where endCoeffs = headApply (+) polyCoeff [prevCoeff * c | c <- diviCoeff]
+              where normalizedCoeff = prevCoeff / normalizingCoeff
+                    endCoeffs = headApply (+) polyCoeff 
+                              $ map (normalizedCoeff *) diviCoeff
 syntheticDiv _ _ = (Nothing, Nothing)
 
 instance Num PolyCoeff  where
