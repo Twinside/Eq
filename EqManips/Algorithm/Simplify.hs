@@ -75,6 +75,22 @@ subSimplification _ a b
 ----            '*' simplification
 --------------------------------------------------
 mulSimplification :: EvalFun -> EvalOp
+mulSimplification eval (BinOp _ OpPow [a, c]) b
+    | hashOfFormula a == hashOfFormula b
+        && a == b = 
+#ifdef _DEBUG
+        tracer "Triggered '*' simplification" OpMul a b >>
+#endif
+        Left <$> eval (a ** (c + 1))
+
+mulSimplification eval b (BinOp _ OpPow [a, c])
+    | hashOfFormula a == hashOfFormula b
+        && a == b = 
+#ifdef _DEBUG
+        tracer "Triggered '*' simplification" OpMul b a >>
+#endif
+        Left <$> eval (a ** (c + 1))
+
 mulSimplification _ a b
     | hashOfFormula a == hashOfFormula b
         && a == b =

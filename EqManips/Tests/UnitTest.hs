@@ -642,7 +642,7 @@ simplifyOperation =
     , sin (Variable "x") + 2 * sin (Variable "x")
         ==> 3 * sin (Variable "x")
     , sin (Variable "x") + 2 * sin (Variable "y") 
-        ==> 2 * sin (Variable "x") + sin (Variable "y")
+        ==> sin (Variable "x") + 2 * sin (Variable "y")
 
 
     , sin (Variable "x") - sin (Variable "x")
