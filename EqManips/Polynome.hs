@@ -67,18 +67,36 @@ polynomizeFormula (Formula f) = Formula $ topDownTraversal converter f
 -- basic operators.
 convertToFormulaPrim :: Polynome -> FormulaPrim
 convertToFormulaPrim (PolyRest coeff) = coefToFormula coeff
-convertToFormulaPrim (Polynome var lst) = adder $ map elemConverter lst
-    where adder [x] = x
-          adder rest = binOp OpAdd rest
-          fvar = Variable var
-          elemConverter (degree,def) = degreeOf (convertToFormulaPrim def)
-                                                (coefToFormula degree)
+convertToFormulaPrim (Polynome var lst) =
+ foldl' constructor realFirst rest
+    where constructor a (Left b) = a + b
+          constructor a (Right b) = a - b
 
-          degreeOf fdef (CInteger 0) = fdef
-          degreeOf (CInteger 1) (CInteger 1) = fvar
-          degreeOf fdef (CInteger 1) = fdef * fvar
-          degreeOf (CInteger 1) deg = fvar ** deg
-          degreeOf fdef deg = fdef * (fvar ** deg)
+          realFirst = either id id felem
+          (felem : rest) = map elemConverter lst
+
+          fvar = Variable var
+          elemConverter (degree,def) =
+              degreeOf (convertToFormulaPrim def)
+                       (coefToFormula degree)
+
+          degreeOf            fdef (CInteger 0)
+              | isConstantNegative fdef = Right $ negateConstant fdef
+              | otherwise = Left $ fdef
+              
+          degreeOf (CInteger   1 ) (CInteger 1) = Left fvar
+          degreeOf (CInteger (-1)) (CInteger 1) = Right fvar
+          degreeOf fdef         (CInteger 1)
+              | isConstantNegative fdef = Right $ negateConstant fdef * fvar
+              | otherwise = Left $ fdef * fvar
+
+          degreeOf (CInteger 1) deg = Left $ fvar ** deg
+          degreeOf (CInteger (-1)) deg = Right $ fvar ** deg
+
+          degreeOf fdef deg
+              | isConstantNegative fdef =
+                    Right $ negateConstant fdef * (fvar ** deg)
+              | otherwise = Left $ fdef * (fvar ** deg)
 
 -- | Conversion from coef to basic formula. ratio
 -- are converted to (a/b), like a division.
@@ -87,8 +105,7 @@ coefToFormula (CoeffFloat f) = CFloat f
 coefToFormula (CoeffInt i) = CInteger i
 coefToFormula (CoeffRatio r) = if denominator r == 1
         then CInteger $ numerator r
-        else (CInteger $ numerator r)
-           / (CInteger $ denominator r)
+        else Fraction r
 
 -- | Flatten the formula, remove all the OpSub and replace them
 -- by OpAdd. Also bring lowest variables to the front, regardless of

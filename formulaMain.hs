@@ -6,6 +6,8 @@ import EqManips.Renderer.Latex
 import EqManips.Renderer.Mathml
 import EqManips.Renderer.RenderConf
 
+import EqManips.Algorithm.StackVM.Stack
+
 #ifdef _DEBUG
 import EqManips.Renderer.Sexpr
 #endif
@@ -303,6 +305,7 @@ commandList =
             , filterCommand mathMlToEqLang', commonOption)
     , ("show"       , "Try to retrieve some information about supported options"
             , introspect, askingOption)
+    -- , ( , )
     ]
 
 reducedCommand :: [(String, [String] -> IO Bool)]

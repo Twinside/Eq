@@ -1,4 +1,3 @@
 3:Decide derivation for log
-1:Make a simplify algorithm
 1:Make some validation about definition domain
 0:Make an integrator algorithm (urgh)

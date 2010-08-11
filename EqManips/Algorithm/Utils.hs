@@ -6,6 +6,7 @@ module EqManips.Algorithm.Utils ( biAssocM, biAssoc
                                 , listifyFormula, listifyBinOp 
                                 , isFormulaConstant, isFormulaConstant' 
                                 , isFormulaInteger, isFormulaScalar 
+                                , isConstantNegative, negateConstant
                                 , sortFormula, invSortFormula, sortBinOp  
                                 
                                 -- | Count nodes in basic formula
@@ -248,9 +249,25 @@ isFormulaScalar :: FormulaPrim -> Bool
 isFormulaScalar (CFloat _) = True
 isFormulaScalar (CInteger _) = True
 isFormulaScalar (Fraction _) = True
+-- next case is "fishy"
 isFormulaScalar (Complex _ (a,b)) = isFormulaScalar a && isFormulaScalar b
 isFormulaScalar (UnOp _ OpNegate f) = isFormulaScalar f
 isFormulaScalar _ = False
+
+negateConstant :: FormulaPrim -> FormulaPrim
+negateConstant (CFloat a) = CFloat (-a)
+negateConstant (CInteger a) = CInteger (-a)
+negateConstant (Fraction a) = Fraction (-a)
+negateConstant (UnOp _ OpNegate c) = c
+negateConstant a = a
+
+isConstantNegative :: FormulaPrim -> Bool
+isConstantNegative (CFloat a) = a < 0
+isConstantNegative (CInteger a) = a < 0
+isConstantNegative (Fraction a) = a < 0
+isConstantNegative (UnOp _ OpNegate c) =
+    not $ isConstantNegative c
+isConstantNegative _ = False
 
 -- | Translate a complex to a simpler formula using '+' and '*'
 -- Perform mandatory simplification
