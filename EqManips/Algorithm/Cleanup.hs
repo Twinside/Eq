@@ -1,4 +1,6 @@
-module EqManips.Algorithm.Cleanup ( cleanup, cleanupRules ) where
+module EqManips.Algorithm.Cleanup ( cleanup
+                                  , cleanupFormulaPrim
+                                  , cleanupRules ) where
 
 import EqManips.Types
 import EqManips.Polynome
@@ -12,6 +14,9 @@ type BiRuler = FormulaPrim -> FormulaPrim -> Either FormulaPrim (FormulaPrim, Fo
 
 cleanup :: Formula anyForm -> Formula anyForm
 cleanup = depthFirstFormula `asAMonad` (Formula . rules . unTagFormula)
+
+cleanupFormulaPrim :: FormulaPrim -> FormulaPrim
+cleanupFormulaPrim = depthFormulaPrimTraversal `asAMonad` rules
 
 cleanupRules :: Formula anyForm -> Formula anyForm
 cleanupRules (Formula a) = Formula $ rules a
