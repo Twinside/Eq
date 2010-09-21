@@ -10,19 +10,11 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   :numbered:
 
-   prettyprinter
-   calculator
-   preprocessor
-   onlinehelp
-
-   functions/sum
-   functions/derivate
-   functions/integrate
-
-   language/datatype/matrix
-   language/define
-   language/matching
+   uses
+   functions/functions
+   language/language
 
 Indices and tables
 ==================

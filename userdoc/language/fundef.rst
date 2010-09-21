@@ -1,29 +1,14 @@
-===========
-Definitions
-===========
+.. _fundef:
+
+===================
+Function definition
+===================
 
 In this section, the definitions are stored in files.
 
+
 Definition
 ==========
-Let's get things started slowly by `binding` a variable and
-using it.
-
-.. command-output:: cat docexample/var_bind.txt
-.. command-output:: eq eval -f docexample/var_bind.txt
-
-
-The ``:=`` operator let you set the value of a variable.
-The right and side of the operator (3 here), is evaluated at the definition
-site.
-
-The ``;`` separate all your definitions. Only the value of the last
-expression is displayed. During the evaluation of an expression if a variable
-is found, we check if it's bound, if it is, we replace the variable by the
-bound value and continue evaluation.
-
-Function definition
-===================
 You can define function the same way than variable, but using a
 slightly different syntax.
 
@@ -40,7 +25,8 @@ Mathcing
 You may now want to define functions with many if to change behaviour
 of your definitions and everything. Sad news, there is no ``if``,
 no ``while`` and no ``for`` in `Eq Language`. But
-the language provide an other mean to control behaviour. It's the power of...
+the language provide an other mean to control behaviour, the
+unification.
 
 Unification
 -----------
@@ -77,10 +63,10 @@ That was easy. When you find a ``--`` token, the rest of the line is considered
 as a comment. You can write ``{- multiline comment like in this sample -}``.
 It's time to introduce you to some special values :
  
- * true
- * false
+ * :ref:`true`
+ * :ref:`false`
 
-Which are the `boolean` values. All comparisons operators generate a boolean value.
+Which are the :ref:`boolean` values. All comparisons operators generate a boolean value.
 So to define an if, it's a good thing to use them. The if got a third case, which is a bit
 weird. In a normal utilisation, an ``if`` should always use boolean value as first
 argument (the `conditional` argument. The reason of this definition need an example :
@@ -89,14 +75,13 @@ argument (the `conditional` argument. The reason of this definition need an exam
 .. command-output:: eq eval -f docexample/pattern_failure.txt; true
     :shell:
 
-Your first matching error. Cute isn't it? So instead of getting a harsh crash,
-we return the variable ``undefined``, which can help you to reuse some result later.
-You can bound the ``undefined`` variable like any other variable.
+What you can see here is a pattern matching error. But instead
+of generating a hard crash, we return the special variable ``undefined``,
+which can help you to reuse some result later.  You can bound the
+``undefined`` variable like any other variable, it's just a convention.
 
 Before I told you that the `Eq Language` didn't possess an if construct. I have
 to admit that I lied a bit. There is an if function, defined in the standard library.
 You can read the standard library (which is rather thin at the moment), but if you
 modify it the modification won't be taken into account.
 
-To learn how to loop and perform some more advanced stuff, jump to the next
-section.

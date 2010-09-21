@@ -1,0 +1,5 @@
+matchExactList( [1, 2, 3] ) :> perfect;
+matchExactList( [a, b, c] ) :> list_of_three;
+matchExactList( a )         :> nothing;
+
+matchExactList( [1,4,3] ) + matchExactList( [1,2,3] )

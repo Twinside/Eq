@@ -356,11 +356,11 @@ eval evaluator (Matrix _ n m mlines) = do
     return $ matrix n m cells
 eval evaluator (List _ l) = do list <$> mapM evaluator l
 eval _ func@(Lambda _ _) = unTagFormula <$> inject (Formula func)
-eval _ (Variable v) = do
+eval evaluator (Variable v) = do
     symbol <- symbolLookup v
     case symbol of
          Nothing -> return $ Variable v
-         Just (Formula (f)) -> return f
+         Just (Formula (f)) -> evaluator f
 
 eval evaluator (App _ (Variable "matrix") args) =
     mapM evaluator args >>= matrixCreate

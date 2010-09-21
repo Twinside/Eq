@@ -1,3 +1,5 @@
+.. _matching:
+
 ========
 Matching
 ========

@@ -1,0 +1,6 @@
+oddsOfList( x :: y :: xs ) :> x :: oddsOfList( xs );
+oddsOfList( [x] ) :> [x];
+oddsOfList( []  ) :> [];
+
+oddsOfList( [a, b, d, c, 15, 10, 42 ] )
+
