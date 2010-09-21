@@ -1,5 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module EqManips.Algorithm.StackVM.Stack where
+module EqManips.Algorithm.StackVM.Stack( compileExpression
+                                       , evalProgram 
+                                       ) where
 
 import Control.Applicative
 import Data.List( foldl' )
@@ -42,8 +44,9 @@ type MachineWorld = [ValueType]
 -- | bla
 evalProgram :: CompiledExpression -> ValueType -> ValueType
             -> ValueType
-evalProgram _program _x _y = 0.0
+evalProgram program x y = head $ foldl' (evalOperation x y) [] program
 
+-- | Main eval function.
 evalOperation :: ValueType -> ValueType -> MachineWorld
               -> StackOperand
               -> MachineWorld

@@ -6,7 +6,7 @@ import EqManips.Renderer.Latex
 import EqManips.Renderer.Mathml
 import EqManips.Renderer.RenderConf
 
-import EqManips.Algorithm.StackVM.Stack
+import EqManips.Renderer.Ascii2DGrapher
 
 #ifdef _DEBUG
 import EqManips.Renderer.Sexpr
