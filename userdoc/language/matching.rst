@@ -10,14 +10,14 @@ so it's a nice occasion to implement one ourselves.
 Modulo
 ======
 Let's write our modulo in the most straightforward way.
-.. command-output:: cat modulo101.txt
+.. command-output:: cat docexample/modulo101.txt
 
 Here we have written a loop within the ``modintern`` function, the condition of
 the loop is symbolized by the first argument, unifying to a boolean. The rest can be
 seen as a local variable, as for the num. We remove the modulo while the rest is still
 greater than it. So, now let's try it.
 
-.. command-output:: eq eval -f modulo101.txt; true
+.. command-output:: eq eval -f docexample/modulo101.txt; true
     :shell:
 
 We got two errors we some cryptic messages (yes it's in my <strong>`TODO`</strong>
@@ -43,11 +43,11 @@ A working modulo
 ================
 So, new program :
 
-.. command-output:: cat modulo606.txt
+.. command-output:: cat docexample/modulo606.txt
 
 Notice the new ``:>`` operator.
 
-.. command-output:: eq eval -f modulo606.txt
+.. command-output:: eq eval -f docexample/modulo606.txt
 
 
 The ``:>`` operator is the `Lazy attribute operator`. It has exactly
