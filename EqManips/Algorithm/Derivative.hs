@@ -114,7 +114,8 @@ derivationRules evaluator variable (Formula func) = d func variable
                             return ( nume / denom, f, denom : nume : rezLst)
 
                   divDeriver (previousDerivation, _, rezLst) f =
-                      return (previousDerivation / f, f, f : rezLst)
+                      return ( previousDerivation / f, f
+                             , f : previousDerivation : rezLst)
 
        -- Eq:format derivate( f ^ n, x ) = 
        --  n * derivate( f, x ) * f ^ (n - 1)
