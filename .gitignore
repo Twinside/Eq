@@ -2,6 +2,8 @@
 *.o
 *.o-boot
 *.hi-boot
+*.hi
+*.a
 *.obj
 *.hi
 .svn
@@ -13,6 +15,11 @@ eqtestsuite
 *.tix
 .hpc
 coverageReport
+*.ncb
+*.suo
+*.user
+formulaDll_stub.c
+formulaDll_stub.h
 Debug
 Release
 Build

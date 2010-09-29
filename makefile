@@ -1,4 +1,3 @@
-
 ifeq ($(shell uname),WindowsNT)
 
 SHELL:=cmd
@@ -76,4 +75,19 @@ staticrelease: EqManips/BaseLibrary.hs
 
 run:
 	./eq eval "(1 + 3 * x + 2 * x^2 - 7 * x ^3) / (1 + x - 2 * x ^2)"
+
+dll:
+	ghc $(DEBUG) -c --make -cpp formulaDll.hs
+	ghc $(DEBUG) -c dllMain.cpp
+	unixfind . | grep "\.o$$" | xargs ghc $(DEBUG) -shared -optl-mwindows \
+										-o formulaDll.dll \
+										-package parsec \
+										-package array \
+										-package mtl \
+										-package containers \
+										-package filepath \
+										-package utf8-string\
+										-package HaXml \
+										-lOle32 \
+										formulaDll.def
 
