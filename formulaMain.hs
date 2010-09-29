@@ -35,6 +35,8 @@ import EqManips.BaseLibrary
 import EqManips.InputParser.MathML
 import EqManips.InputParser.EqCode
 
+import Repl
+
 -- Debugging
 {-import EqManips.Renderer.CharRender-}
 
@@ -291,6 +293,9 @@ commandList =
             , transformParseFormula evalGlobalLosslessStatement, commonOption)
     , ("format", "Load and display the formula in ASCII Art"
             , formatCommand formatFormula, commonOption)
+    , ("interactive", "Invoke Eq as an interactive prompt",
+                (\_ -> do repl evalGlobalLossyStatement
+                          return True), [])
     , ("latexify", "Translate the formula into latex"
             , formatCommand latexRender, commonOption)
     , ("mathmlify", "Translate the formula into MathML"
