@@ -48,9 +48,13 @@ Eq's library
 
     .. command-output:: eq eval "modulo( 14, 3 )"
 
-.. function:: taylor( formula, derivation var, onVar, order )
+.. function:: taylor( formula, derivation var, atPos, order )
 
-    taylor( f, var, a, n ) :> Sort( Cleanup( taylorin( Lambda( var, f ), var, a, n )))
+    Return the taylor expansion of an expression. For exemple
+    to get the taylor expansion of the formula ``sin(x) + x``
+    for the variable x and at 0, you should try :
+
+    .. command-output:: eq exacteval "taylor( sin(x) + x, x, 0, 10 )"
 
 .. function:: cons(a, b)
 
@@ -110,4 +114,23 @@ Higher-order functions
 
 .. function:: foldl( function, accumulator, list )
 
+    Function used to perform a left fold on a list.
+    The function should take two parameters : one
+    for an accumulator, and one for an element of the list.
+
+    The accumulator is carried over all the elements of the list,
+    and the iterations start at the beginning of the list. One
+    example of the use of fold is to write the equivalent of the
+    reverse function using a left fold :
+
+    .. command-output:: eq eval "foldl( cons, [], [1, 2, 3, 4] )"
+
+    .. _a link: http://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
+    
 .. function:: foldr( function, accumulator, list )
+
+    Same as the left fold, but here is the right fold, iterations
+    start from the end of the list to the beginning.
+
+    .. _a link: http://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
+
