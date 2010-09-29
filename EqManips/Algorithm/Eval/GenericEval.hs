@@ -381,7 +381,6 @@ eval evaluator fullApp@(App _ def var) = do
                     addSymbols [ (name, Formula formula) 
                                         | (name, formula) <- subst]
 #ifdef _DEBUG
-                    {-traceContext-}
                     addTrace ("subst | " ++ show subst, treeIfyFormula $ Formula body)
 #endif
                     depth <- contextStackSize

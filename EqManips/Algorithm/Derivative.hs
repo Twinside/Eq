@@ -82,8 +82,9 @@ derivationRules evaluator variable (Formula func) = d func variable
      
        -- Eq:format derivate( f * g, x ) =
        --      derivate( f, x ) * g + f * derivate( g, x )
-       d (BinOp _ OpMul lst) var = do
-          (_,_, subTrees) <- foldM mulDeriver (int 0, int 1, []) lst
+       d (BinOp _ OpMul (f1:lst)) var = do
+          f1' <- d f1 var
+          (_,_, subTrees) <- foldM mulDeriver (f1', f1, []) lst
           return $ binOp OpAdd subTrees
             where mulDeriver (previousDerivation, previous, rezLst) f =
                       (\derived -> ( derived

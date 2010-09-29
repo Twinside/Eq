@@ -712,6 +712,7 @@ derivateTest =
     [ derivate 3 x ==> 0
     , derivate (x ** 3) x ==> 3 * x ** 2
     , derivate (x ** 3 / 2) x ==> (3 * x ** 2) / 2
+    , derivate (log x * exp x) x ==> exp x / x + log x * exp x
     ]
 
 basicFunctions :: FormulaPrim -> Double -> [(FormulaPrim, FormulaPrim)]

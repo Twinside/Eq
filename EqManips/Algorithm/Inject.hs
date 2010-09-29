@@ -44,7 +44,7 @@ reBoundVar (Product _ (BinOp _ OpEq (Variable v:_)) _ _) = Just [v]
 reBoundVar (Sum _ (BinOp _ OpEq (Variable v: _)) _ _) = Just [v]
 reBoundVar (Lambda _ clauses) = Just
 #ifdef _DEBUG
-    . (\a -> Debug.trace ("------------\n" ++ show a ++ "\n") a)
+    -- . (\a -> Debug.trace ("------------\n" ++ show a ++ "\n") a)
 #endif
       $ concat [concatMap collectSymbols args
                         | (args, _) <- clauses]
