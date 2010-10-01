@@ -4,12 +4,12 @@ module EqManips.FormulaIterator( depthFirstFormula
                                , depthFormulaPrimTraversal 
                                , depthPrimTraversal 
                                , topDownTraversal 
+                               , topDownScanning 
                                ) where
 
 import Control.Applicative
 import Control.Monad.Identity
 import EqManips.Types
-import Data.Maybe( fromMaybe )
 
 import EqManips.EvaluationContext
 
@@ -42,75 +42,95 @@ depthFormulaPrimTraversal :: (Applicative m, Monad m)
                           -> m FormulaPrim
 depthFormulaPrimTraversal = depthPrimTraversal (const $ return ())
 
--- | This function must be used to transform
 topDownTraversal :: (FormulaPrim -> Maybe FormulaPrim)
-                 -> FormulaPrim
-                 -> FormulaPrim
-topDownTraversal f p@(Poly _ _) = fromMaybe p $ f p
-topDownTraversal f v@(Variable _) = fromMaybe v $ f v
-topDownTraversal f i@(CInteger _) = fromMaybe i $ f i
-topDownTraversal f i@(Fraction _) = fromMaybe i $ f i
-topDownTraversal f i@(Complex _ _) = fromMaybe i $ f i
-topDownTraversal f d@(CFloat _) = fromMaybe d $ f d
-topDownTraversal f e@(NumEntity _) = fromMaybe e $ f e
-topDownTraversal f t@(Truth _) = fromMaybe t $ f t
-topDownTraversal f l@(Lambda _ eqs) = 
-    fromMaybe (lambda lambda') $ f l
-        where lambda' =
-                  [ ( map (topDownTraversal f) args
-                    , topDownTraversal f body) | (args, body) <- eqs]
+                 -> FormulaPrim -> FormulaPrim
+topDownTraversal f formu =
+    runIdentity $ topDownScanning (return . f) formu
 
-topDownTraversal f met@(Meta _ op form) =
-    fromMaybe (meta op $ topDownTraversal f form) $ f met
+fromMaybeM :: (Monad m) => m a -> m (Maybe a) -> m a
+fromMaybeM e da = do
+    rez <- da
+    case rez of
+         Nothing -> e
+         Just a  -> return a
 
-topDownTraversal f i@(Indexes _ what lst) =
-    fromMaybe (indexes (topDownTraversal f what) $ map (topDownTraversal f) lst) $ f i
+-- | This function must be used to transform function from
+-- the top.
+{-# SPECIALIZE topDownScanning :: (FormulaPrim -> Identity (Maybe FormulaPrim))
+                               -> FormulaPrim -> Identity FormulaPrim #-}
+{-# SPECIALIZE topDownScanning :: (FormulaPrim -> EqContext (Maybe FormulaPrim))
+                               -> FormulaPrim -> EqContext FormulaPrim #-}
+topDownScanning :: (Monad m, Applicative m)
+                => (FormulaPrim -> m (Maybe FormulaPrim))
+                -> FormulaPrim
+                -> m FormulaPrim
+topDownScanning f p@(Poly _ _) = fromMaybeM (return p) $ f p
+topDownScanning f v@(Variable _) = fromMaybeM (return v) $ f v
+topDownScanning f i@(CInteger _) = fromMaybeM (return i) $ f i
+topDownScanning f i@(Fraction _) = fromMaybeM (return i) $ f i
+topDownScanning f i@(Complex _ _) = fromMaybeM (return i) $ f i
+topDownScanning f d@(CFloat _) = fromMaybeM (return d) $ f d
+topDownScanning f e@(NumEntity _) = fromMaybeM (return e) $ f e
+topDownScanning f t@(Truth _) = fromMaybeM (return t) $ f t
+topDownScanning f l@(Lambda _ eqs) = 
+    fromMaybeM (lambda <$> lambda') $ f l
+        where lambda' = sequence
+                  [ do args' <- mapM (topDownScanning f) args
+                       body' <- topDownScanning f body
+                       return (args', body') | (args, body) <- eqs]
 
-topDownTraversal f l@(List _ lst) =
-    fromMaybe (list $ map (topDownTraversal f) lst) $ f l
+topDownScanning f met@(Meta _ op form) =
+    fromMaybeM (meta op <$> topDownScanning f form) $ f met
 
-topDownTraversal f formula@(App _ func args) =
-    fromMaybe (app mayFunc mayArgs) $ f formula
-        where mayFunc = topDownTraversal f func
-              mayArgs = map (topDownTraversal f) args
+topDownScanning f i@(Indexes _ what lst) = do
+    what' <- topDownScanning f what
+    fromMaybeM (indexes what' <$> mapM (topDownScanning f) lst)
+                 $ f i
 
-topDownTraversal f formula@(Sum _ ini end what) =
-    fromMaybe (summ mayIni mayEnd mayWhat) $ f formula
-        where mayIni = topDownTraversal f ini
-              mayEnd = topDownTraversal f end
-              mayWhat = topDownTraversal f what
+topDownScanning f l@(List _ lst) =
+    fromMaybeM (list <$> mapM (topDownScanning f) lst) $ f l
 
-topDownTraversal f formula@(Product _ ini end what) =
-    fromMaybe (productt mayIni mayEnd mayWhat) $ f formula
-        where mayIni = topDownTraversal f ini
-              mayEnd = topDownTraversal f end
-              mayWhat = topDownTraversal f what
+topDownScanning f formula@(App _ func args) =
+    fromMaybeM (app <$> mayFunc <*> mayArgs) $ f formula
+        where mayFunc = topDownScanning f func
+              mayArgs = mapM (topDownScanning f) args
 
-topDownTraversal f formula@(Derivate _ what var) =
-    fromMaybe (derivate mayWhat mayVar ) $ f formula
-        where mayVar = topDownTraversal f var
-              mayWhat = topDownTraversal f what
+topDownScanning f formula@(Sum _ ini end what) =
+    fromMaybeM (summ <$> mayIni <*> mayEnd <*> mayWhat) $ f formula
+        where mayIni = topDownScanning f ini
+              mayEnd = topDownScanning f end
+              mayWhat = topDownScanning f what
 
-topDownTraversal f formula@(Integrate _ ini end what var) =
-    fromMaybe (integrate mayIni mayEnd mayWhat mayVar) $ f formula
-        where mayIni = topDownTraversal f ini
-              mayEnd = topDownTraversal f end
-              mayWhat = topDownTraversal f what
-              mayVar = topDownTraversal f var
+topDownScanning f formula@(Product _ ini end what) =
+    fromMaybeM (productt <$> mayIni <*> mayEnd <*> mayWhat) $ f formula
+        where mayIni = topDownScanning f ini
+              mayEnd = topDownScanning f end
+              mayWhat = topDownScanning f what
 
-topDownTraversal f formula@(Matrix _ n m cells) =
-    fromMaybe (matrix n m [[topDownTraversal f cell | cell <- line] | line <- cells])
+topDownScanning f formula@(Derivate _ what var) =
+    fromMaybeM (derivate <$> mayWhat <*> mayVar ) $ f formula
+        where mayVar = topDownScanning f var
+              mayWhat = topDownScanning f what
+
+topDownScanning f formula@(Integrate _ ini end what var) =
+    fromMaybeM (integrate <$> mayIni <*> mayEnd <*> mayWhat <*> mayVar) $ f formula
+        where mayIni = topDownScanning f ini
+              mayEnd = topDownScanning f end
+              mayWhat = topDownScanning f what
+              mayVar = topDownScanning f var
+
+topDownScanning f formula@(Matrix _ n m cells) =
+    fromMaybeM (matrix n m <$> mapM (mapM (topDownScanning f)) cells)
             $ f formula
 
-topDownTraversal f formula@(UnOp _ op sub) =
-    fromMaybe (unOp op $ topDownTraversal f sub) $ f formula
+topDownScanning f formula@(UnOp _ op sub) =
+    fromMaybeM (unOp op <$> topDownScanning f sub) $ f formula
 
-topDownTraversal f formula@(BinOp _ op fs) =
-    fromMaybe (binOp op $ map (topDownTraversal f) fs) $ f formula
+topDownScanning f formula@(BinOp _ op fs) =
+    fromMaybeM (binOp op <$> mapM (topDownScanning f) fs) $ f formula
 
 -- Hmm, it's a debug for renderer, we dont really care
-topDownTraversal _ b@(Block _ _ _) = b
-
+topDownScanning _ b@(Block _ _ _) = return b
 
 
 -- | Depth first traversal providing two events :

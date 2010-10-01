@@ -10,7 +10,6 @@ import qualified EqManips.ErrorMessages as Err
 import EqManips.Types
 import EqManips.Polynome
 import EqManips.EvaluationContext
-import EqManips.Algorithm.Eval.Meta
 import EqManips.Algorithm.Inject
 import EqManips.Algorithm.Utils
 
@@ -22,28 +21,23 @@ int = CInteger
 
 -- | Public function to perform a derivation on a
 -- variable.
-derivateFormula :: (Formula ListForm -> EqContext (Formula ListForm))
-                -> Var
-                -> Formula ListForm
+derivateFormula :: Var -> Formula ListForm
                 -> EqContext (Formula ListForm)
-derivateFormula evaluator v f =
-    Formula <$> derivationRules evaluator v f
+derivateFormula v f =
+    Formula <$> derivationRules v f
+
+eqError :: FormulaPrim -> String -> EqContext FormulaPrim
+eqError f msg = unTagFormula <$> eqFail (Formula f) msg
 
 -- | real function for derivation, d was choosen
 -- because I'm too lasy to type something else :]
-derivationRules :: (Formula ListForm -> EqContext (Formula ListForm))
-                -> String
-                -> Formula ListForm
+derivationRules :: String -> Formula ListForm
                 -> EqContext FormulaPrim
-derivationRules evaluator variable (Formula func) = d func variable
- where d (Meta _ m f) var = do
-           Formula evaluated <- metaEval evaluator m $ Formula f
-           d evaluated var
-
-       -- Poloynome with only ^ 0, degenerated case, but
+derivationRules variable (Formula func) = d func variable
+ where -- Poloynome with only ^ 0, degenerated case, but
        -- must handle it
        d   (Poly _ (PolyRest _)) _ = pure $ int 0
-       d f@(Poly _ (Polynome _ [])) _ = unTagFormula <$> eqFail (Formula f) Err.polynome_empty
+       d f@(Poly _ (Polynome _ [])) _ = eqError f Err.polynome_empty
 
        -- Eq:format derivate( sum( a_i * x^i ), x ) = sum( a_i * i * x ^ (i-1))
        d (Poly _ p) var = case polyDerivate p var of
@@ -63,12 +57,12 @@ derivationRules evaluator variable (Formula func) = d func variable
        d (App _ f [g]) var =
            (\f' -> (app f' [g] *)) <$> d f var <*> d g var
      
-       d f@(Complex _ _) _ = unTagFormula <$> eqFail (Formula f) "No complex derivation yet"
-       d f@(App _ _ _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_multi_app
-       d f@(BinOp _ _ []) _ = unTagFormula <$> eqFail (Formula f) (Err.empty_binop "derivate - ")
-       d f@(BinOp _ _ [_]) _ = unTagFormula <$> eqFail (Formula f) (Err.single_binop "derivate - ")
-       d f@(BinOp _ OpEq _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_eq_expr
-       d f@(BinOp _ OpAttrib _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_attrib_expr
+       d f@(Complex _ _) _ = eqError f "No complex derivation yet"
+       d f@(App _ _ _) _ = eqError f Err.deriv_no_multi_app
+       d f@(BinOp _ _ []) _ = eqError f (Err.empty_binop "derivate - ")
+       d f@(BinOp _ _ [_]) _ = eqError f (Err.single_binop "derivate - ")
+       d f@(BinOp _ OpEq _) _ = eqError f Err.deriv_no_eq_expr
+       d f@(BinOp _ OpAttrib _) _ = eqError f Err.deriv_no_attrib_expr
      
        -- Eq:format derivate(f + g, x) = derivate( f, x ) + 
        --                          derivate( g, x )
@@ -127,7 +121,7 @@ derivationRules evaluator variable (Formula func) = d func variable
                           else head rest
      
        d f@(BinOp _ _ _) _ =
-           unTagFormula <$> eqFail (Formula f) "Bad binary operator biduling"
+           eqError f "Bad binary operator biduling"
      
        -- Eq:format derivate( -f, x ) = - derivate( f, x )
        d (UnOp _ OpNegate f) var = negate <$> d f var
@@ -184,23 +178,24 @@ derivationRules evaluator variable (Formula func) = d func variable
            body'' <- d treeIfied var
            return $ lambda [([Variable var], body'')]
      
-       d f@(Lambda _ _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_lambda
+       d f@(Lambda _ _) _ = eqError f Err.deriv_lambda
      
        d f@(UnOp _ OpAbs _f) _var = unTagFormula <$>
            eqFail (Formula f) Err.deriv_no_abs
-     
-       d f@(UnOp _ OpFactorial _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_factorial
-       d f@(UnOp _ OpFloor _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_floor_not_continuous 
-       d f@(UnOp _ OpCeil _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_ceil_not_continuous 
-       d f@(UnOp _ OpFrac _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_frac_not_continuous 
-       d f@(Sum _ _i _e _w) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_sum
-       d f@(Product _ _i _e _w) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_product
-       d f@(Derivate _ _w _v) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_in_deriv
-       d f@(Integrate _ _i _e _w _v) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_integration
-       d f@(Matrix _ _ _ _formulas) _var = unTagFormula <$> eqFail (Formula f) Err.deriv_no_matrix
-       d f@(Truth _) _ = unTagFormula <$> eqFail (Formula f) Err.deriv_no_bool
-       d (Block _ _ _) _var = unTagFormula <$> eqFail (Formula $ Block 0 1 1) Err.deriv_block
-       d (List _ _) _var = unTagFormula <$> eqFail (Formula $ Block 0 1 1) Err.deriv_no_list
+
+       d f@(Meta _ _ _) _ = eqError f Err.deriv_no_meta
+       d f@(UnOp _ OpFactorial _) _ = eqError f Err.deriv_no_factorial
+       d f@(UnOp _ OpFloor _) _ = eqError f Err.deriv_floor_not_continuous 
+       d f@(UnOp _ OpCeil _) _ = eqError f Err.deriv_ceil_not_continuous 
+       d f@(UnOp _ OpFrac _) _ = eqError f Err.deriv_frac_not_continuous 
+       d f@(Sum _ _i _e _w) _var = eqError f Err.deriv_no_sum
+       d f@(Product _ _i _e _w) _var = eqError f Err.deriv_no_product
+       d f@(Derivate _ _w _v) _var = eqError f Err.deriv_in_deriv
+       d f@(Integrate _ _i _e _w _v) _var = eqError f Err.deriv_no_integration
+       d f@(Matrix _ _ _ _formulas) _var = eqError f Err.deriv_no_matrix
+       d f@(Truth _) _ = eqError f Err.deriv_no_bool
+       d (Block _ _ _) _var = eqError (Block 0 1 1) Err.deriv_block
+       d (List _ _) _var = eqError (Block 0 1 1) Err.deriv_no_list
 
 polyDerivate :: Polynome -> String -> Polynome
 polyDerivate (PolyRest _) _ = PolyRest $ CoeffInt 0

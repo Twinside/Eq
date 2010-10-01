@@ -82,6 +82,7 @@ deriv_no_factorial = "Differentiation of factorials is undefined"
 deriv_no_abs = "Absolute value is not derivable"
 deriv_no_log = "No position for Log for now"
 deriv_no_list = "Cannot derivate lists"
+deriv_no_meta = "No meta operation allowed in derivation"
 
 --------------------------------------------------
 ----            C output

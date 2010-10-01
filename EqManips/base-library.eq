@@ -80,5 +80,6 @@ taylorin( f, var, a, n ) :> taylorin( f, var, a, n - 1 )
 
 -- taylor( formula, derivation var, onVar, order )
 taylor( f, var, a, n ) :>
-    Sort( Cleanup( taylorin( Lambda( var, f ), var, a, n )))
+    Sort( Cleanup( taylorin( Lambda( Force(var), Force(f) )
+                           , var, a, n )))
 

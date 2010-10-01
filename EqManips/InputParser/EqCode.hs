@@ -65,6 +65,9 @@ integer = P.integer lexer
 parens :: ParsecT String u Identity a -> ParsecT String u Identity a
 parens = P.parens lexer
 
+braces :: ParsecT String u Identity a -> ParsecT String u Identity a
+braces = P.braces lexer
+
 brackets :: ParsecT String u Identity a -> ParsecT String u Identity a
 brackets = P.brackets lexer
 
@@ -108,7 +111,8 @@ operatorDefs =
       ,binary "<=" (binop OpLe) AssocLeft,  binary ">=" (binop OpGe) AssocLeft]
     , [binary "&" (binop OpAnd) AssocLeft, binary "|" (binop OpOr) AssocLeft]
     , [binary "::" (binop OpCons) AssocRight]
-    , [binary ":>" (binop OpLazyAttrib) AssocRight, binary ":=" (binop OpAttrib) AssocRight]
+    , [ binary ":>" (binop OpLazyAttrib) AssocRight
+      , binary ":=" (binop OpAttrib) AssocRight]
     ]
 
 funCall :: Parsed st FormulaPrim
@@ -137,6 +141,7 @@ term = try trueConst
     <|> try (CFloat <$> float)
     <|> CInteger . fromInteger <$> integer
     <|> parens expr
+    <|> meta Force <$> braces expr
     <|> listParser
     <?> "Term error"
 

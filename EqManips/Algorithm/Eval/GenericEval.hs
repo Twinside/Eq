@@ -439,23 +439,22 @@ eval evaluator (UnOp _ OpAbs f) = fAbs =<< evaluator f
 
 eval evaluator (UnOp _ op f) = return . unOp op =<< evaluator f
 
-eval evaluator (Derivate _ what (Meta _ op var)) =
-    metaEvaluation evaluator op var >>= eval evaluator . derivate what
-
-eval evaluator (Derivate _ what (Variable s)) = do
+eval evaluator f@(Derivate _ what varSpec) = do
+    var'<- metaFilter evaluator varSpec 
+    what' <- metaFilter evaluator what
+    derivator what' var'
+        where derivator toDeriv (Variable v) = do
 #ifdef _DEBUG
-    addTrace ("Derivation on " ++ s, treeIfyFormula . Formula $ what)
+                    addTrace ("Derivation on " ++ v, treeIfyFormula . Formula $ toDeriv)
 #endif
-    derived <- derivateFormula (taggedEvaluator evaluator) s $ Formula what
-    return . unTagFormula $ cleanup derived
-
+                    derived <- derivateFormula v $ Formula toDeriv 
+                    return . unTagFormula $ cleanup derived
+              derivator _ _ = eqPrimFail f Err.deriv_bad_var_spec
+        
 eval evaluator (Indexes _ what lst) = do
     what' <- evaluator what
     lst' <- mapM evaluator lst
     indexCompute what' lst'
-
-eval _ f@(Derivate _ _ _) =
-    eqPrimFail f Err.deriv_bad_var_spec 
 
 eval evaluator formu@(Sum _ (BinOp _ OpEq [Variable v, inexpr]) endexpr f) = do
     inexpr' <- evaluator inexpr
