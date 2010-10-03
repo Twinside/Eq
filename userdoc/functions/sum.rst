@@ -55,6 +55,12 @@ The floating point version of 4 stop the evaluator to perform some more processi
 As some may have noticed, the previous samples are the taylor expension of the
 exponential function in 0.
 
+.. function:: sum( initialisation, upperbound, formula )
+
+    :param initialisation: Must be in form ``var = expr`` the expr part is evaluated
+    :param upperbound: Must be an expression, is evaluated at runtime.
+    :param formula: The formula to be summed
+
 Product for evaluation
 ======================
 The same rules apply for the product, this section is just
@@ -62,4 +68,10 @@ here to provide a working example
 
 .. command-output:: eq eval 'product( n = 1, 10, n )'
 .. command-output:: eq eval 'product( n = 1, 10, n ) = 10!'
+
+.. function:: product( initialisation, upperbound, formula )
+
+    :param initialisation: Must be in form ``var = expr`` the expr part is evaluated
+    :param upperbound: Must be an expression, is evaluated at runtime.
+    :param formula: The formula to be multiplied
 

@@ -8,4 +8,5 @@ Eq's uses
     prettyprinter
     calculator
     preprocessor
+    repl
     onlinehelp

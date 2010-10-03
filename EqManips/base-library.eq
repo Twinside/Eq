@@ -1,8 +1,8 @@
 -- derivaten( function, var, order )
 derivaten( f, var, 0 ) :> f;
-derivaten( f, var, 1 ) :> derivate( Force(f), Force(var) );
-derivaten( f, var, n ) :> derivate( Force(derivaten( f, var, n-1 ))
-                                  , Force(var) );
+derivaten( f, var, 1 ) :> derivate( {f}, {var} );
+derivaten( f, var, n ) :> derivate( {derivaten( f, var, n-1 )}
+                                  , {var} );
 
 -- if( condition (boolean), then, else )
 if(      true, a, b ) :> a;
@@ -76,10 +76,10 @@ modulo( n, p ) :> modintern( n < p, n, p );
 -- taylor( function (as a lambda!!), derivation var, onVar, order )
 taylorin( f, var, a, 0 ) :> f(a);
 taylorin( f, var, a, n ) :> taylorin( f, var, a, n - 1 ) 
-                          + (derivaten(f, var, Force(n)))( a ) / n! * (x - a) ^ n;
+                          + (derivaten(f, var, {n}))( a ) / n! * (x - a) ^ n;
 
 -- taylor( formula, derivation var, onVar, order )
 taylor( f, var, a, n ) :>
-    Sort( Cleanup( taylorin( Lambda( Force(var), Force(f) )
+    Sort( Cleanup( taylorin( Lambda( {var}, {f} )
                            , var, a, n )))
 

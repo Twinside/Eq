@@ -4,13 +4,19 @@ Derivate
 
 Example
 =======
-Pretty simple function, first parameter is the expression
-to differentiate, second parameter is the variable on which
-to differentiate.
 
-.. command-output:: eq format "derivate( x^4 + sin(x^2) - ln(x) * exp(x) + 7, x )"
+.. function:: derivate( formula, var )
 
-.. command-output:: eq eval "derivate( x^4 + sin(x^2) - ln(x) * exp(x) + 7, x )"
+    :param formula: The unevaluated formula
+    :param var: The unevaluated derivation variable
+
+
+    Examples :
+
+    .. command-output:: eq format "derivate( x^4 + sin(x^2) - ln(x) * exp(x) + 7, x )"
+    .. command-output:: eq eval "derivate( x^4 + sin(x^2) - ln(x) * exp(x) + 7, x )"
+
+    You can force evaluation in formula and var.
 
 Non-allowed derivations
 =======================

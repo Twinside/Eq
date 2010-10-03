@@ -20,7 +20,7 @@ It's possible to have function with multiple parameters too
 .. command-output:: cat docexample/fun_multi.txt
 .. command-output:: eq eval -f docexample/fun_multi.txt
 
-Mathcing
+Matching
 ========
 You may now want to define functions with many if to change behaviour
 of your definitions and everything. Sad news, there is no ``if``,

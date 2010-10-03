@@ -3,6 +3,7 @@ module EqManips.Algorithm.Eval.Meta ( metaEval
                                     ) where
 
 import Control.Applicative
+import Data.List( sort )
 
 import EqManips.Algorithm.Utils
 import EqManips.Algorithm.Expand
@@ -24,7 +25,11 @@ metaEval evaluator Cleanup f = return . cleanup =<< evaluator f
 metaEval _ Hold f = return f
 metaEval _ Expand f = return . listifyFormula . expand . treeIfyFormula $ f
 
+metaEval evaluator Sort (Formula (List _ lst)) =
+    Formula . list . sort <$> mapM unclap lst
+        where unclap formu = unTagFormula <$> evaluator (Formula formu)
 metaEval evaluator Sort f = return . sortFormula =<< evaluator f
+
 metaEval evaluator LambdaBuild (Formula (Lambda _ [([arg], body)])) = do
     arg' <- metaFilter (\a -> unTagFormula <$> (evaluator $ Formula a)) arg
     body' <- metaFilter (\a -> unTagFormula <$> (evaluator $ Formula a)) body

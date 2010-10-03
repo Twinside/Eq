@@ -11,6 +11,7 @@ Language
     datatype/variable
     datatype/lambda
 
+    evalControl
     operators
     fundef
     matching

@@ -95,25 +95,3 @@ Other functions
 
 	Return the natural logarithm of a scalar element.
 
-Evaluation control
-==================
-.. function:: Hold( num )
-
-	Meh
-
-.. function:: Force( num )
-
-	Meh
-
-.. function:: Expand( num )
-
-	Meh
-
-.. function:: Cleanup( num )
-
-	Meh
-
-.. function:: Sort( num )
-
-	Meh
-
