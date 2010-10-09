@@ -85,3 +85,24 @@ to admit that I lied a bit. There is an if function, defined in the standard lib
 You can read the standard library (which is rather thin at the moment), but if you
 modify it the modification won't be taken into account.
 
+Deep comparison
+===============
+
+.. command-output:: eq eval "x - 3 = x - 3"
+
+The ``=`` is thought to compare equality on value,
+but some times you want to check deep equality, like in the
+previous sample. The two sub-tree are identical, you could
+try to write some weird function deconstructing the two
+subexpression to provide equality. Or you can try a very
+simple trick.
+
+.. command-output:: eq eval "equal( a, a ) :> true; equal( a, b ) :> false; equal( x - 3, x - 3)"
+
+``equal( a, a )`` does all the job, the first argument match himself
+with the variable, and then a is substituted by the first argument in the argument
+list and in the function body. Then the second argument has a complex tree to
+match to. If it does, the first equation is chosen, giving a deep equality check.
+Otherwise, the all accepting clause ``equal( a, b )`` is selected
+and reject the equality.
+
