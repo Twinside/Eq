@@ -594,6 +594,7 @@ polyDivTest =
       / simPoly [(0,-1), (1,-2), (2, 3)])
           ==> (simPoly [(0, 3), (1, 2)]
               + simPoly [(0,-4), (1,8)] / simPoly [(0,-1), (1,-2), (2, 3)])
+    , ( simPoly [(4, 1)] / simPoly [(2, 1)]) ==> simPoly [(2,1)]
     ]
     where simPoly = poly . Polynome "x" . map (\(a,b) -> (a, PolyRest $ b))
 

@@ -329,6 +329,8 @@ polynomize (BinOp _ OpAdd lst) = join             -- flatten a maybe level, we d
                   coef ((_,c1,_):_) = c1
                   coef [] = error Err.polynom_emptyCoeffPack
 
+polynomize (BinOp _ OpPow [Variable v, CInteger c]) =
+        Just $ Polynome v [(CoeffInt c, PolyRest 1)]
 polynomize _ = Nothing
 
 -- | Function in charge of extracting variable name (if any), and
