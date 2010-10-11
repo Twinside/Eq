@@ -1,9 +1,10 @@
 Name:       Eq
-Version:    1.0
+Version:    1.0.2
 Synopsis:   Render math formula in ASCII, and perform some simplifications
 Build-Type: Simple
 Category:   Language, Math
 Cabal-Version: >= 1.4
+Homepage:	    http://twinside.free.fr/eq/
 Description:    Haskell formula manipulation program
 Author:         Vincent Berthoux
 Maintainer:     Vincent Berthoux <vincent.berthoux@gmail.com>
