@@ -1,13 +1,13 @@
 Name:       FormulaRenderer
 Version:    1.0
-Synopsis:   Render math formula in ASCII, and works under windows 
+Synopsis:   Render math formula in ASCII, and perform some simplifications
 Build-Type: Simple
 Category:   Language
 Cabal-Version: >= 1.2
-Description: Lalalal
-Author: Vincent Berthoux
-Maintainer: Vincent Berthoux
-License:    AllRightsReserved
+Description:    Haskell formula manipulation program
+Author:         Vincent Berthoux
+Maintainer:     Vincent Berthoux <vincent.berthoux@gmail.com>
+License:        AllRightsReserved
 
 Flag Debug
     Description: Enable debug prints
