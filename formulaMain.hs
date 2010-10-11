@@ -48,7 +48,7 @@ data Flag =
     deriving Eq
 
 version :: String
-version = "0.2"
+version = "1.0"
 
 commonOption :: [OptDescr (Flag, String)]
 commonOption =
