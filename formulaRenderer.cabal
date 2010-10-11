@@ -2,7 +2,7 @@ Name:       Eq
 Version:    1.0
 Synopsis:   Render math formula in ASCII, and perform some simplifications
 Build-Type: Simple
-Category:   Language
+Category:   Language, Math
 Cabal-Version: >= 1.4
 Description:    Haskell formula manipulation program
 Author:         Vincent Berthoux
