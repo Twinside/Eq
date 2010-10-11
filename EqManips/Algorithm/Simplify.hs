@@ -25,20 +25,20 @@ tracer str op f1 f2 =
 -- Some propreties which should work for the addition
 -- operation.
 addSimplification :: EvalFun -> EvalOp
-addSimplification eval a second@(BinOp _ OpMul [b, c])
+addSimplification eval a (BinOp _ OpMul [b, c])
     | hashOfFormula a == hashOfFormula c 
         && a == c = do
 #ifdef _DEBUG
-        tracer "Triggered '+' simplification" OpAdd a second
+        tracer "Triggered '+' simplification" OpAdd a (BinOp 0 OpMul [b, c])
 #endif
         subCoeff <- eval $ b + 1
         left $ subCoeff * c
 
-addSimplification eval first@(BinOp _ OpMul [a, c]) b
+addSimplification eval (BinOp _ OpMul [a, c]) b
     | hashOfFormula c == hashOfFormula b 
         && b == c = do
 #ifdef _DEBUG
-        tracer "Triggered '+' simplification" OpAdd first b
+        tracer "Triggered '+' simplification" OpAdd (BinOp 0 OpMul [a,c]) b
 #endif
         subCoeff <- eval $ a + 1
         left $ subCoeff * c
@@ -53,11 +53,11 @@ addSimplification _ a b
 
 -- | '-' operator simplification
 subSimplification :: EvalFun -> EvalOp
-subSimplification eval first@(BinOp _ OpMul [a, c]) b
+subSimplification eval (BinOp _ OpMul [a, c]) b
     | hashOfFormula c == hashOfFormula b 
         && b == c = do
 #ifdef _DEBUG
-        tracer "Triggered '-' simplification" OpSub first b
+        tracer "Triggered '-' simplification" OpSub (BinOp 0 OpMul [a, c]) b
 #endif
         subCoeff <- eval (a - 1)
         left (subCoeff * c)

@@ -1,5 +1,5 @@
 module EqManips.Renderer.Ascii2DGrapher where
-
+{-
 import Data.Array.Unboxed
 import EqManips.Types
 import EqManips.Algorithm.StackVM.Stack
@@ -68,4 +68,4 @@ plot2D (width, height) xEnd f xSucc xPlot yPlot = subPlot
 
             Continue c -> ((xPlot x, yPlot $ f x), c)
                             : subPlot (xSucc x)
-
+-}

@@ -36,11 +36,13 @@ add e e' = right (e, e')
 ----            '-'
 -----------------------------------------------
 sub :: EvalOp
-sub leftArg@(Poly _ p1) rightArg@(Poly _ p2) = 
 #ifdef _DEBUG
+sub leftArg@(Poly _ p1) rightArg@(Poly _ p2) = 
   addTrace ( "Polynome/Polynome '-'"
            , treeIfyFormula . Formula 
                             $ leftArg - rightArg) >>
+#else
+sub (Poly _ p1) (Poly _ p2) = 
 #endif
     leftclean (poly $ p1 - p2)
 
