@@ -6,7 +6,99 @@ data Openness =
   | Exclude     -- ^ ]0;1[ 0 and 1 excluded
   deriving (Eq, Show)
 
-type Bound = (Double, Openness)
+data Limit =
+      PlusInf
+    | MinusInf
+    | Val Double
+    deriving (Eq, Show)
+
+instance Ord Limit where
+    compare PlusInf PlusInf = EQ
+    compare MinusInf MinusInf = EQ
+    compare (Val a) (Val b) = compare a b
+
+    compare PlusInf MinusInf = GT
+    compare MinusInf PlusInf = LT
+
+    compare PlusInf (Val _) = GT
+    compare MinusInf (Val _) = LT
+    compare (Val _) PlusInf = LT
+    compare (Val _) MinusInf = GT
+
+instance Num Limit where
+    --------------------------------------------------
+    ---- '*' :: a -> a -> a (or error :p)
+    --------------------------------------------------
+    (Val a) + (Val b) = Val $ a + b
+
+    PlusInf + PlusInf = PlusInf
+    PlusInf + (Val _) = PlusInf
+    (Val _) + PlusInf = PlusInf
+
+    MinusInf + MinusInf = MinusInf
+    MinusInf + (Val  _) = MinusInf
+    (Val  _) + MinusInf = MinusInf
+
+    MinusInf + PlusInf  = error "Infinite addition"
+    PlusInf  + MinusInf = error "Infinite addition"
+
+    --------------------------------------------------
+    ---- '*' :: a -> a -> a
+    --------------------------------------------------
+    (Val a) * (Val b) = Val $ a * b
+
+    PlusInf  * PlusInf = PlusInf
+    MinusInf * MinusInf = PlusInf
+    PlusInf  * MinusInf = MinusInf
+    MinusInf * PlusInf  = MinusInf
+
+    PlusInf * a@(Val _) = a * PlusInf
+    (Val a) * PlusInf | a > 0 = PlusInf
+                      | a < 0 = MinusInf
+
+    MinusInf * a@(Val  _) = a * MinusInf
+    (Val  _) * MinusInf | a > 0 = MinusInf
+                        | a < 0 = PlusInf
+
+    --------------------------------------------------
+    ---- negate :: a -> a
+    --------------------------------------------------
+    negate PlusInf  = MinusInf
+    negate MinusInf = PlusInf
+    negate (Val a) = Val $ negate a
+
+    --------------------------------------------------
+    ---- abs :: a -> a
+    --------------------------------------------------
+    abs PlusInf = PlusInf
+    abs MinusInf = PlusInf
+    abs (Val a) = Val $ abs a
+
+    --------------------------------------------------
+    ---- fromInteger :: Integer -> a
+    --------------------------------------------------
+    fromInteger i = Val $ fromInteger i
+
+    --------------------------------------------------
+    ---- signum :: a -> a
+    --------------------------------------------------
+    signum MinusInf = Val (-1)
+    signum PlusInf  = Val 1
+    signum (Val a)  = Val $ signum a
+
+instance Fractional Limit where
+    PlusInf / (Var a)
+        | a > 0 = PlusInf
+        | a < 0 = MinusInf
+
+    MinusInf / (Var a)
+        | a > 0 = MinusInf
+        | a < 0 = PlusInf
+
+    _ / _ = error "Undetermined case of limit division"
+
+
+type Bound = (Limit, Openness)
 
 -- | Yeay, interval
 data Interval = Interval !Bound !Bound deriving (Eq, Show)
