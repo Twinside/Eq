@@ -28,30 +28,35 @@ namespace WinGui
         /// </summary>
         private static bool alreadyUsed = false;
 
-        #region Dll imports
-        
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr LoadLibrary(string fileName);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
-        public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-
-        private delegate void ForeignAction();
-        private delegate bool ForeignTruth();
-
-        [return: MarshalAs(UnmanagedType.LPWStr)]
-        private delegate String Evaluator([MarshalAs(UnmanagedType.LPWStr)][In] String input);
-
-        private static ForeignTruth InitRuntime;
-        private static ForeignAction EndRuntime;
-        private static Evaluator Eval;
-        private static Evaluator MathMLTranslate;
-
-        #endregion /* Dll imports */        
-    
         public EqBridge()
         {
             Init();
+        }
+
+        [DllImport("formulaDll.dll", EntryPoint="eq_begin_runtime", CallingConvention=CallingConvention.Cdecl)]
+        private static extern int InitRuntime();
+
+        [DllImport("formulaDll.dll", EntryPoint="eq_end_runtime", CallingConvention=CallingConvention.Cdecl)]
+        private static extern void EndRuntime();
+
+        [DllImport("formulaDll.dll", EntryPoint = "eq_evalW", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.LPWStr)]
+        private static extern string dllCallEqEval([MarshalAs(UnmanagedType.LPWStr)]string txt);
+
+        [DllImport("formulaDll.dll", EntryPoint = "eq_translate_mathml", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.LPWStr)]
+        private static extern string dllCallMathMLToEq([MarshalAs(UnmanagedType.LPWStr)]string txt);
+
+        public string EvalProgram(string txt)
+        {
+            if (!initialized) Init();
+            return dllCallEqEval(txt);
+        }
+
+        public string TranslateMathMLToEq(string txt)
+        {
+            if (!initialized) Init();
+            return dllCallMathMLToEq(txt);
         }
 
         private void Init()
@@ -59,30 +64,9 @@ namespace WinGui
             if (alreadyUsed)
                 throw new HaskellRuntimeException("Haskell subsystem has already been used");
 
-            if (initialized) return;
-
-            IntPtr formulaLib = LoadLibrary("formulaDll.dll");
-
-            if (formulaLib == IntPtr.Zero)
-                throw new DllNotFoundException("formulaDll.dll");
-
-            
-            IntPtr initRuntime = GetProcAddress(formulaLib, "eq_begin_runtime");
-            IntPtr endRuntime = GetProcAddress(formulaLib, "eq_end_runtime");
-            IntPtr eqEval = GetProcAddress(formulaLib, "eq_evalW");
-            IntPtr mmlTranslate = GetProcAddress(formulaLib, "eq_translate_mathml");
-
-            if (initRuntime == IntPtr.Zero || endRuntime == IntPtr.Zero || eqEval == IntPtr.Zero || mmlTranslate == IntPtr.Zero)
-                throw new BadImageFormatException("The dll doesn't export the good functions");
-
-            InitRuntime = (ForeignTruth)Marshal.GetDelegateForFunctionPointer(initRuntime, typeof(ForeignTruth));
-            EndRuntime = (ForeignAction)Marshal.GetDelegateForFunctionPointer(endRuntime, typeof(ForeignAction));
-            Eval = (Evaluator)Marshal.GetDelegateForFunctionPointer(eqEval, typeof(Evaluator));
-            MathMLTranslate = (Evaluator)Marshal.GetDelegateForFunctionPointer(mmlTranslate, typeof(Evaluator));
-
             if (!initialized)
             {
-                if (!InitRuntime())
+                if (InitRuntime() == 0)
                     throw new HaskellRuntimeException("Failed to initialize the Haskell core");
             }
         }
@@ -95,11 +79,5 @@ namespace WinGui
                 initialized = false;
             }
         }
-
-        public String EvalProgram(String program)
-            { return Eval(program); }
-
-        public String TranslateMathMLToEq( String prog )
-            { return MathMLTranslate(prog); }
     }
 }

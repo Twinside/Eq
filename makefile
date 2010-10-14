@@ -78,8 +78,9 @@ run:
 
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs
-	ghc $(DEBUG) -c dllMain.cpp
-	unixfind . | grep "\.o$$" | xargs ghc $(DEBUG) -shared -optl-mwindows \
+	ghc $(DEBUG) -c dllMain.c
+	unixfind . | grep "\.o$$" | sed -e 's:\\:/:g' | \
+				xargs ghc $(DEBUG) -shared -optl-mwindows \
 										-o formulaDll.dll \
 										-package parsec \
 										-package array \

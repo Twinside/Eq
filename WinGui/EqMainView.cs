@@ -20,11 +20,14 @@ namespace WinGui
             InitializeComponent();
 
             mathInput = new MathInputControl();
-            mathInput.SetOwnerWindow(rezEntrySplitter.Panel1.Handle.ToInt32());
-            mathInput.Show();
-            mathInput.Insert += new _IMathInputControlEvents_InsertEventHandler(mathInput_Insert);
-            mathInput.Close += new _IMathInputControlEvents_CloseEventHandler(mathInput_Close);
 
+            if (mathInput != null)
+            {
+                mathInput.SetOwnerWindow(rezEntrySplitter.Panel1.Handle.ToInt32());
+                mathInput.Show();
+                mathInput.Insert += new _IMathInputControlEvents_InsertEventHandler(mathInput_Insert);
+                mathInput.Close += new _IMathInputControlEvents_CloseEventHandler(mathInput_Close);
+            }
             computationKernel = kernel;
         }
 

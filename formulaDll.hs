@@ -8,10 +8,15 @@ import Foreign.C.String( CString, CWString
 import Foreign.Marshal.Alloc( free )
 import EqManips.Types
 import EqManips.InputParser.MathML
+import EqManips.InputParser.EqCode
 import EqManips.Algorithm.Eval
 import EqManips.EvaluationContext
 import EqManips.Algorithm.Utils
 import EqManips.Renderer.Ascii
+import EqManips.Renderer.RenderConf
+
+dllRenderConf :: Conf
+dllRenderConf = defaultRenderConf { useUnicode = True }
 
 eqWDoForeign :: (String -> String) -> CWString -> IO CWString
 eqWDoForeign f inCode = do
@@ -23,11 +28,11 @@ eqDoForeign f inCode = do
     inString <- peekCString inCode
     newCString $ f inString
 
-formatErrors :: [(Formula, String)] -> String
+formatErrors :: [(Formula TreeForm, String)] -> String
 formatErrors lst =
-    foldr (\(f,s) acc -> s ++ "\n" ++ formatFormula f ++ acc) [] lst
+    foldr (\(f,s) acc -> s ++ "\n" ++ formatFormula dllRenderConf f ++ acc) [] lst
 
-eqFormulaParser :: (Formula -> EqContext Formula) -> String -> String
+eqFormulaParser :: (Formula ListForm -> EqContext (Formula ListForm)) -> String -> String
 eqFormulaParser operation formulaText =
     either parseError computeFormula formulaList
         where formulaList = parseProgramm formulaText
@@ -37,7 +42,9 @@ eqFormulaParser operation formulaText =
                             $ mapM operation formulal
 
                         errs = formatErrors $ errorList rez
-                        finalForm = formatFormula $ result rez
+                        finalForm = formatFormula dllRenderConf
+                                  . treeIfyFormula
+                                  $ result rez
 
 eqMathMLTranslate :: CWString -> IO CWString
 eqMathMLTranslate = eqWDoForeign $ mathMlToEqLang'
