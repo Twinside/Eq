@@ -17,6 +17,7 @@ module EqManips.EvaluationContext( EqTransformInfo( .. )
                                  , printTrace
                                  , traceContext 
 #endif /* _DEBUG */
+                                 , emptyContext
                                  ) where
 
 import Data.Map (Map)

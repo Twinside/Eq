@@ -45,7 +45,7 @@ namespace WinGui
         {
             if (e.KeyCode == Keys.Enter && e.Modifiers == Keys.Shift)
             {
-                String result = computationKernel.EvalProgram(txtEntry.Text);
+                String result = computationKernel.EvalProgramWithContext(txtEntry.Text);
                 txtEntry.Text = "";
                 txtResult.AppendText("------------------------------\n");
                 txtResult.AppendText(result.Replace("\n","\r\n"));

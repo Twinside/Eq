@@ -28,9 +28,15 @@ namespace WinGui
         /// </summary>
         private static bool alreadyUsed = false;
 
+        private static int haskellRuntimeUseCount = 0;
+
+        private IntPtr contextHandle;
+
         public EqBridge()
         {
+            haskellRuntimeUseCount++;
             Init();
+            contextHandle = dllCreateContext();
         }
 
         [DllImport("formulaDll.dll", EntryPoint="eq_begin_runtime", CallingConvention=CallingConvention.Cdecl)]
@@ -47,17 +53,19 @@ namespace WinGui
         [return: MarshalAs(UnmanagedType.LPWStr)]
         private static extern string dllCallMathMLToEq([MarshalAs(UnmanagedType.LPWStr)]string txt);
 
-        public string EvalProgram(string txt)
-        {
-            if (!initialized) Init();
-            return dllCallEqEval(txt);
-        }
+        [DllImport("formulaDll.dll", EntryPoint = "eq_create_context", CallingConvention=CallingConvention.Cdecl)]
+        private static extern IntPtr dllCreateContext();
 
-        public string TranslateMathMLToEq(string txt)
-        {
-            if (!initialized) Init();
-            return dllCallMathMLToEq(txt);
-        }
+        [DllImport("formulaDll.dll", EntryPoint = "eq_delete_context", CallingConvention=CallingConvention.Cdecl)]
+        private static extern void dllDeleteContext( IntPtr handle );
+
+        [DllImport("formulaDll.dll", EntryPoint = "eq_eval_with_contextW", CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.LPWStr)]
+        private static extern string dllCallEqEvalWithContext([MarshalAs(UnmanagedType.LPWStr)]string txt, IntPtr context );
+
+        public string EvalProgramWithContext(string txt) { return dllCallEqEvalWithContext(txt, contextHandle); }
+        public string EvalProgram(string txt) { return dllCallEqEval(txt); }
+        public string TranslateMathMLToEq(string txt) { return dllCallMathMLToEq(txt); }
 
         private void Init()
         {
@@ -73,7 +81,9 @@ namespace WinGui
 
         public void Dispose()
         {
-            if (initialized)
+            dllDeleteContext(contextHandle);
+            haskellRuntimeUseCount--;
+            if (initialized && haskellRuntimeUseCount <= 0)
             {
                 EndRuntime();
                 initialized = false;
