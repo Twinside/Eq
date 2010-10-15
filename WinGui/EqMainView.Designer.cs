@@ -79,6 +79,7 @@
             this.txtEntry.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtEntry.Size = new System.Drawing.Size(363, 142);
             this.txtEntry.TabIndex = 1;
+            this.txtEntry.KeyUp += new System.Windows.Forms.KeyEventHandler(this.txtEntry_KeyUp);
             // 
             // EqMainView
             // 

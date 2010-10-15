@@ -6,19 +6,15 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 
-using micautLib;
-
 namespace WinGui
 {
     public partial class EqMainView : Form
     {
         private EqBridge computationKernel;
-        private MathInputControl mathInput;
 
         public EqMainView(EqBridge kernel)
         {
             InitializeComponent();
-
             computationKernel = kernel;
         }
 
