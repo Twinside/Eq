@@ -128,8 +128,8 @@ eqEvalWithContext str ref = do
     writeIORef ref' context'
     newCString rez
 
-foreign export ccall "eqWFormat" eqWEval :: CWString -> IO CWString
-foreign export ccall "eqFormat" eqEval :: CString -> IO CString
+foreign export ccall "eqWFormat" eqWFormat :: CWString -> IO CWString
+foreign export ccall "eqFormat" eqFormat :: CString -> IO CString
 foreign export ccall "eqWEval" eqWEval :: CWString -> IO CWString
 foreign export ccall "eqEval" eqEval :: CString -> IO CString
 foreign export ccall "eqFreeHaskellString" freeHaskell :: CWString -> IO ()

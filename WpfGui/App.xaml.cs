@@ -12,5 +12,9 @@ namespace WpfGui
     /// </summary>
     public partial class App : Application
     {
+        public static void main( string[] argv )
+        {
+            MessageBox.Show("meh");
+        }
     }
 }

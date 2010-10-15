@@ -16,6 +16,8 @@ extern "C"
 
     EQ_API wchar_t* eq_eval( wchar_t *in );
     EQ_API void eq_cleanup_last_result();
+    EQ_API char* eq_format( char *in );
+    EQ_API wchar_t* eq_formatW( wchar_t *in );
 
     EQ_API eq_context_t* eq_create_context();
 
