@@ -15,8 +15,8 @@ import EqManips.Algorithm.Utils
 import EqManips.Renderer.Ascii
 import EqManips.Renderer.RenderConf
 
-dllRenderConf :: Conf
-dllRenderConf = defaultRenderConf { useUnicode = True }
+dllRenderConf :: Bool -> Conf
+dllRenderConf unicode = defaultRenderConf { useUnicode = unicode }
 
 eqWDoForeign :: (String -> String) -> CWString -> IO CWString
 eqWDoForeign f inCode = do
@@ -28,12 +28,14 @@ eqDoForeign f inCode = do
     inString <- peekCString inCode
     newCString $ f inString
 
-formatErrors :: [(Formula TreeForm, String)] -> String
-formatErrors lst =
-    foldr (\(f,s) acc -> s ++ "\n" ++ formatFormula dllRenderConf f ++ acc) [] lst
+formatErrors :: Bool -> [(Formula TreeForm, String)] -> String
+formatErrors unicode lst =
+    foldr (\(f,s) acc -> s ++ "\n" ++ formatFormula conf f ++ acc) [] lst
+        where conf = dllRenderConf unicode
 
-eqFormulaParser :: (Formula ListForm -> EqContext (Formula ListForm)) -> String -> String
-eqFormulaParser operation formulaText =
+eqFormulaParser :: Bool -> (Formula ListForm -> EqContext (Formula ListForm)) -> String
+                -> String
+eqFormulaParser unicode operation formulaText =
     either parseError computeFormula formulaList
         where formulaList = parseProgramm formulaText
               parseError err = "Error : " ++ show err
@@ -41,8 +43,8 @@ eqFormulaParser operation formulaText =
                   where rez = performLastTransformation 
                             $ mapM operation formulal
 
-                        errs = formatErrors $ errorList rez
-                        finalForm = formatFormula dllRenderConf
+                        errs = formatErrors unicode $ errorList rez
+                        finalForm = formatFormula (dllRenderConf unicode)
                                   . treeIfyFormula
                                   $ result rez
 
@@ -50,10 +52,10 @@ eqMathMLTranslate :: CWString -> IO CWString
 eqMathMLTranslate = eqWDoForeign $ mathMlToEqLang'
 
 eqWEval :: CWString -> IO CWString
-eqWEval = eqWDoForeign $ eqFormulaParser evalGlobalLossyStatement
+eqWEval = eqWDoForeign $ eqFormulaParser True evalGlobalLossyStatement
 
 eqEval :: CString -> IO CString
-eqEval = eqDoForeign $ eqFormulaParser evalGlobalLossyStatement
+eqEval = eqDoForeign $ eqFormulaParser False evalGlobalLossyStatement
 
 freeHaskell :: CWString -> IO ()
 freeHaskell = free
