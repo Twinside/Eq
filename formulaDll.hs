@@ -48,6 +48,16 @@ eqFormulaParser unicode operation formulaText =
                                   . treeIfyFormula
                                   $ result rez
 
+eqFormulaFormat :: Bool -> String -> String
+eqFormulaFormat unicode formulaText = either parseError computeFormula formulaList
+        where formulaList = parseProgramm formulaText
+              parseError err = "Error : " ++ show err
+              computeFormula = concatMap formater
+
+              formater = formatFormula (dllRenderConf unicode)
+                       . treeIfyFormula
+
+
 eqMathMLTranslate :: CWString -> IO CWString
 eqMathMLTranslate = eqWDoForeign $ mathMlToEqLang'
 
@@ -56,6 +66,12 @@ eqWEval = eqWDoForeign $ eqFormulaParser True evalGlobalLossyStatement
 
 eqEval :: CString -> IO CString
 eqEval = eqDoForeign $ eqFormulaParser False evalGlobalLossyStatement
+
+eqFormat :: CString -> IO CString
+eqFormat = eqDoForeign $ eqFormulaFormat False
+
+eqWFormat :: CWString -> IO CWString
+eqWFormat = eqWDoForeign $ eqFormulaFormat True
 
 freeHaskell :: CWString -> IO ()
 freeHaskell = free
