@@ -9,7 +9,7 @@ from plugins.helpers import log, log_calls
 
 # For lib Eq
 from ctypes import *
-lib = cdll.LoadLibrary("eqlinlib.so")
+lib = cdll.LoadLibrary("/home/nats/gajim/eqlinlib.so")
 
 class EqMathPlugin(GajimPlugin):
 
@@ -74,9 +74,9 @@ class EqMathPlugin(GajimPlugin):
 						break
 				tmp_str += c
 			if (counter == 0):
-				length_to_replace = len(tmp_str) + index_of_eq + 7
+				length_to_replace = len(tmp_str) + index_of_eq + 6
 				tmp_str = c_char_p(lib.eqEval(tmp_str)).value
-				return_str = origin_str[0:index_of_eq] + '\n' + tmp_str + '\n' + origin_str[length_to_replace:]
+				return_str = origin_str[0:index_of_eq] + '\n' + tmp_str + origin_str[length_to_replace:]
 				changed = 1
 				#return_str = self.replace_by_eq(return_str)
 		print 'eqmathcall'
