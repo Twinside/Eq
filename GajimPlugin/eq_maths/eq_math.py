@@ -9,7 +9,7 @@ from plugins.helpers import log, log_calls
 
 # For lib Eq
 from ctypes import *
-lib = cdll.LoadLibrary("/home/nats/gajim/eqlinlib.so")
+lib = cdll.LoadLibrary("/your/full/path/eqlinlib.so")
 
 class EqMathPlugin(GajimPlugin):
 
