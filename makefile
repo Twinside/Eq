@@ -92,3 +92,6 @@ dll:
 										-lOle32 \
 										formulaDll.def
 
+sharedlib:
+	ghc -O2 --make -cpp  -no-hs-main -optl '-shared' -optc '-DMODULE=FormulaDll' -o eqlinlib.so formulaDll.hs module_init.c
+

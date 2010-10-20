@@ -1,0 +1,8 @@
+THIS PLUGIN IS NOT REALLY TESTED !
+
+Installation:
+
+Copy the directory to your gajim/plugins directory.
+Copy eqliblin.so somewhere and modify the LoadLibrary line in eq_math.py to the fullpath of your .so... I told you, this is a dev version !
+
+To write an equation juste type "blablabla (eq:(mymaths)) blablablala"
