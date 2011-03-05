@@ -46,7 +46,7 @@ plot2DExpression conf formula =
     case VM.compileExpression formula of
       Left err -> Left err
       Right prog -> 
-        let successor = widthSuccessor $ xScaling conf
+        let successor = widthSuccessor conf $ xScaling conf
             yScaler = sizeMapper (yRange conf) (drawHeight conf)
                     $ yScaling conf
             xScaler = sizeMapper (xRange conf) (drawWidth conf)
@@ -57,7 +57,8 @@ plot2DExpression conf formula =
                            (flip (VM.evalProgram prog) 0)
                            successor xScaler yScaler
                            xBegin
-        in Right $ array ((0, 0) ,(w - 1, h - 1)) graph
+        in Right $ accumArray (\_ e -> e) ' '
+                              ((0, 0) ,(w - 1, h - 1)) graph
     
 
 -- | This type is a transformation from function
@@ -71,10 +72,13 @@ type ValSuccessor =
 
 -- | Equivalent of the 'succ' function of the
 -- 'Enum' class, with a linear scale.
-widthSuccessor :: ScalingType -> ValSuccessor
-widthSuccessor (Linear v) x = tracer $ v + x
-    where tracer vv = trace (">" ++ show x ++ "-->" ++ show vv) vv
-widthSuccessor (Logarithmic v) x = v * x
+widthSuccessor :: PlotConf -> ScalingType -> ValSuccessor
+widthSuccessor conf (Linear _) x = tracer $ addVal + x
+    where addVal = (xMax - xMin) / toEnum (drawWidth conf)
+          (xMin, xMax) = xRange conf
+          tracer vv = trace (">" ++ show x ++ " + " ++ show addVal
+                            ++ "-->" ++ show vv) vv
+widthSuccessor _ (Logarithmic v) x = v * x
 
 -- | How to map the height value onto the screen,
 -- by taking tinto action the 'canvas' size
@@ -105,7 +109,7 @@ data DrawAction =
   | Continue Char  -- ^ Continue with the current interval
 
 neighbour :: Int -> ValueType -> ValueType -> Bool
-neighbour _ y1 y2 = abs (y1 - y2) < 0.00003
+neighbour _ y1 y2 = abs (y1 - y2) < 0.07
 
 rangeSplitter :: ValSuccessor -> ValueType -> ValueType
 rangeSplitter f x = tracer $ x + (f x - x) / 2
@@ -139,7 +143,7 @@ charOf height yplot y1 y2
     | otherwise = Continue '-'
 
 
--- | The real plotting function, calling it is rather complex,
+-- | The real plotting fpt64dffurunction, calling it is rather complex,
 -- due to the number of thing to take into account, favor the use
 -- of a more high level function like 'plot2DExpression'
 plot2D :: (Int, Int)              -- ^ Size of the canvas in number of cells
@@ -161,7 +165,7 @@ plot2D (width, height) xEnd f xSucc xPlot yPlot = subPlot
 
             Subdivide c -> ((xPlot x, yPlot $ f x),c) : 
                                 inner ++ subPlot xNext
-                where midPoint = (x + xNext) / 2
+                where midPoint = min xEnd $ (x + xNext) / 2
                       xNext = xSucc x
                       inner = plot2D (width, height)
                                      xNext f (rangeSplitter xSucc)

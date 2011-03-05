@@ -16,4 +16,6 @@ linesOfArray a = map (lineOfArray a) [yMin .. yMax]
 
 charArrayToString :: (Enum i, Ix i, IArray a Char)
                   => a (i,i) Char -> String
-charArrayToString = concat . intersperse "\n" . linesOfArray
+charArrayToString = concat . reverse 
+                  . intersperse "\n" . linesOfArray
+

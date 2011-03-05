@@ -74,7 +74,8 @@ staticrelease: EqManips/BaseLibrary.hs
 	upx --best eq$(EXEEXT)
 
 run:
-	./eq eval "(1 + 3 * x + 2 * x^2 - 7 * x ^3) / (1 + x - 2 * x ^2)"
+	#./eq eval "(1 + 3 * x + 2 * x^2 - 7 * x ^3) / (1 + x - 2 * x ^2)"
+	./eq plot "sin(x)"
 
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs
