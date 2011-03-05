@@ -53,6 +53,9 @@ addSimplification _ a b
 
 -- | '-' operator simplification
 subSimplification :: EvalFun -> EvalOp
+{-subSimplification eval (Variable v) (BinOp _ OpDiv [a, somethingWithV])-}
+
+{- if c == b  then a * c - b = (a-1) * c -}
 subSimplification eval first@(BinOp _ OpMul [a, c]) b
     | hashOfFormula c == hashOfFormula b 
         && b == c = do

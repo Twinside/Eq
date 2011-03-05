@@ -8,6 +8,9 @@ import EqManips.Renderer.RenderConf
 
 import EqManips.Renderer.Ascii2DGrapher
 
+import Control.Arrow
+import CharArray
+
 #ifdef _DEBUG
 import EqManips.Renderer.Sexpr
 #endif
@@ -21,7 +24,7 @@ import qualified System.IO as Io
 
 import System.Console.GetOpt
 
-import Data.List( find, intersperse )
+import Data.List( find, intersperse, foldl' )
 import Data.Maybe( fromMaybe )
 
 import qualified Data.Map as Map
@@ -47,6 +50,14 @@ data Flag =
     | SupportedFunction
     | SupportedOperators
     | SupportedPreprocLanguages
+
+    -- for plotting
+    | PlotWidth
+    | PlotHeight
+    | XBeg
+    | XEnd
+    | YBeg
+    | YEnd
     deriving Eq
 
 version :: String
@@ -68,6 +79,31 @@ askingOption =
     , Option "" ["languages"] (NoArg (SupportedPreprocLanguages,""))
                 "Ask for supported languages for the preprocessor"
     ]
+
+plotOption :: [OptDescr (Flag, String)]
+plotOption =
+    [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x)"
+    , Option "xe"  ["xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x)"
+    , Option "y" ["yBegin"] (ReqArg ((,) XEnd) "YBEG") "Beginning of plot (y)"
+    , Option "ye"  ["yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y)"
+    , Option "w" ["width"]  (ReqArg ((,) PlotWidth) "Width") "Plotting width"
+    , Option "h" ["height"] (ReqArg ((,) PlotHeight) "height") "Plotting height"
+    ]
+
+preparePlotConf :: PlotConf -> (Flag, String) -> PlotConf
+preparePlotConf conf (PlotWidth, val) = 
+    conf { drawWidth = read val }
+preparePlotConf conf (PlotHeight, val) =
+    conf { drawHeight = read val }
+preparePlotConf conf (XBeg, val) =
+    conf { xRange = first (const $ read val) $ xRange conf }
+preparePlotConf conf (XEnd, val) =
+    conf { xRange = second (const $ read val) $ xRange conf }
+preparePlotConf conf (YBeg, val) =
+    conf { yRange = first (const $ read val) $ yRange conf }
+preparePlotConf conf (YEnd, val) =
+    conf { yRange = second (const $ read val) $ yRange conf }
+preparePlotConf conf _ = conf
 
 preprocOptions :: [OptDescr (Flag, String)]
 preprocOptions = commonOption
@@ -100,8 +136,8 @@ filterCommand transformator args = do
     Io.putStr "==========================================\n\n"
     hClose output
     return True
-     where (opt, left, _) = getOpt Permute formatOption args
-           (input, outputFile) = getInputOutput opt left
+     where (opt, rest, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt rest
 
 -- | Command which just format an equation
 -- without affecting it's form.
@@ -116,8 +152,8 @@ formatCommand formulaFormater args = do
                 hClose output
                 return True)
            formula
-     where (opt, left, _) = getOpt Permute formatOption args
-           (input, outputFile) = getInputOutput opt left
+     where (opt, rest, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt rest
            conf = defaultRenderConf{ useUnicode = Unicode `lookup` opt /= Nothing }
 
 printErrors :: [(Formula TreeForm, String)] -> IO ()
@@ -226,9 +262,31 @@ transformParseFormula operation args = do
                return . null $ errorList rez)
            formulaList
 
-     where (opt, left, _) = getOpt Permute formatOption args
-           (input, outputFile) = getInputOutput opt left
+     where (opt, rest, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt rest
            conf = defaultRenderConf{ useUnicode = Unicode `lookup` opt /= Nothing }
+
+plotCommand :: [String] -> IO Bool
+plotCommand args = do
+    formulaText <- input
+    finalFile <- outputFile
+
+    let formulaList = parseProgramm formulaText
+    either (parseErrorPrint finalFile)
+           (\formulal -> do
+               case plot2DExpression plotConf . unTagFormula $ head formulal of
+                Left err -> do
+                    Io.hPutStr finalFile err
+                    hClose finalFile
+                    return False
+
+                Right v -> do
+                    Io.hPutStr finalFile $ charArrayToString  v
+                    return True)
+           formulaList
+     where (opt, rest, _) = getOpt Permute (commonOption ++ plotOption) args
+           plotConf = foldl' preparePlotConf defaultPlotConf opt
+           (input, outputFile) = getInputOutput opt rest
 
 printVer :: IO ()
 printVer = 
@@ -310,7 +368,8 @@ commandList =
             , filterCommand mathMlToEqLang', commonOption)
     , ("show"       , "Try to retrieve some information about supported options"
             , introspect, askingOption)
-    -- , ( , )
+    , ("plot", "Print an ASCII-art plot of the given function"
+            , plotCommand, commonOption ++ plotOption)
     ]
 
 reducedCommand :: [(String, [String] -> IO Bool)]

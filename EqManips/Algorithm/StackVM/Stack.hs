@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module EqManips.Algorithm.StackVM.Stack( compileExpression
                                        , evalProgram 
+                                       , ValueType
                                        ) where
 
 import Control.Applicative
