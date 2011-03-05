@@ -37,6 +37,7 @@ data StackOperand =
     | LoadX
     | LoadY
     | LoadConst ValueType
+    deriving Show
 
 type CompiledExpression = [StackOperand]
 
@@ -55,11 +56,11 @@ evalOperation _ _ rest (LoadConst v) = v : rest
 evalOperation x _ rest LoadX = x : rest
 evalOperation _ y rest LoadY = y : rest
 
-evalOperation _ _ (v1:v2:rest) Add = (v1 + v2) : rest
-evalOperation _ _ (v1:v2:rest) Sub = (v1 - v2) : rest
-evalOperation _ _ (v1:v2:rest) Mul = (v1 * v2) : rest
-evalOperation _ _ (v1:v2:rest) Div = (v1 / v2) : rest
-evalOperation _ _ (v1:v2:rest) Pow = (v1 ** v2) : rest
+evalOperation _ _ (v1:v2:rest) Add = (v2 + v1) : rest
+evalOperation _ _ (v1:v2:rest) Sub = (v2 - v1) : rest
+evalOperation _ _ (v1:v2:rest) Mul = (v2 * v1) : rest
+evalOperation _ _ (v1:v2:rest) Div = (v2 / v1) : rest
+evalOperation _ _ (v1:v2:rest) Pow = (v2 ** v1) : rest
 
 evalOperation _ _ (v1:rest) Negate = (-v1) : rest
 evalOperation _ _ (v1:rest) Abs = (-v1) : rest
@@ -176,8 +177,12 @@ compileExpression (UnOp _ op sub) =
 
 compileExpression (BinOp _ op formulas) =
   case stackOpOfBinop op of
-    Just stackOp -> foldr (\lst acc -> lst ++ (stackOp : acc)) []
-                 <$> mapM compileExpression formulas
+    Just stackOp -> case mapM compileExpression formulas of
+        Left err -> Left err
+        Right [] -> Left "Stack VM : Empty binop"
+        Right [x] -> Right x
+        Right (x:xs) ->
+            Right $ x ++ foldr (\lst acc -> lst ++ (stackOp : acc)) [] xs
     Nothing -> Left "Error non continuous operators used"
 compileExpression (App _ _ _) =
     Left "No function call allowed in compiled expression."

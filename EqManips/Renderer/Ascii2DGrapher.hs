@@ -45,7 +45,7 @@ plot2DExpression :: PlotConf -> FormulaPrim
 plot2DExpression conf formula =
     case VM.compileExpression formula of
       Left err -> Left err
-      Right prog -> 
+      Right prog -> trace (show prog) $
         let successor = widthSuccessor conf $ xScaling conf
             yScaler = sizeMapper (yRange conf) (drawHeight conf)
                     $ yScaling conf
@@ -58,7 +58,8 @@ plot2DExpression conf formula =
                            successor xScaler yScaler
                            xBegin
         in Right $ accumArray (\_ e -> e) ' '
-                              ((0, 0) ,(w - 1, h - 1)) graph
+                              ((0, 0) ,(w - 1, h - 1)) 
+                                $ (\a -> trace (show a) a) graph
     
 
 -- | This type is a transformation from function
@@ -105,7 +106,8 @@ sizeMapper (vMin, vMax) fullSize (Logarithmic _) =
 -- accomplish in order to draw a function
 data DrawAction =
     ActionStop -- ^ Stop the ploting
-  | Subdivide Char -- ^ Halve the x interval and continue plotting
+  | SubdivideUpward Char -- ^ Halve the x interval and continue plotting
+  | SubdivideDownward Char -- ^ Halve the x interval and continue plotting
   | Continue Char  -- ^ Continue with the current interval
 
 neighbour :: Int -> ValueType -> ValueType -> Bool
@@ -115,35 +117,38 @@ rangeSplitter :: ValSuccessor -> ValueType -> ValueType
 rangeSplitter f x = tracer $ x + (f x - x) / 2
     where tracer vv = trace ("|" ++ show x ++ "-->" ++ show vv) vv
 
--- | Given
-charOf :: Int -> Scaler -> ValueType -> ValueType 
+-- | Given two samples, give an Ascii representation
+-- and information to the plotter on how to continue
+-- the drawing.
+charOf :: Int -> Scaler -> Int -> ValueType -> ValueType 
        -> DrawAction
-charOf height yplot y1 y2
-    -- We are out of the drawing box, stop
-    -- the drawing for the current value of x
-    | yplot y1 > height || yplot y1 < 0 = ActionStop
+charOf height yplot screenY1 y1 y2 = check
+    where screenY2 = yplot y2
+          check -- We are out of the drawing box, stop
+                -- the drawing for the current value of x
+                | screenY1 >= height || screenY1 < 0 = ActionStop
 
-    -- The two values are in a different cell,
-    -- we need to refine the values.
-    {-| yplot y1 > yplot y2 || yplot y1 < yplot y2 =-}
-        {-Subdivide '|'-}
+                -- The two values are in a different cell,
+                -- we need to refine the values.
+                | screenY1 < screenY2 = SubdivideUpward '|'
+                | screenY1 > screenY2 = SubdivideDownward '|'
 
-    -- If values are sufisently near, draw a flat
-    -- line and continue
-    | neighbour height y1 y2 = Continue '-'
+                -- If values are sufisently near, draw a flat
+                -- line and continue
+                | neighbour height y1 y2 = Continue '-'
+            
+                -- We are ascending, but not enough to subdivide,
+                -- continue to the next x
+                | y1 < y2 = Continue '/'
+            
+                -- Descending...
+                | y1 > y2 = Continue '\\'
 
-    -- We are ascending, but not enough to subdivide,
-    -- continue to the next x
-    | y1 < y2 = Continue '/'
-
-    -- Descending...
-    | y1 > y2 = Continue '\\'
-
-    -- y1 more or less equal y2
-    | otherwise = Continue '-'
+                -- y1 more or less equal y2
+                | otherwise = Continue '-'
 
 
--- | The real plotting fpt64dffurunction, calling it is rather complex,
+-- | The real plotting function, calling it is rather complex,
 -- due to the number of thing to take into account, favor the use
 -- of a more high level function like 'plot2DExpression'
 plot2D :: (Int, Int)              -- ^ Size of the canvas in number of cells
@@ -154,21 +159,27 @@ plot2D :: (Int, Int)              -- ^ Size of the canvas in number of cells
        -> Scaler                  -- ^ Function to translate (f xVal) to canvas position
        -> ValueType    -- ^ The \'current\' ploted value, xBegin for first call
        -> [((Int, Int),Char)] -- ^ Woohoo, the result, to be stored in an array
-plot2D (width, height) xEnd f xSucc xPlot yPlot = subPlot
-  where subPlot x
+plot2D (_width, height) xStop f widthSucc xPlot yPlot = subPlot xStop widthSucc 
+  where subPlot xEnd xSucc x
           | x >= xEnd = []
-          | otherwise = case charOf height yPlot 
-                              (f x) (f $ xSucc x) of 
-            ActionStop -> subPlot $ f x
-            Continue c -> ((xPlot x, yPlot $ f x), c)
-                            : subPlot (xSucc x)
+          | otherwise = 
+          let val = f x
+              xNext = xSucc x
+              screenY = yPlot val
+          in case charOf height yPlot screenY val (f xNext) of 
+            ActionStop -> subPlot xEnd xSucc xNext
+            Continue c -> ((xPlot x, screenY), c)
+                            : subPlot xEnd xSucc xNext
 
-            Subdivide c -> ((xPlot x, yPlot $ f x),c) : 
-                                inner ++ subPlot xNext
-                where midPoint = min xEnd $ (x + xNext) / 2
-                      xNext = xSucc x
-                      inner = plot2D (width, height)
-                                     xNext f (rangeSplitter xSucc)
-                                     xPlot yPlot midPoint
+            SubdivideDownward c -> ((xPlot x, screenY),c) : 
+                                inner ++ subPlot xEnd xSucc xNext
+                where midPoint = (x + xNext) / 2
+                      inner = subPlot (min xEnd xNext)
+                                      (rangeSplitter xSucc) midPoint
+            SubdivideUpward c -> ((xPlot x, screenY),c) : 
+                                inner ++ subPlot xEnd xSucc xNext
+                where midPoint = (x + xNext) / 2
+                      inner = subPlot (min xEnd xNext)
+                                      (rangeSplitter xSucc) midPoint
 
 
