@@ -73,13 +73,14 @@ type ValSuccessor =
 
 -- | Equivalent of the 'succ' function of the
 -- 'Enum' class, with a linear scale.
-widthSuccessor :: PlotConf -> ScalingType -> ValSuccessor
-widthSuccessor conf (Linear _) x = tracer $ addVal + x
+widthSuccessor :: PlotConf -> ScalingType -> (ValSuccessor, ValSuccessor)
+widthSuccessor conf (Linear _) = (\x -> tracer x $ x + addVal
+                                 ,\x -> tracer x $ x - addVal)
     where addVal = (xMax - xMin) / toEnum (drawWidth conf)
           (xMin, xMax) = xRange conf
-          tracer vv = trace (">" ++ show x ++ " + " ++ show addVal
+          tracer x vv = trace (">" ++ show x ++ " + " ++ show addVal
                             ++ "-->" ++ show vv) vv
-widthSuccessor _ (Logarithmic v) x = v * x
+{-widthSuccessor _ (Logarithmic v) x = v * x-}
 
 -- | How to map the height value onto the screen,
 -- by taking tinto action the 'canvas' size
@@ -106,16 +107,16 @@ sizeMapper (vMin, vMax) fullSize (Logarithmic _) =
 -- accomplish in order to draw a function
 data DrawAction =
     ActionStop -- ^ Stop the ploting
-  | SubdivideUpward Char -- ^ Halve the x interval and continue plotting
-  | SubdivideDownward Char -- ^ Halve the x interval and continue plotting
+  | Subdivide Char -- ^ Halve the x interval and continue plotting
   | Continue Char  -- ^ Continue with the current interval
+  deriving Show
 
 neighbour :: Int -> ValueType -> ValueType -> Bool
-neighbour _ y1 y2 = abs (y1 - y2) < 0.07
+neighbour _ y1 y2 = abs (y1 - y2) < 0.05
 
 rangeSplitter :: ValSuccessor -> ValueType -> ValueType
 rangeSplitter f x = tracer $ x + (f x - x) / 2
-    where tracer vv = trace ("|" ++ show x ++ "-->" ++ show vv) vv
+    where tracer vv = trace ("|>" ++ show x ++ "-->" ++ show vv) vv
 
 -- | Given two samples, give an Ascii representation
 -- and information to the plotter on how to continue
@@ -124,14 +125,20 @@ charOf :: Int -> Scaler -> Int -> ValueType -> ValueType
        -> DrawAction
 charOf height yplot screenY1 y1 y2 = check
     where screenY2 = yplot y2
-          check -- We are out of the drawing box, stop
+          check -- Assured to win
+                | isInfinite y1 = Subdivide '|'
+
+                | isNaN y1 = ActionStop
+
+                -- We are out of the drawing box, stop
                 -- the drawing for the current value of x
                 | screenY1 >= height || screenY1 < 0 = ActionStop
 
+
                 -- The two values are in a different cell,
                 -- we need to refine the values.
-                | screenY1 < screenY2 = SubdivideUpward '|'
-                | screenY1 > screenY2 = SubdivideDownward '|'
+                | screenY1 < screenY2 - 1 = Subdivide '|'
+                | screenY1 > screenY2 + 1= Subdivide '|'
 
                 -- If values are sufisently near, draw a flat
                 -- line and continue
@@ -154,32 +161,34 @@ charOf height yplot screenY1 y1 y2 = check
 plot2D :: (Int, Int)              -- ^ Size of the canvas in number of cells
        -> ValueType               -- ^ End value for x
        -> (ValueType -> ValueType) -- ^ The function to be evaluated
-       -> (ValueType -> ValueType) -- ^ x Successor function
+       -> (ValSuccessor, ValSuccessor)  -- ^ x Successor function, forward, backward
        -> Scaler                  -- ^ Function to translate xVal to canvas position
        -> Scaler                  -- ^ Function to translate (f xVal) to canvas position
        -> ValueType    -- ^ The \'current\' ploted value, xBegin for first call
        -> [((Int, Int),Char)] -- ^ Woohoo, the result, to be stored in an array
-plot2D (_width, height) xStop f widthSucc xPlot yPlot = subPlot xStop widthSucc 
-  where subPlot xEnd xSucc x
-          | x >= xEnd = []
+plot2D (_width, height) xStop f widthSucc xPlot yPlot v = 
+ subPlot (v - 0.000000000001, xStop) widthSucc True v
+  where subPlot interval@(xBegin, xEnd) successors@(xSucc, xPrev) forward x
+          | x <= xBegin || x >= xEnd = []
           | otherwise = 
           let val = f x
-              xNext = xSucc x
+              xNext = if forward then xSucc x else xPrev x
               screenY = yPlot val
-          in case charOf height yPlot screenY val (f xNext) of 
-            ActionStop -> subPlot xEnd xSucc xNext
+              tracer a = trace (show a) a
+          in case tracer $ charOf height yPlot screenY val (f xNext) of 
+            ActionStop -> subPlot interval successors forward xNext
             Continue c -> ((xPlot x, screenY), c)
-                            : subPlot xEnd xSucc xNext
+                            : subPlot interval successors forward xNext
 
-            SubdivideDownward c -> ((xPlot x, screenY),c) : 
-                                inner ++ subPlot xEnd xSucc xNext
+            Subdivide c -> ((xPlot x, screenY),c) : 
+                            innerForward ++ innerBackward 
+                            ++ subPlot interval successors forward xNext
                 where midPoint = (x + xNext) / 2
-                      inner = subPlot (min xEnd xNext)
-                                      (rangeSplitter xSucc) midPoint
-            SubdivideUpward c -> ((xPlot x, screenY),c) : 
-                                inner ++ subPlot xEnd xSucc xNext
-                where midPoint = (x + xNext) / 2
-                      inner = subPlot (min xEnd xNext)
-                                      (rangeSplitter xSucc) midPoint
-
+                      halfSuccessors = (rangeSplitter xSucc,
+                                        rangeSplitter xPrev)
+                      innerForward = subPlot (x, min xEnd xNext)
+                                             halfSuccessors     
+                                             True midPoint
+                      innerBackward = subPlot (x, midPoint) halfSuccessors False
+                                              midPoint
 
