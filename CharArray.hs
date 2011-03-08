@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module CharArray where
 
-import Data.List( intersperse )
 import Data.Array.IArray
 
 lineOfArray :: (Enum i, Ix i, IArray a Char)
@@ -17,5 +16,5 @@ linesOfArray a = map (lineOfArray a) [yMin .. yMax]
 charArrayToString :: (Enum i, Ix i, IArray a Char)
                   => a (i,i) Char -> String
 charArrayToString = concat . reverse 
-                  . intersperse "\n" . linesOfArray
+                  . map (++ "\n") . linesOfArray
 

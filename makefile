@@ -76,6 +76,11 @@ staticrelease: EqManips/BaseLibrary.hs
 run:
 	#./eq eval "(1 + 3 * x + 2 * x^2 - 7 * x ^3) / (1 + x - 2 * x ^2)"
 	./eq plot "log(x)" > rez 2>&1
+	./eq plot "tan(x)" >> rez 2>&1
+	./eq plot "sin(x)" >> rez 2>&1
+	./eq plot "sin(x) * 3" >> rez 2>&1
+	./eq plot "sin(x) * 5" >> rez 2>&1
+	./eq plot "sin(x) / 3" >> rez 2>&1
 
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs
