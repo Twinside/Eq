@@ -81,6 +81,8 @@ run:
 	./eq plot "sin(x) * 3" >> rez 2>&1
 	./eq plot "sin(x) * 5" >> rez 2>&1
 	./eq plot "sin(x) / 3" >> rez 2>&1
+	./eq plot "exp(x)" >> rez 2>&1
+	./eq plot --logheight "exp(x)" >> rez 2>&1
 
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs

@@ -1,23 +1,27 @@
-module EqManips.Renderer.Ascii2DGrapher{-  (
+-- | This module implement an ASCII Art graph plotter,
+-- using subdivision to provide good looking ascii graph.
+module EqManips.Renderer.Ascii2DGrapher(
                                        -- * Plotting configuration
                                          PlotConf( .. )
                                        , ScalingType( .. )
                                        , defaultPlotConf
                                        -- * Da Ploting LAUNCHER !!
                                        , plot2DExpression
-                                       ) -} where
+                                       ) where
 
 import Data.Array.Unboxed
 import EqManips.Types
-import Debug.Trace
 import qualified EqManips.Algorithm.StackVM.Stack as VM
 
+-- | Alias in case I want to change in the future.
 type ValueType = Double
+
+-- | (Begin, End), all inclusive
 type PlotRange = (ValueType, ValueType)
 
 data ScalingType =
-      Linear        ValueType
-    | Logarithmic   ValueType
+      Linear
+    | Logarithmic
     deriving Show
 
 data PlotConf = PlotConf
@@ -27,7 +31,9 @@ data PlotConf = PlotConf
     , drawHeight :: Int
     , yScaling :: ScalingType
     , xScaling :: ScalingType
-    , drawAxis :: Bool
+    , drawXAxis :: Bool
+    , drawYAxis :: Bool
+    , draw0Axis :: Bool
     }
     deriving Show
 
@@ -37,10 +43,58 @@ defaultPlotConf = PlotConf
     , yRange = (-5.0, 5.0)
     , drawWidth = 50
     , drawHeight = 30
-    , xScaling = Linear 1.0
-    , yScaling = Linear 1.0
-    , drawAxis = False
+    , xScaling = Linear
+    , yScaling = Linear
+    , drawXAxis = False
+    , drawYAxis = False
+    , draw0Axis = False
     }
+
+translateX :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
+translateX i lst = [ ((x + i, y), c) | ((x,y), c) <- lst ]
+
+translateY :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
+translateY i lst = [ ((x, y + i), c) | ((x,y), c) <- lst ]
+
+add0Axis :: PlotConf -> Scaler -> (Int, Int)
+         -> [((Int, Int), Char)]
+         -> ((Int, Int), [((Int, Int), Char)])
+add0Axis conf scaler (shiftWidth, shiftHeight) vals =
+    ( (wShift, shiftHeight)
+    , ((wShift - 1,y), '0') : line ++ translateX valShift vals)
+    where w = drawWidth conf
+          y = scaler 0
+          line = [((x, y), '-') | 
+                    x <- [wShift .. wShift + (w - 1)]]
+          wShift = max 3 shiftWidth
+          valShift = shiftWidth - wShift
+
+addXaxis :: PlotConf -> Scaler -> (Int, Int)
+         -> [((Int, Int), Char)]
+         -> ((Int, Int), [((Int, Int), Char)])
+addXaxis conf _ (shiftWidth, shiftHeight) vals =
+  ( (shiftWidth, hShift)
+  , line ++ translateY valShift vals)
+    where line = [((x, hShift - 1), '_') 
+                        | x <- [hShift..(w - 1) + hShift]]
+          w = drawWidth conf
+          hShift = max 2 shiftHeight
+          valShift = shiftHeight - hShift
+
+addAxis :: PlotConf
+        -> (Scaler, Scaler)
+        -> [((Int, Int), Char)]
+        -> ((Int, Int), [((Int, Int), Char)])
+addAxis conf (widthScaler, heightScaler) a = if drawYAxis conf
+                then (shifts'', vals'')
+                else (shifts'', vals'')
+    where shifts = (0,0)
+          (shifts', vals') = if draw0Axis conf
+                then add0Axis conf heightScaler shifts a
+                else (shifts, a)
+          (shifts'', vals'') = if drawXAxis conf
+                then addXaxis conf widthScaler shifts' vals'
+                else (shifts', vals')
 
 plot2DExpression :: PlotConf -> FormulaPrim
                  -> Either String (UArray (Int, Int) Char)
@@ -59,10 +113,11 @@ plot2DExpression conf formula =
                            (flip (VM.evalProgram prog) 0)
                            successor xScaler yScaler
                            xBegin
+            ((shiftX, shiftY), graph') =
+                addAxis conf (xScaler, yScaler) graph
         in Right $ accumArray (\_ e -> e) ' '
-                              ((0, 0) ,(w - 1, h - 1)) $
-                              {-(\a -> trace (show a) a) $-}
-                              [v | v@((x,_),_) <- graph, x < w ]
+                              ((0, 0) ,(w + shiftX - 1, h + shiftY - 1))
+                              [v | v@((x,_),_) <- graph', x < w + shiftX]
     
 
 -- | This type is a transformation from function
@@ -77,7 +132,7 @@ type ValSuccessor =
 -- | Equivalent of the 'succ' function of the
 -- 'Enum' class, with a linear scale.
 widthSuccessor :: PlotConf -> ScalingType -> (ValSuccessor, ValSuccessor)
-widthSuccessor conf (Linear _) = (\x -> x - addVal, \x -> x + addVal)
+widthSuccessor conf Linear = (\x -> x - addVal, \x -> x + addVal)
     where addVal = (xMax - xMin) / toEnum (drawWidth conf)
           (xMin, xMax) = xRange conf
 {-widthSuccessor _ (Logarithmic v) x = v * x-}
@@ -86,33 +141,42 @@ widthSuccessor conf (Linear _) = (\x -> x - addVal, \x -> x + addVal)
 -- by taking tinto action the 'canvas' size
 sizeMapper :: PlotRange -> Int -> ScalingType
            -> (ValueType -> Int)
-sizeMapper (vMin, vMax) fullSize (Linear _) =
+sizeMapper (vMin, vMax) fullSize Linear =
   \val -> truncate $ (val - vMin) * scaler
       where scaler = toEnum fullSize / (vMax - vMin + 1)
               
-sizeMapper (vMin, vMax) fullSize (Logarithmic _) =
-  \val -> truncate $ (val - vMin') * scaler
+sizeMapper (vMin, vMax) fullSize Logarithmic =
+  \val -> truncate $ (log val - vMin') * scaler
       where (vMin', vMax') = (log vMin, log vMax)
             scaler = toEnum fullSize / (vMax' - vMin')
 
 -- | Describe the action that the plotter must
 -- accomplish in order to draw a function
 data DrawAction =
-    ActionStop -- ^ Stop the ploting
-  | SubdivideBoth Char -- ^ Halve the x interval and continue plotting
-  | SubdivideUpper Char
-  | SubdivideLower Char
-  | SubdivideIgnore
-  | Continue Char  -- ^ Continue with the current interval
-  deriving Show
+    ActionStop          -- ^ Stop the ploting/subdivision for this value
+  | SubdivideBoth  Char -- ^ Halve the x interval and continue plotting, on both ends
+  | SubdivideUpper Char -- ^ Halve and continue only on the upper part.
+  | SubdivideLower Char -- ^ Halve and continue only on the lower part.
+  | SubdivideIgnore     -- ^ Halve and continue both ends but don't write any char.
+  | Continue Char       -- ^ Continue with the current interval, adn write a char.
 
 neighbour :: ValueType -> ValueType -> Bool
 neighbour y1 y2 = abs (y1 - y2) < 0.05
 
-rangeSplitter :: ValSuccessor -> ValueType -> ValueType
+-- | Given a successor function given as parameter,
+-- it will return a successor function going half
+-- as far as the previous one. Work with backward
+-- functions to.
+rangeSplitter :: ValSuccessor -> ValSuccessor
 rangeSplitter f x = x + (f x - x) / 2
 
-sideChar :: Direction -> Direction -> Char
+-- | As side is inversed when drawing backward,
+-- this function help to choose a representation
+-- given the current direction and a 'Forward'
+-- assention or 'Backward' descent.
+sideChar :: Direction           -- ^ Current drawing direction
+         -> Direction          -- ^ Assention or descent
+         -> Char
 sideChar Forward Forward = '/'
 sideChar Forward Backward = '\\'
 sideChar Backward a = sideChar Forward $ inverseDirection a
@@ -120,10 +184,12 @@ sideChar Backward a = sideChar Forward $ inverseDirection a
 -- | Given two samples, give an Ascii representation
 -- and information to the plotter on how to continue
 -- the drawing.
-charOf :: Direction -> Int -> Int
-       -> (ValueType, Int)
-       -> (ValueType, Int)
-       -> DrawAction
+charOf :: Direction        -- ^ Current plotting direction
+       -> Int              -- ^ Canvas height
+       -> Int              -- ^ Absciss in canvas space of the previous value.
+       -> (ValueType, Int) -- ^ Value and canvas position of the current value.
+       -> (ValueType, Int) -- ^ Value and canvas position of the current value.
+       -> DrawAction       -- ^ What to do next
 charOf direction height screenPrev (y1, screenY1) (y2, screenY2)
    | isNaN y1 = ActionStop
    | isInfinite y1 && screenY1 >= 0 && screenY1 < height =
@@ -158,12 +224,17 @@ charOf direction height screenPrev (y1, screenY1) (y2, screenY2)
    | otherwise = Continue '-'
 
 
-
+-- | Happy float
 epsilon :: ValueType
 epsilon = 0.00000000000001
 
-data Direction = Forward | Backward deriving Eq
+-- | Type used when plotting, to inform
+-- the subdivision direction.
+data Direction = Forward | Backward
+    deriving Eq
 
+-- | Inverse the direction, equivalent of
+-- 'not', but for 'Direction'
 inverseDirection :: Direction -> Direction
 inverseDirection Forward = Backward
 inverseDirection Backward = Forward
@@ -174,7 +245,7 @@ inverseDirection Backward = Forward
 plot2D :: (Int, Int)              -- ^ Size of the canvas in number of cells
        -> ValueType               -- ^ End value for x
        -> (ValueType -> ValueType) -- ^ The function to be evaluated
-       -> (ValSuccessor, ValSuccessor)  -- ^ x Successor function, forward, backward
+       -> (ValSuccessor, ValSuccessor)  -- ^ x Successor function, backward, forward,
        -> Scaler                  -- ^ Function to translate xVal to canvas position
        -> Scaler                  -- ^ Function to translate (f xVal) to canvas position
        -> ValueType    -- ^ The \'current\' ploted value, xBegin for first call

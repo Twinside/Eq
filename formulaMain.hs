@@ -58,7 +58,12 @@ data Flag =
     | XEnd
     | YBeg
     | YEnd
-    deriving Eq
+    | XLogScale
+    | YLogScale
+    | DrawXaxis
+    | DrawYaxis
+    | Draw0axis
+    deriving (Eq, Show)
 
 version :: String
 version = "0.2"
@@ -88,6 +93,16 @@ plotOption =
     , Option "ye"  ["yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y)"
     , Option "w" ["width"]  (ReqArg ((,) PlotWidth) "Width") "Plotting width"
     , Option "h" ["height"] (ReqArg ((,) PlotHeight) "height") "Plotting height"
+    , Option "lx" ["logwidth"] (NoArg (XLogScale,""))
+                  "Plot with a logrithmic scale in x"
+    , Option "ly" ["logheight"] (NoArg (YLogScale,""))
+                  "Plot with a logrithmic scale in y"
+    , Option "ax" ["xaxis"] (NoArg (DrawXaxis,""))
+                  "Draw the X axis on the graph"
+    , Option "ay" ["yaxis"] (NoArg (DrawYaxis,""))
+                  "Draw the Y axis on the graph"
+    , Option "a0" ["zeroaxis"] (NoArg (Draw0axis,""))
+                  "Draw the 0 axis on the graph"
     ]
 
 preparePlotConf :: PlotConf -> (Flag, String) -> PlotConf
@@ -103,6 +118,16 @@ preparePlotConf conf (YBeg, val) =
     conf { yRange = first (const $ read val) $ yRange conf }
 preparePlotConf conf (YEnd, val) =
     conf { yRange = second (const $ read val) $ yRange conf }
+preparePlotConf conf (XLogScale, _) =
+    conf { xScaling = Logarithmic }
+preparePlotConf conf (YLogScale, _) =
+    conf { yScaling = Logarithmic }
+preparePlotConf conf (DrawXaxis, _) =
+    conf { drawXAxis = True }
+preparePlotConf conf (DrawYaxis, _) =
+    conf { drawYAxis = True }
+preparePlotConf conf (Draw0axis, _) =
+    conf { draw0Axis = True }
 preparePlotConf conf _ = conf
 
 preprocOptions :: [OptDescr (Flag, String)]
@@ -281,11 +306,14 @@ plotCommand args = do
                     return False
 
                 Right v -> do
+                    Io.hPutStrLn finalFile $ show opt
+                    Io.hPutStrLn finalFile $ show plotConf
                     Io.hPutStr finalFile $ charArrayToString  v
                     return True)
            formulaList
      where (opt, rest, _) = getOpt Permute (commonOption ++ plotOption) args
-           plotConf = foldl' preparePlotConf defaultPlotConf opt
+           plotConf = foldl' preparePlotConf defaultPlotConf 
+                             opt
            (input, outputFile) = getInputOutput opt rest
 
 printVer :: IO ()
