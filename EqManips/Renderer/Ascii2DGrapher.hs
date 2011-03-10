@@ -61,13 +61,34 @@ add0Axis :: PlotConf -> Scaler -> (Int, Int)
          -> ((Int, Int), [((Int, Int), Char)])
 add0Axis conf scaler (shiftWidth, shiftHeight) vals =
     ( (wShift, shiftHeight)
-    , ((wShift - 1,y), '0') : line ++ translateX valShift vals)
+    , ((wShift - nominalShift + 1, y), '0') : 
+        line ++ translateX valShift vals)
     where w = drawWidth conf
           y = scaler 0
           line = [((x, y), '-') | 
                     x <- [wShift .. wShift + (w - 1)]]
-          wShift = max 3 shiftWidth
-          valShift = shiftWidth - wShift
+          nominalShift = 4
+          wShift = max nominalShift shiftWidth
+          valShift = if shiftWidth >= nominalShift
+            then shiftWidth - wShift
+            else wShift - shiftWidth
+
+addYAxis :: PlotConf -> Scaler -> (Int, Int)
+         -> [((Int, Int), Char)]
+         -> ((Int, Int), [((Int, Int), Char)])
+addYAxis conf _scaler (shiftWidth, shiftHeight) vals =
+    ( (wShift, shiftHeight)
+    ,  line ++ translateX valShift vals)
+    where h = drawHeight conf
+          x = nominalShift - 1
+          line = [((x, y), '|') | 
+                    y <- [shiftHeight .. shiftHeight + (h - 1)]]
+          nominalShift = 4
+          wShift = max nominalShift shiftWidth
+          valShift = if shiftWidth >= nominalShift
+            then shiftWidth - wShift
+            else wShift - shiftWidth
+
 
 addXaxis :: PlotConf -> Scaler -> (Int, Int)
          -> [((Int, Int), Char)]
@@ -76,17 +97,20 @@ addXaxis conf _ (shiftWidth, shiftHeight) vals =
   ( (shiftWidth, hShift)
   , line ++ translateY valShift vals)
     where line = [((x, hShift - 1), '_') 
-                        | x <- [hShift..(w - 1) + hShift]]
+                        | x <- [shiftWidth ..(w - 1) + shiftWidth]]
           w = drawWidth conf
-          hShift = max 2 shiftHeight
-          valShift = shiftHeight - hShift
+          nominalShift = 2
+          hShift = max nominalShift shiftHeight
+          valShift = if shiftHeight >= nominalShift
+                then shiftHeight - hShift
+                else hShift - shiftHeight
 
 addAxis :: PlotConf
         -> (Scaler, Scaler)
         -> [((Int, Int), Char)]
         -> ((Int, Int), [((Int, Int), Char)])
 addAxis conf (widthScaler, heightScaler) a = if drawYAxis conf
-                then (shifts'', vals'')
+                then addYAxis conf heightScaler shifts'' vals''
                 else (shifts'', vals'')
     where shifts = (0,0)
           (shifts', vals') = if draw0Axis conf
