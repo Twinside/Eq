@@ -65,8 +65,10 @@ add0Axis conf scaler (shiftWidth, shiftHeight) vals =
         line ++ translateX valShift vals)
     where w = drawWidth conf
           y = scaler 0
-          line = [((x, y), '-') | 
+          line = if y >= 0 && y < drawHeight conf
+            then [((x, y), '-') | 
                     x <- [wShift .. wShift + (w - 1)]]
+            else []
           nominalShift = 4
           wShift = max nominalShift shiftWidth
           valShift = if shiftWidth >= nominalShift
