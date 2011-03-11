@@ -90,18 +90,18 @@ plotOption =
     [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x)"
     , Option ""  ["xe", "xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x)"
     , Option "y" ["yBegin"] (ReqArg ((,) XEnd) "YBEG") "Beginning of plot (y)"
-    , Option "ye"  ["yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y)"
+    , Option ""  ["ye", "yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y)"
     , Option "w" ["width"]  (ReqArg ((,) PlotWidth) "Width") "Plotting width"
     , Option "h" ["height"] (ReqArg ((,) PlotHeight) "height") "Plotting height"
-    , Option "lx" ["logwidth"] (NoArg (XLogScale,""))
+    , Option "" ["lx", "logwidth"] (NoArg (XLogScale,""))
                   "Plot with a logrithmic scale in x"
-    , Option "ly" ["logheight"] (NoArg (YLogScale,""))
+    , Option "" ["ly", "logheight"] (NoArg (YLogScale,""))
                   "Plot with a logrithmic scale in y"
-    , Option "ax" ["xaxis"] (NoArg (DrawXaxis,""))
+    , Option "" ["ax", "xaxis"] (NoArg (DrawXaxis,""))
                   "Draw the X axis on the graph"
-    , Option "ay" ["yaxis"] (NoArg (DrawYaxis,""))
+    , Option "" ["ay", "yaxis"] (NoArg (DrawYaxis,""))
                   "Draw the Y axis on the graph"
-    , Option "a0" ["zeroaxis"] (NoArg (Draw0axis,""))
+    , Option "" ["a0", "zeroaxis"] (NoArg (Draw0axis,""))
                   "Draw the 0 axis on the graph"
     ]
 

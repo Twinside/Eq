@@ -34,6 +34,8 @@ data PlotConf = PlotConf
     , drawXAxis :: Bool
     , drawYAxis :: Bool
     , draw0Axis :: Bool
+    , xLabelEvery :: Maybe Int
+    , yLabelEvery :: Maybe Int
     }
     deriving Show
 
@@ -48,6 +50,8 @@ defaultPlotConf = PlotConf
     , drawXAxis = False
     , drawYAxis = False
     , draw0Axis = False
+    , yLabelEvery = Nothing
+    , xLabelEvery = Just 7
     }
 
 translateX :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
@@ -56,10 +60,31 @@ translateX i lst = [ ((x + i, y), c) | ((x,y), c) <- lst ]
 translateY :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
 translateY i lst = [ ((x, y + i), c) | ((x,y), c) <- lst ]
 
-add0Axis :: PlotConf -> Scaler -> (Int, Int)
-         -> [((Int, Int), Char)]
+addXAxisLabel :: PlotConf -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
+              -> ((Int,Int), [((Int,Int), Char)])
+addXAxisLabel conf successor rez@((shiftWidth, yPos), vals) = 
+ case (drawXAxis conf, xLabelEvery conf) of
+  (_, Nothing) -> rez
+  (False, _) -> rez
+  (True, Just size) ->
+   ((shiftWidth, yPos), vals ++ draw shiftWidth (fst $ xRange conf))
+    where maxWidth = drawWidth conf + shiftWidth
+
+          apply val 0 = val
+          apply val times = apply (successor val) $ times - 1
+
+          draw x xVal
+            | x > maxWidth = []
+            | otherwise = 
+                let indicator = ((x,1), '|')
+                    future = draw (x + size) (apply xVal size)
+                in indicator : [((xPos, 0), c)
+                                    | (xPos, c) <- zip [x .. x + size - 2] $ show xVal] ++ future
+                
+
+add0Axis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
          -> ((Int, Int), [((Int, Int), Char)])
-add0Axis conf scaler (shiftWidth, shiftHeight) vals =
+add0Axis conf scaler ((shiftWidth, shiftHeight), vals) =
     ( (wShift, shiftHeight)
     , ((wShift - nominalShift + 1, y), '0') : 
         line ++ translateX valShift vals)
@@ -75,10 +100,9 @@ add0Axis conf scaler (shiftWidth, shiftHeight) vals =
             then shiftWidth - wShift
             else wShift - shiftWidth
 
-addYAxis :: PlotConf -> Scaler -> (Int, Int)
-         -> [((Int, Int), Char)]
+addYAxis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
          -> ((Int, Int), [((Int, Int), Char)])
-addYAxis conf _scaler (shiftWidth, shiftHeight) vals =
+addYAxis conf _scaler ((shiftWidth, shiftHeight), vals) =
     ( (wShift, shiftHeight)
     ,  line ++ translateX valShift vals)
     where h = drawHeight conf
@@ -92,10 +116,9 @@ addYAxis conf _scaler (shiftWidth, shiftHeight) vals =
             else wShift - shiftWidth
 
 
-addXaxis :: PlotConf -> Scaler -> (Int, Int)
-         -> [((Int, Int), Char)]
+addXaxis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
          -> ((Int, Int), [((Int, Int), Char)])
-addXaxis conf _ (shiftWidth, shiftHeight) vals =
+addXaxis conf _ ((shiftWidth, shiftHeight), vals) =
   ( (shiftWidth, hShift)
   , line ++ translateY valShift vals)
     where line = [((x, hShift - 1), '_') 
@@ -107,20 +130,25 @@ addXaxis conf _ (shiftWidth, shiftHeight) vals =
                 then shiftHeight - hShift
                 else hShift - shiftHeight
 
+doWhen :: Bool -> (a -> a) -> a -> a
+doWhen False _ a = a
+doWhen True  f a = f a
+
 addAxis :: PlotConf
         -> (Scaler, Scaler)
+        -> (ValSuccessor, ValSuccessor)
         -> [((Int, Int), Char)]
         -> ((Int, Int), [((Int, Int), Char)])
-addAxis conf (widthScaler, heightScaler) a = if drawYAxis conf
-                then addYAxis conf heightScaler shifts'' vals''
-                else (shifts'', vals'')
-    where shifts = (0,0)
-          (shifts', vals') = if draw0Axis conf
-                then add0Axis conf heightScaler shifts a
-                else (shifts, a)
-          (shifts'', vals'') = if drawXAxis conf
-                then addXaxis conf widthScaler shifts' vals'
-                else (shifts', vals')
+addAxis conf (widthScaler, heightScaler) (xSucc, _ySucc) a = 
+    doWhen (drawYAxis conf)
+           (addYAxis conf heightScaler)
+    . doWhen (xLabelEvery conf /= Nothing)
+             (addXAxisLabel conf xSucc)
+    . doWhen (drawXAxis conf)
+             (addXaxis conf widthScaler)
+    . doWhen (draw0Axis conf)
+             (add0Axis conf heightScaler) $ ((0,0), a)
+
 
 plot2DExpression :: PlotConf -> FormulaPrim
                  -> Either String (UArray (Int, Int) Char)
@@ -140,7 +168,7 @@ plot2DExpression conf formula =
                            successor xScaler yScaler
                            xBegin
             ((shiftX, shiftY), graph') =
-                addAxis conf (xScaler, yScaler) graph
+                addAxis conf (xScaler, yScaler) (snd successor, snd successor) graph
         in Right $ accumArray (\_ e -> e) ' '
                               ((0, 0) ,(w + shiftX - 1, h + shiftY - 1))
                               [v | v@((x,_),_) <- graph', x < w + shiftX]
