@@ -1,4 +1,3 @@
-{-# LANGUAGE NewQualifiedOperators #-}
 module EqManips.Renderer.Mathml( mathmlRender ) where
 
 import EqManips.Types hiding ( matrix )

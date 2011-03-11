@@ -11,19 +11,6 @@ import EqManips.Types
 import EqManips.Polynome
 import EqManips.Algorithm.Cleanup( cleanupFormulaPrim )
 
--- TODO : remove this two instances and/or
--- put them somewhere else
-instance Applicative (Either a) where
-    pure = Right
-    (<*>) (Left a) _ = Left a
-    (<*>) (Right _) (Left b) = Left b
-    (<*>) (Right f) (Right v) = Right (f v)
-
-instance Monad (Either a) where
-    return = Right
-    (>>=) (Left a) _ = Left a
-    (>>=) (Right v) f = f v
-
 type ValueType = Double
 
 data StackOperand =

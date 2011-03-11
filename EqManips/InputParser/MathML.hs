@@ -57,17 +57,6 @@ elemOfContent _ = error "Xml element waited at this point"
 simplifyContent :: Content a -> Either String ReducedXmlTree
 simplifyContent = simplify . elemOfContent
 
-instance Applicative (Either a) where
-    pure = Right
-    (<*>) (Left a) _ = Left a
-    (<*>) (Right _) (Left b) = Left b
-    (<*>) (Right f) (Right v) = Right (f v)
-
-instance Monad (Either a) where
-    return = Right
-    (>>=) (Left a) _ = Left a
-    (>>=) (Right v) f = f v
-
 eitherMap :: [Either a b] -> Either a [b]
 eitherMap [] = Right []
 eitherMap lst = foldr mapper (Right []) lst

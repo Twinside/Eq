@@ -88,7 +88,7 @@ askingOption =
 plotOption :: [OptDescr (Flag, String)]
 plotOption =
     [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x)"
-    , Option "xe"  ["xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x)"
+    , Option ""  ["xe", "xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x)"
     , Option "y" ["yBegin"] (ReqArg ((,) XEnd) "YBEG") "Beginning of plot (y)"
     , Option "ye"  ["yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y)"
     , Option "w" ["width"]  (ReqArg ((,) PlotWidth) "Width") "Plotting width"

@@ -71,6 +71,6 @@ Executable eqtestsuite
                  , filepath
                  , containers
                  , directory
-                 , QuickCheck >= 2.1.0.2 && < 2.3
+                 , QuickCheck >= 2.4 && < 2.5
                  , HUnit >= 1.2.2.1 && < 2.0
 
