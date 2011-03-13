@@ -11,6 +11,8 @@ module EqManips.Renderer.Ascii2DGrapher(
                                        ) where
 
 import Data.Array.Unboxed
+import Text.Printf
+
 import EqManips.Types
 import qualified EqManips.Algorithm.StackVM.Stack as VM
 
@@ -65,6 +67,9 @@ defaultPlotConf = PlotConf
     , draw0Axis = False
     }
 
+doubleShow :: ValueType -> String
+doubleShow = printf "%.2f"
+
 dimensionRange :: Dimension -> PlotRange
 dimensionRange dim = (minVal dim, maxVal dim)
 
@@ -73,35 +78,59 @@ canvasSize conf = ( projectionSize $ xDim conf
                   , projectionSize $ yDim conf)
 
 translateX :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
+translateX 0 lst = lst
 translateX i lst = [ ((x + i, y), c) | ((x,y), c) <- lst ]
 
 translateY :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
+translateY 0 lst = lst
 translateY i lst = [ ((x, y + i), c) | ((x,y), c) <- lst ]
 
-addYAxisLabel :: PlotConf -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
+addYAxisLabel :: Dimension -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
               -> ((Int,Int), [((Int,Int), Char)])
-addYAxisLabel _ _ a = a
-
-addXAxisLabel :: PlotConf -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
-              -> ((Int,Int), [((Int,Int), Char)])
-addXAxisLabel conf successor rez@((shiftWidth, yPos), vals) = 
- case (drawAxis $ xDim conf, labelEvery $ xDim conf) of
+addYAxisLabel dim successor rez@((xPos, shiftHeight), vals) =
+ case (drawAxis dim, labelEvery dim) of
   (_, Nothing) -> rez
   (False, _) -> rez
   (True, Just size) ->
-   ((shiftWidth, yPos), vals ++ draw shiftWidth (minVal $ xDim conf))
-    where maxWidth = projectionSize (xDim conf) + shiftWidth
+   ((xShift, shiftHeight), vals' ++ draw shiftHeight (minVal dim))
+    where maxHeight = projectionSize dim + shiftHeight
+
+          xShift = max 8 xPos
+          vals' = translateX (xShift - xPos) vals
+          
+          apply val 0 = val
+          apply val times = apply (successor val) $ times - 1
+
+          draw y yVal
+            | y >= maxHeight = []
+            | otherwise = 
+                let indicator = ((xShift - 1, y), '+')
+                    future = draw (y + size) (apply yVal size)
+                in indicator :
+                    [((xP, y), c) | (xP, c) <- zip [0.. xShift - 2] $ doubleShow yVal] ++
+                                    future
+
+addXAxisLabel :: Dimension -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
+              -> ((Int,Int), [((Int,Int), Char)])
+addXAxisLabel dim successor rez@((shiftWidth, yPos), vals) = 
+ case (drawAxis dim, labelEvery dim) of
+  (_, Nothing) -> rez
+  (False, _) -> rez
+  (True, Just size) ->
+   ((shiftWidth, yPos), vals ++ draw shiftWidth (minVal dim))
+    where maxWidth = projectionSize dim + shiftWidth
 
           apply val 0 = val
           apply val times = apply (successor val) $ times - 1
 
           draw x xVal
-            | x > maxWidth = []
+            | x >= maxWidth = []
             | otherwise = 
                 let indicator = ((x - 1,1), '|')
                     future = draw (x + size) (apply xVal size)
                 in indicator : [((xPos, 0), c)
-                                    | (xPos, c) <- zip [x - 1.. x + size - 3] $ show xVal] ++ future
+                                    | (xPos, c) <- zip [x - 1.. x + size - 3] 
+                                $ doubleShow xVal] ++ future
                 
 
 add0Axis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
@@ -153,10 +182,13 @@ addXaxis conf _ ((shiftWidth, shiftHeight), vals) =
                 then shiftHeight - hShift
                 else hShift - shiftHeight
 
+-- | Equivalent of 'when' but non-monadic.
 doWhen :: Bool -> (a -> a) -> a -> a
 doWhen False _ a = a
 doWhen True  f a = f a
 
+-- | Function in charge of adding all the plot axis
+-- to the generated character stream
 addAxis :: PlotConf
         -> (Scaler, Scaler)
         -> (ValSuccessor, ValSuccessor)
@@ -164,17 +196,19 @@ addAxis :: PlotConf
         -> ((Int, Int), [((Int, Int), Char)])
 addAxis conf (widthScaler, heightScaler) (xSucc, ySucc) a = 
       doWhen (labelEvery (yDim conf) /= Nothing)
-             (addYAxisLabel conf ySucc)
+             (addYAxisLabel (yDim conf) ySucc)
     . doWhen (drawAxis $ yDim conf)
              (addYAxis conf heightScaler)
     . doWhen (labelEvery (xDim conf) /= Nothing)
-             (addXAxisLabel conf xSucc)
+             (addXAxisLabel (xDim conf) xSucc)
     . doWhen (drawAxis $ xDim conf)
              (addXaxis conf widthScaler)
     . doWhen (draw0Axis conf)
              (add0Axis conf heightScaler) $ ((0,0), a)
 
 
+-- | User function to start a plot. Handle all the scary
+-- configuration before starting the plot.
 plot2DExpression :: PlotConf -> FormulaPrim
                  -> Either String (UArray (Int, Int) Char)
 plot2DExpression conf formula =
@@ -182,6 +216,7 @@ plot2DExpression conf formula =
       Left err -> Left err
       Right prog ->
         let successor = widthSuccessor $ xDim conf
+            (_,ySuccessor) = widthSuccessor $ yDim conf
             yScaler = sizeMapper $ yDim conf
             xScaler = sizeMapper $ xDim conf
             (xBegin, xEnd) = dimensionRange $ xDim conf
@@ -191,9 +226,9 @@ plot2DExpression conf formula =
                            successor xScaler yScaler
                            xBegin
             ((shiftX, shiftY), graph') =
-                addAxis conf (xScaler, yScaler) (snd successor, snd successor) graph
+                addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
         in Right $ accumArray (\_ e -> e) ' '
-                              ((0, 0) ,(w + shiftX - 1, h + shiftY - 1))
+                              ((0, 0) ,(w + shiftX - 1, h + shiftY - 1)) $
                               [v | v@((x,_),_) <- graph', x < w + shiftX]
     
 
