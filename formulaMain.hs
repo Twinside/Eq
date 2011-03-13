@@ -8,7 +8,6 @@ import EqManips.Renderer.RenderConf
 
 import EqManips.Renderer.Ascii2DGrapher
 
-import Control.Arrow
 import CharArray
 
 #ifdef _DEBUG
@@ -107,25 +106,25 @@ plotOption =
 
 preparePlotConf :: PlotConf -> (Flag, String) -> PlotConf
 preparePlotConf conf (PlotWidth, val) = 
-    conf { drawWidth = read val }
+    conf { xDim = (xDim conf){ projectionSize = read val } }
 preparePlotConf conf (PlotHeight, val) =
-    conf { drawHeight = read val }
+    conf { yDim = (yDim conf){ projectionSize = read val }}
 preparePlotConf conf (XBeg, val) =
-    conf { xRange = first (const $ read val) $ xRange conf }
+    conf { xDim = (xDim conf){ minVal = read val }}
 preparePlotConf conf (XEnd, val) =
-    conf { xRange = second (const $ read val) $ xRange conf }
+    conf { xDim = (xDim conf){ maxVal = read val }}
 preparePlotConf conf (YBeg, val) =
-    conf { yRange = first (const $ read val) $ yRange conf }
+    conf { yDim = (yDim conf){ minVal = read val }}
 preparePlotConf conf (YEnd, val) =
-    conf { yRange = second (const $ read val) $ yRange conf }
+    conf { yDim = (yDim conf){ maxVal = read val }}
 preparePlotConf conf (XLogScale, _) =
-    conf { xScaling = Logarithmic }
+    conf { xDim = (xDim conf){ scaling = Logarithmic } }
 preparePlotConf conf (YLogScale, _) =
-    conf { yScaling = Logarithmic }
+    conf { yDim = (yDim conf){ scaling = Logarithmic } }
 preparePlotConf conf (DrawXaxis, _) =
-    conf { drawXAxis = True }
+    conf { xDim = (xDim conf){ drawAxis = True } }
 preparePlotConf conf (DrawYaxis, _) =
-    conf { drawYAxis = True }
+    conf { yDim = (yDim conf){ drawAxis = True } }
 preparePlotConf conf (Draw0axis, _) =
     conf { draw0Axis = True }
 preparePlotConf conf _ = conf

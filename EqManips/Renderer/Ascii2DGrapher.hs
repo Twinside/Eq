@@ -4,6 +4,7 @@ module EqManips.Renderer.Ascii2DGrapher(
                                        -- * Plotting configuration
                                          PlotConf( .. )
                                        , ScalingType( .. )
+                                       , Dimension( .. )
                                        , defaultPlotConf
                                        -- * Da Ploting LAUNCHER !!
                                        , plot2DExpression
@@ -24,35 +25,52 @@ data ScalingType =
     | Logarithmic
     deriving Show
 
+data Dimension = Dimension
+    { minVal :: ValueType
+    , maxVal :: ValueType
+    , projectionSize :: Int
+    , scaling :: ScalingType
+    , drawAxis :: Bool
+    , labelEvery :: Maybe Int
+    }
+    deriving Show
+
 data PlotConf = PlotConf
-    { xRange :: PlotRange
-    , yRange :: PlotRange
-    , drawWidth :: Int
-    , drawHeight :: Int
-    , yScaling :: ScalingType
-    , xScaling :: ScalingType
-    , drawXAxis :: Bool
-    , drawYAxis :: Bool
+    { xDim :: Dimension
+    , yDim :: Dimension
     , draw0Axis :: Bool
-    , xLabelEvery :: Maybe Int
-    , yLabelEvery :: Maybe Int
     }
     deriving Show
 
 defaultPlotConf :: PlotConf
 defaultPlotConf = PlotConf
-    { xRange = (0.0, 10.0)
-    , yRange = (-5.0, 5.0)
-    , drawWidth = 50
-    , drawHeight = 30
-    , xScaling = Linear
-    , yScaling = Linear
-    , drawXAxis = False
-    , drawYAxis = False
+    { xDim = Dimension
+        { minVal = 0.0
+        , maxVal = 10.0
+        , projectionSize = 50
+        , scaling = Linear
+        , drawAxis = False
+        , labelEvery = Just 7
+        }
+
+    , yDim = Dimension
+        { minVal = -5.0
+        , maxVal = 5.0
+        , projectionSize = 30
+        , scaling = Linear
+        , drawAxis = False
+        , labelEvery = Just 3
+        }
+
     , draw0Axis = False
-    , yLabelEvery = Nothing
-    , xLabelEvery = Just 7
     }
+
+dimensionRange :: Dimension -> PlotRange
+dimensionRange dim = (minVal dim, maxVal dim)
+
+canvasSize :: PlotConf -> (Int, Int)
+canvasSize conf = ( projectionSize $ xDim conf
+                  , projectionSize $ yDim conf)
 
 translateX :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
 translateX i lst = [ ((x + i, y), c) | ((x,y), c) <- lst ]
@@ -60,15 +78,19 @@ translateX i lst = [ ((x + i, y), c) | ((x,y), c) <- lst ]
 translateY :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
 translateY i lst = [ ((x, y + i), c) | ((x,y), c) <- lst ]
 
+addYAxisLabel :: PlotConf -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
+              -> ((Int,Int), [((Int,Int), Char)])
+addYAxisLabel _ _ a = a
+
 addXAxisLabel :: PlotConf -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
               -> ((Int,Int), [((Int,Int), Char)])
 addXAxisLabel conf successor rez@((shiftWidth, yPos), vals) = 
- case (drawXAxis conf, xLabelEvery conf) of
+ case (drawAxis $ xDim conf, labelEvery $ xDim conf) of
   (_, Nothing) -> rez
   (False, _) -> rez
   (True, Just size) ->
-   ((shiftWidth, yPos), vals ++ draw shiftWidth (fst $ xRange conf))
-    where maxWidth = drawWidth conf + shiftWidth
+   ((shiftWidth, yPos), vals ++ draw shiftWidth (minVal $ xDim conf))
+    where maxWidth = projectionSize (xDim conf) + shiftWidth
 
           apply val 0 = val
           apply val times = apply (successor val) $ times - 1
@@ -76,10 +98,10 @@ addXAxisLabel conf successor rez@((shiftWidth, yPos), vals) =
           draw x xVal
             | x > maxWidth = []
             | otherwise = 
-                let indicator = ((x,1), '|')
+                let indicator = ((x - 1,1), '|')
                     future = draw (x + size) (apply xVal size)
                 in indicator : [((xPos, 0), c)
-                                    | (xPos, c) <- zip [x .. x + size - 2] $ show xVal] ++ future
+                                    | (xPos, c) <- zip [x - 1.. x + size - 3] $ show xVal] ++ future
                 
 
 add0Axis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
@@ -88,9 +110,10 @@ add0Axis conf scaler ((shiftWidth, shiftHeight), vals) =
     ( (wShift, shiftHeight)
     , ((wShift - nominalShift + 1, y), '0') : 
         line ++ translateX valShift vals)
-    where w = drawWidth conf
+    where w = projectionSize $ xDim conf
+          h = projectionSize $ yDim conf
           y = scaler 0
-          line = if y >= 0 && y < drawHeight conf
+          line = if y >= 0 && y < h
             then [((x, y), '-') | 
                     x <- [wShift .. wShift + (w - 1)]]
             else []
@@ -105,7 +128,7 @@ addYAxis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
 addYAxis conf _scaler ((shiftWidth, shiftHeight), vals) =
     ( (wShift, shiftHeight)
     ,  line ++ translateX valShift vals)
-    where h = drawHeight conf
+    where h = projectionSize $ yDim conf
           x = nominalShift - 1
           line = [((x, y), '|') | 
                     y <- [shiftHeight .. shiftHeight + (h - 1)]]
@@ -123,7 +146,7 @@ addXaxis conf _ ((shiftWidth, shiftHeight), vals) =
   , line ++ translateY valShift vals)
     where line = [((x, hShift - 1), '_') 
                         | x <- [shiftWidth ..(w - 1) + shiftWidth]]
-          w = drawWidth conf
+          w = projectionSize $ xDim conf
           nominalShift = 2
           hShift = max nominalShift shiftHeight
           valShift = if shiftHeight >= nominalShift
@@ -139,12 +162,14 @@ addAxis :: PlotConf
         -> (ValSuccessor, ValSuccessor)
         -> [((Int, Int), Char)]
         -> ((Int, Int), [((Int, Int), Char)])
-addAxis conf (widthScaler, heightScaler) (xSucc, _ySucc) a = 
-    doWhen (drawYAxis conf)
-           (addYAxis conf heightScaler)
-    . doWhen (xLabelEvery conf /= Nothing)
+addAxis conf (widthScaler, heightScaler) (xSucc, ySucc) a = 
+      doWhen (labelEvery (yDim conf) /= Nothing)
+             (addYAxisLabel conf ySucc)
+    . doWhen (drawAxis $ yDim conf)
+             (addYAxis conf heightScaler)
+    . doWhen (labelEvery (xDim conf) /= Nothing)
              (addXAxisLabel conf xSucc)
-    . doWhen (drawXAxis conf)
+    . doWhen (drawAxis $ xDim conf)
              (addXaxis conf widthScaler)
     . doWhen (draw0Axis conf)
              (add0Axis conf heightScaler) $ ((0,0), a)
@@ -156,13 +181,11 @@ plot2DExpression conf formula =
     case VM.compileExpression formula of
       Left err -> Left err
       Right prog ->
-        let successor = widthSuccessor conf $ xScaling conf
-            yScaler = sizeMapper (yRange conf) (drawHeight conf)
-                    $ yScaling conf
-            xScaler = sizeMapper (xRange conf) (drawWidth conf)
-                    $ xScaling conf
-            (xBegin, xEnd) = xRange conf
-            size@(w, h)  = (drawWidth conf, drawHeight conf)
+        let successor = widthSuccessor $ xDim conf
+            yScaler = sizeMapper $ yDim conf
+            xScaler = sizeMapper $ xDim conf
+            (xBegin, xEnd) = dimensionRange $ xDim conf
+            size@(w, h)  = canvasSize conf
             graph = plot2D size xEnd
                            (flip (VM.evalProgram prog) 0)
                            successor xScaler yScaler
@@ -185,25 +208,26 @@ type ValSuccessor =
 
 -- | Equivalent of the 'succ' function of the
 -- 'Enum' class, with a linear scale.
-widthSuccessor :: PlotConf -> ScalingType -> (ValSuccessor, ValSuccessor)
-widthSuccessor conf Linear = (\x -> x - addVal, \x -> x + addVal)
-    where addVal = (xMax - xMin) / toEnum (drawWidth conf)
-          (xMin, xMax) = xRange conf
-{-widthSuccessor _ (Logarithmic v) x = v * x-}
+widthSuccessor :: Dimension -> (ValSuccessor, ValSuccessor)
+widthSuccessor dim = case scaling dim of
+  Linear -> (\v -> v - addVal, \v -> v + addVal)
+    where addVal = (vMax - vMin) / toEnum (projectionSize dim)
+          (vMin, vMax) = dimensionRange dim
+  Logarithmic -> error "Unimplemented"
 
 -- | How to map the height value onto the screen,
 -- by taking tinto action the 'canvas' size
-sizeMapper :: PlotRange -> Int -> ScalingType
-           -> (ValueType -> Int)
-sizeMapper (vMin, vMax) fullSize Linear =
-  \val -> truncate $ (val - vMin) * scaler
+sizeMapper :: Dimension -> (ValueType -> Int)
+sizeMapper dim = 
+ let (vMin, vMax) = dimensionRange dim
+     fullSize = projectionSize dim
+ in case scaling dim of
+   Linear -> \val -> truncate $ (val - vMin) * scaler
       where scaler = toEnum fullSize / (vMax - vMin + 1)
-              
-sizeMapper (vMin, vMax) fullSize Logarithmic =
-  \val -> truncate $ (log val - vMin') * scaler
+   Logarithmic -> \val -> truncate $ (log val - vMin') * scaler
       where (vMin', vMax') = (log vMin, log vMax)
             scaler = toEnum fullSize / (vMax' - vMin')
-
+              
 -- | Describe the action that the plotter must
 -- accomplish in order to draw a function
 data DrawAction =
