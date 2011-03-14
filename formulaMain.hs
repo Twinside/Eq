@@ -62,6 +62,15 @@ data Flag =
     | DrawXaxis
     | DrawYaxis
     | Draw0axis
+
+    | NoDrawXLabel
+    | NoDrawYLabel
+
+    | XLabelPrecision
+    | YLabelPrecision
+
+    | XLabelSpacing
+    | YLabelSpacing
     deriving (Eq, Show)
 
 version :: String
@@ -86,12 +95,12 @@ askingOption =
 
 plotOption :: [OptDescr (Flag, String)]
 plotOption =
-    [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x)"
-    , Option ""  ["xe", "xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x)"
-    , Option "y" ["yBegin"] (ReqArg ((,) XEnd) "YBEG") "Beginning of plot (y)"
-    , Option ""  ["ye", "yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y)"
-    , Option "w" ["width"]  (ReqArg ((,) PlotWidth) "Width") "Plotting width"
-    , Option "h" ["height"] (ReqArg ((,) PlotHeight) "height") "Plotting height"
+    [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x), float"
+    , Option ""  ["xe", "xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x), float"
+    , Option "y" ["yBegin"] (ReqArg ((,) XEnd) "YBEG") "Beginning of plot (y), float"
+    , Option ""  ["ye", "yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y), float"
+    , Option "w" ["width"]  (ReqArg ((,) PlotWidth) "Width") "Plotting width, int"
+    , Option "h" ["height"] (ReqArg ((,) PlotHeight) "height") "Plotting height, int"
     , Option "" ["lx", "logwidth"] (NoArg (XLogScale,""))
                   "Plot with a logrithmic scale in x"
     , Option "" ["ly", "logheight"] (NoArg (YLogScale,""))
@@ -102,6 +111,22 @@ plotOption =
                   "Draw the Y axis on the graph"
     , Option "" ["a0", "zeroaxis"] (NoArg (Draw0axis,""))
                   "Draw the 0 axis on the graph"
+    , Option "" ["nlx", "nolabelx"] (NoArg (NoDrawXLabel,""))
+                  "Don't draw label on x Axis"
+    , Option "" ["nly", "nolabely"] (NoArg (NoDrawYLabel,""))
+                  "Don't draw label on Y Axis"
+    , Option "" ["lpx", "xlabelprecision"] 
+                (ReqArg ((,) XLabelPrecision) "p") 
+                "Display label on x axis with 'p' decimals"
+    , Option "" ["lpy", "ylabelprecision"] 
+                (ReqArg ((,) YLabelPrecision) "p") 
+                "Display label on y axis with 'p' decimals"
+    , Option "" ["spx", "labelspacingx"]
+                (ReqArg ((,) XLabelSpacing) "s")
+                "Put a label evry 's' chars on x axis"
+    , Option "" ["spy", "labelspacingy"]
+                (ReqArg ((,) YLabelSpacing) "s")
+                "Put a label evry 's' chars on y axis"
     ]
 
 preparePlotConf :: PlotConf -> (Flag, String) -> PlotConf
@@ -127,6 +152,18 @@ preparePlotConf conf (DrawYaxis, _) =
     conf { yDim = (yDim conf){ drawAxis = True } }
 preparePlotConf conf (Draw0axis, _) =
     conf { draw0Axis = True }
+preparePlotConf conf (NoDrawXLabel, _) =
+    conf { xDim = (xDim conf){ labelEvery = Nothing } }
+preparePlotConf conf (NoDrawYLabel, _) =
+    conf { yDim = (yDim conf){ labelEvery = Nothing } }
+preparePlotConf conf (XLabelSpacing, val) =
+    conf { xDim = (xDim conf){ labelEvery = Just $ read val} }
+preparePlotConf conf (YLabelSpacing, val) =
+    conf { yDim = (yDim conf){ labelEvery = Just $ read val} }
+preparePlotConf conf (XLabelPrecision, val) =
+    conf { xDim = (xDim conf){ labelPrecision = read val} }
+preparePlotConf conf (YLabelPrecision, val) =
+    conf { xDim = (yDim conf){ labelPrecision = read val} }
 preparePlotConf conf _ = conf
 
 preprocOptions :: [OptDescr (Flag, String)]

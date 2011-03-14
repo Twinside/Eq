@@ -33,6 +33,7 @@ data Dimension = Dimension
     , projectionSize :: Int
     , scaling :: ScalingType
     , drawAxis :: Bool
+    , labelPrecision :: Int
     , labelEvery :: Maybe Int
     }
     deriving Show
@@ -52,6 +53,7 @@ defaultPlotConf = PlotConf
         , projectionSize = 50
         , scaling = Linear
         , drawAxis = False
+        , labelPrecision = 4
         , labelEvery = Just 7
         }
 
@@ -61,14 +63,15 @@ defaultPlotConf = PlotConf
         , projectionSize = 30
         , scaling = Linear
         , drawAxis = False
-        , labelEvery = Just 3
+        , labelPrecision = 4
+        , labelEvery = Just 4
         }
 
     , draw0Axis = False
     }
 
-doubleShow :: ValueType -> String
-doubleShow = printf "%.2f"
+doubleShow :: Dimension -> ValueType -> String
+doubleShow dim = printf "%.*f" (labelPrecision dim)
 
 dimensionRange :: Dimension -> PlotRange
 dimensionRange dim = (minVal dim, maxVal dim)
@@ -77,22 +80,26 @@ canvasSize :: PlotConf -> (Int, Int)
 canvasSize conf = ( projectionSize $ xDim conf
                   , projectionSize $ yDim conf)
 
+-- | Translate a list of write on the x (width) axis with
+-- a given amount. Perform no operation if translation amount
+-- is 0.
 translateX :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
 translateX 0 lst = lst
 translateX i lst = [ ((x + i, y), c) | ((x,y), c) <- lst ]
 
+-- | Same thing as 'translateX' but with the y (height) axis.
 translateY :: Int -> [((Int, Int), Char)] -> [((Int, Int), Char)]
 translateY 0 lst = lst
 translateY i lst = [ ((x, y + i), c) | ((x,y), c) <- lst ]
 
-addYAxisLabel :: Dimension -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
-              -> ((Int,Int), [((Int,Int), Char)])
-addYAxisLabel dim successor rez@((xPos, shiftHeight), vals) =
+-- | Add some vertical labels
+addYAxisLabel :: Dimension -> ValSuccessor -> CharCanvas -> CharCanvas
+addYAxisLabel dim successor rez@(((xPos, shiftHeight), adds), vals) =
  case (drawAxis dim, labelEvery dim) of
   (_, Nothing) -> rez
   (False, _) -> rez
   (True, Just size) ->
-   ((xShift, shiftHeight), vals' ++ draw shiftHeight (minVal dim))
+   (((xShift, shiftHeight), adds), vals' ++ draw shiftHeight (minVal dim))
     where maxHeight = projectionSize dim + shiftHeight
 
           xShift = max 8 xPos
@@ -107,21 +114,28 @@ addYAxisLabel dim successor rez@((xPos, shiftHeight), vals) =
                 let indicator = ((xShift - 1, y), '+')
                     future = draw (y + size) (apply yVal size)
                 in indicator :
-                    [((xP, y), c) | (xP, c) <- zip [0.. xShift - 2] $ doubleShow yVal] ++
+                    [((xP, y), c) | (xP, c) <- zip [0.. xShift - 2] 
+                                            $ doubleShow dim yVal] ++
                                     future
 
-addXAxisLabel :: Dimension -> ValSuccessor -> ((Int,Int), [((Int,Int), Char)])
-              -> ((Int,Int), [((Int,Int), Char)])
-addXAxisLabel dim successor rez@((shiftWidth, yPos), vals) = 
+type CharCanvas =
+    (((Int,Int),(Int,Int)), [((Int,Int), Char)])
+
+addXAxisLabel :: Dimension -> ValSuccessor -> CharCanvas -> CharCanvas
+addXAxisLabel dim successor rez@(((shiftWidth, yPos), (addX, addY)), vals) = 
  case (drawAxis dim, labelEvery dim) of
   (_, Nothing) -> rez
   (False, _) -> rez
   (True, Just size) ->
-   ((shiftWidth, yPos), vals ++ draw shiftWidth (minVal dim))
+   (((shiftWidth, yPos)
+   ,(rightShift, addY) ), vals ++ draw shiftWidth (minVal dim))
     where maxWidth = projectionSize dim + shiftWidth
 
           apply val 0 = val
           apply val times = apply (successor val) $ times - 1
+
+          rightShift = max addX 
+                     $ size - (projectionSize dim `rem` size)
 
           draw x xVal
             | x >= maxWidth = []
@@ -130,13 +144,12 @@ addXAxisLabel dim successor rez@((shiftWidth, yPos), vals) =
                     future = draw (x + size) (apply xVal size)
                 in indicator : [((xPos, 0), c)
                                     | (xPos, c) <- zip [x - 1.. x + size - 3] 
-                                $ doubleShow xVal] ++ future
+                                                    $ doubleShow dim xVal] ++ future
                 
 
-add0Axis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
-         -> ((Int, Int), [((Int, Int), Char)])
-add0Axis conf scaler ((shiftWidth, shiftHeight), vals) =
-    ( (wShift, shiftHeight)
+add0Axis :: PlotConf -> Scaler -> CharCanvas -> CharCanvas 
+add0Axis conf scaler (((shiftWidth, shiftHeight), adds), vals) =
+    ( ((wShift, shiftHeight), adds)
     , ((wShift - nominalShift + 1, y), '0') : 
         line ++ translateX valShift vals)
     where w = projectionSize $ xDim conf
@@ -152,10 +165,9 @@ add0Axis conf scaler ((shiftWidth, shiftHeight), vals) =
             then shiftWidth - wShift
             else wShift - shiftWidth
 
-addYAxis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
-         -> ((Int, Int), [((Int, Int), Char)])
-addYAxis conf _scaler ((shiftWidth, shiftHeight), vals) =
-    ( (wShift, shiftHeight)
+addYAxis :: PlotConf -> Scaler -> CharCanvas -> CharCanvas
+addYAxis conf _scaler (((shiftWidth, shiftHeight), adds), vals) =
+    ( ((wShift, shiftHeight), adds)
     ,  line ++ translateX valShift vals)
     where h = projectionSize $ yDim conf
           x = nominalShift - 1
@@ -168,19 +180,16 @@ addYAxis conf _scaler ((shiftWidth, shiftHeight), vals) =
             else wShift - shiftWidth
 
 
-addXaxis :: PlotConf -> Scaler -> ((Int, Int), [((Int, Int), Char)])
-         -> ((Int, Int), [((Int, Int), Char)])
-addXaxis conf _ ((shiftWidth, shiftHeight), vals) =
-  ( (shiftWidth, hShift)
+addXaxis :: PlotConf -> Scaler -> CharCanvas -> CharCanvas
+addXaxis conf _ (((shiftWidth, shiftHeight), adds), vals) =
+  ( ((shiftWidth, hShift), adds)
   , line ++ translateY valShift vals)
     where line = [((x, hShift - 1), '_') 
                         | x <- [shiftWidth ..(w - 1) + shiftWidth]]
           w = projectionSize $ xDim conf
           nominalShift = 2
           hShift = max nominalShift shiftHeight
-          valShift = if shiftHeight >= nominalShift
-                then shiftHeight - hShift
-                else hShift - shiftHeight
+          valShift = hShift - shiftHeight
 
 -- | Equivalent of 'when' but non-monadic.
 doWhen :: Bool -> (a -> a) -> a -> a
@@ -193,7 +202,7 @@ addAxis :: PlotConf
         -> (Scaler, Scaler)
         -> (ValSuccessor, ValSuccessor)
         -> [((Int, Int), Char)]
-        -> ((Int, Int), [((Int, Int), Char)])
+        -> CharCanvas
 addAxis conf (widthScaler, heightScaler) (xSucc, ySucc) a = 
       doWhen (labelEvery (yDim conf) /= Nothing)
              (addYAxisLabel (yDim conf) ySucc)
@@ -204,7 +213,7 @@ addAxis conf (widthScaler, heightScaler) (xSucc, ySucc) a =
     . doWhen (drawAxis $ xDim conf)
              (addXaxis conf widthScaler)
     . doWhen (draw0Axis conf)
-             (add0Axis conf heightScaler) $ ((0,0), a)
+             (add0Axis conf heightScaler) $ (((0,0), (0,0)), a)
 
 
 -- | User function to start a plot. Handle all the scary
@@ -225,11 +234,11 @@ plot2DExpression conf formula =
                            (flip (VM.evalProgram prog) 0)
                            successor xScaler yScaler
                            xBegin
-            ((shiftX, shiftY), graph') =
+            (((shiftX, shiftY), (addX, addY)), graph') =
                 addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
         in Right $ accumArray (\_ e -> e) ' '
-                              ((0, 0) ,(w + shiftX - 1, h + shiftY - 1)) $
-                              [v | v@((x,_),_) <- graph', x < w + shiftX]
+                              ((0, 0) ,(w + shiftX + addX - 1, h + shiftY + addY - 1)) $
+                              [v | v@((x,_),_) <- graph', x < w + shiftX + addX]
     
 
 -- | This type is a transformation from function
@@ -246,7 +255,7 @@ type ValSuccessor =
 widthSuccessor :: Dimension -> (ValSuccessor, ValSuccessor)
 widthSuccessor dim = case scaling dim of
   Linear -> (\v -> v - addVal, \v -> v + addVal)
-    where addVal = (vMax - vMin) / toEnum (projectionSize dim)
+    where addVal = (vMax - vMin) / toEnum (projectionSize dim - 2)
           (vMin, vMax) = dimensionRange dim
   Logarithmic -> error "Unimplemented"
 
