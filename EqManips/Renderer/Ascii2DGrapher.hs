@@ -13,6 +13,7 @@ module EqManips.Renderer.Ascii2DGrapher(
 import Data.Array.Unboxed
 import Text.Printf
 
+import Debug.Trace
 import EqManips.Types
 import qualified EqManips.Algorithm.StackVM.Stack as VM
 
@@ -148,7 +149,8 @@ addXAxisLabel dim successor rez@(((shiftWidth, yPos), (addX, addY)), vals) =
                 
 
 add0Axis :: PlotConf -> Scaler -> CharCanvas -> CharCanvas 
-add0Axis conf scaler (((shiftWidth, shiftHeight), adds), vals) =
+add0Axis conf scaler original@(((shiftWidth, shiftHeight), adds), vals) =
+    if y < 0 then original else
     ( ((wShift, shiftHeight), adds)
     , ((wShift - nominalShift + 1, y), '0') : 
         line ++ translateX valShift vals)
@@ -238,8 +240,12 @@ plot2DExpression conf formula =
                 addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
         in Right $ accumArray (\_ e -> e) ' '
                               ((0, 0) ,(w + shiftX + addX - 1, h + shiftY + addY - 1)) $
-                              [v | v@((x,_),_) <- graph', x < w + shiftX + addX]
-    
+                              {-map (\a -> trace (show a) a) $-}
+                              trace (show conf) $
+                              [v | v@((x,_),_) <- graph', 
+                                                 x < w + shiftX + addX,
+                                                 x >= 0]
+
 
 -- | This type is a transformation from function
 -- result to screen space.
@@ -265,12 +271,18 @@ sizeMapper :: Dimension -> (ValueType -> Int)
 sizeMapper dim = 
  let (vMin, vMax) = dimensionRange dim
      fullSize = projectionSize dim
- in case scaling dim of
-   Linear -> \val -> truncate $ (val - vMin) * scaler
+ in case (scaling dim, vMin > 0) of
+   (Linear, _) -> \val -> truncate $ (val - vMin) * scaler
       where scaler = toEnum fullSize / (vMax - vMin + 1)
-   Logarithmic -> \val -> truncate $ (log val - vMin') * scaler
+   (Logarithmic, False) -> trace (">> " ++ show ((vMin, vMax), (vMin', vMax', scaler)))
+                $ \val -> truncate $ (log val - vMin') * scaler
       where (vMin', vMax') = (log vMin, log vMax)
-            scaler = toEnum fullSize / (vMax' - vMin')
+            scaler = toEnum fullSize / (abs (vMax' - vMin') + 1)
+
+   (Logarithmic, True) -> trace ("|> " ++ show ((vMin, vMax), (vMin', vMax', scaler)))
+                $ \val -> truncate $ (log val - vMin') * scaler
+      where (vMin', vMax') = (log vMin, log vMax)
+            scaler = toEnum fullSize / (abs (vMax' - vMin') + 1)
               
 -- | Describe the action that the plotter must
 -- accomplish in order to draw a function

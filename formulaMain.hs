@@ -97,7 +97,7 @@ plotOption :: [OptDescr (Flag, String)]
 plotOption =
     [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x), float"
     , Option ""  ["xe", "xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x), float"
-    , Option "y" ["yBegin"] (ReqArg ((,) XEnd) "YBEG") "Beginning of plot (y), float"
+    , Option "y" ["yBegin"] (ReqArg ((,) YBeg) "YBEG") "Beginning of plot (y), float"
     , Option ""  ["ye", "yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y), float"
     , Option "w" ["width"]  (ReqArg ((,) PlotWidth) "Width") "Plotting width, int"
     , Option "h" ["height"] (ReqArg ((,) PlotHeight) "height") "Plotting height, int"
@@ -342,8 +342,6 @@ plotCommand args = do
                     return False
 
                 Right v -> do
-                    Io.hPutStrLn finalFile $ show opt
-                    Io.hPutStrLn finalFile $ show plotConf
                     Io.hPutStr finalFile $ charArrayToString  v
                     return True)
            formulaList
