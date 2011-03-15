@@ -274,15 +274,16 @@ sizeMapper dim =
  in case (scaling dim, vMin > 0) of
    (Linear, _) -> \val -> truncate $ (val - vMin) * scaler
       where scaler = toEnum fullSize / (vMax - vMin + 1)
-   (Logarithmic, False) -> trace (">> " ++ show ((vMin, vMax), (vMin', vMax', scaler)))
-                $ \val -> truncate $ (log val - vMin') * scaler
+
+   (Logarithmic, True) -> \val -> truncate $ (log val - vMin') * scaler
       where (vMin', vMax') = (log vMin, log vMax)
             scaler = toEnum fullSize / (abs (vMax' - vMin') + 1)
 
-   (Logarithmic, True) -> trace ("|> " ++ show ((vMin, vMax), (vMin', vMax', scaler)))
-                $ \val -> truncate $ (log val - vMin') * scaler
-      where (vMin', vMax') = (log vMin, log vMax)
+   (Logarithmic, False) -> trace (">> " ++ show ((vMin, vMax), (vMin', vMax', scaler)))
+                $ \val -> truncate $ (log $ val - vMin') * scaler
+      where (vMin', vMax') = (log 0.1, log $ vMax - vMin)
             scaler = toEnum fullSize / (abs (vMax' - vMin') + 1)
+
               
 -- | Describe the action that the plotter must
 -- accomplish in order to draw a function
