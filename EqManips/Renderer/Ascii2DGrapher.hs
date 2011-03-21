@@ -13,7 +13,6 @@ module EqManips.Renderer.Ascii2DGrapher(
 import Data.Array.Unboxed
 import Text.Printf
 
-import Debug.Trace
 import EqManips.Types
 import qualified EqManips.Algorithm.StackVM.Stack as VM
 
@@ -43,6 +42,7 @@ data PlotConf = PlotConf
     { xDim :: Dimension
     , yDim :: Dimension
     , draw0Axis :: Bool
+    , graphTitle :: Maybe String
     }
     deriving Show
 
@@ -69,6 +69,7 @@ defaultPlotConf = PlotConf
         }
 
     , draw0Axis = False
+    , graphTitle = Nothing
     }
 
 doubleShow :: Dimension -> ValueType -> String
@@ -149,6 +150,12 @@ addXAxisLabel dim successor rez@(((shiftWidth, yPos), (addX, addY)), vals) =
                                     | (xPos, c) <- zip [x - 1.. x + size - 3] 
                                                     $ doubleShow dim xVal] ++ future
                 
+addTitle :: PlotConf -> Maybe String -> CharCanvas -> CharCanvas
+addTitle _ Nothing a = a
+addTitle conf (Just t) (((shiftWidth, shiftHeight), adds), vals) =
+    (((shiftWidth, shiftHeight + 2), adds), toAdd ++ translateY 2 vals)
+        where begin = (projectionSize (xDim conf) - length t) `div` 2
+              toAdd = [((x,0), c) | (x,c) <- zip [begin ..] t]
 
 add0Axis :: PlotConf -> Scaler -> CharCanvas -> CharCanvas 
 add0Axis conf scaler original@(((shiftWidth, shiftHeight), adds), vals) =
@@ -208,7 +215,9 @@ addAxis :: PlotConf
         -> [((Int, Int), Char)]
         -> CharCanvas
 addAxis conf (widthScaler, heightScaler) (xSucc, ySucc) a = 
-      doWhen (labelEvery (yDim conf) /= Nothing)
+      doWhen (graphTitle conf /= Nothing)
+             (addTitle conf $ graphTitle conf)
+    . doWhen (labelEvery (yDim conf) /= Nothing)
              (addYAxisLabel (yDim conf) ySucc)
     . doWhen (drawAxis $ yDim conf)
              (addYAxis conf heightScaler)
@@ -242,8 +251,6 @@ plot2DExpression conf formula =
                 addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
         in Right $ accumArray (\_ e -> e) ' '
                               ((0, 0) ,(w + shiftX + addX - 1, h + shiftY + addY - 1)) $
-                              {-map (\a -> trace (show a) a) $-}
-                              trace (show conf) $
                               [v | v@((x,_),_) <- graph', 
                                                  x < w + shiftX + addX,
                                                  x >= 0]
@@ -261,13 +268,23 @@ type ValSuccessor =
 -- | Equivalent of the 'succ' function of the
 -- 'Enum' class, with a linear scale.
 widthSuccessor :: Dimension -> (ValSuccessor, ValSuccessor)
-widthSuccessor dim = case scaling dim of
-  Linear -> (\v -> v - addVal, \v -> v + addVal)
+widthSuccessor dim = case (scaling dim, minVal dim > 0) of
+  (Linear, _) -> (\v -> v - addVal, \v -> v + addVal)
     where addVal = (vMax - vMin) / toEnum (projectionSize dim - 2)
           (vMin, vMax) = dimensionRange dim
-  Logarithmic -> (\v -> v  / mulVal,\v -> v * mulVal)
+  (Logarithmic, True)  -> (\v -> v / mulVal,\v -> v * mulVal)
     where mulVal = (vMax / vMin) ** (1.0 / toEnum (projectionSize dim - 1))
           (vMin, vMax) = dimensionRange dim
+  (Logarithmic, False) -> (\v -> vPrev (v + vAdd) - vAdd
+                          ,\v -> vNext (v + vAdd) - vAdd)
+    where (vMin, vMax) = dimensionRange dim
+          bigpsilon = 0.1
+          vAdd = 0.1 + negate vMin
+          (vPrev, vNext) = widthSuccessor $ 
+                dim { minVal = bigpsilon
+                    , maxVal = vMax - vMin + bigpsilon}
+          
+
 
 -- | How to map the height value onto the screen,
 -- by taking tinto action the 'canvas' size

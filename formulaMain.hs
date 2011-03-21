@@ -71,10 +71,12 @@ data Flag =
 
     | XLabelSpacing
     | YLabelSpacing
+
+    | PlotTitle
     deriving (Eq, Show)
 
 version :: String
-version = "0.2"
+version = "1.1"
 
 commonOption :: [OptDescr (Flag, String)]
 commonOption =
@@ -127,6 +129,9 @@ plotOption =
     , Option "" ["spy", "labelspacingy"]
                 (ReqArg ((,) YLabelSpacing) "s")
                 "Put a label evry 's' chars on y axis"
+    , Option "t" ["title"]
+                (ReqArg ((,) PlotTitle) "t")
+                "Add a title t under the graph"
     ]
 
 preparePlotConf :: PlotConf -> (Flag, String) -> PlotConf
@@ -163,7 +168,9 @@ preparePlotConf conf (YLabelSpacing, val) =
 preparePlotConf conf (XLabelPrecision, val) =
     conf { xDim = (xDim conf){ labelPrecision = read val} }
 preparePlotConf conf (YLabelPrecision, val) =
-    conf { xDim = (yDim conf){ labelPrecision = read val} }
+    conf { yDim = (yDim conf){ labelPrecision = read val} }
+preparePlotConf conf (PlotTitle, val) =
+    conf { graphTitle = Just val }
 preparePlotConf conf _ = conf
 
 preprocOptions :: [OptDescr (Flag, String)]

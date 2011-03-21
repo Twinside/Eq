@@ -89,8 +89,8 @@ run:
 	./eq plot --logheight --xaxis "exp(x)" >> rez 2>&1
 	./eq plot --yaxis -y 0.5 --ye 100 --yaxis --logheight --xaxis --zeroaxis "exp(x / 3)" --zeroaxis >> rez 2>&1
 	./eq plot --zeroaxis --logheight --yaxis --xaxis "exp(x)" >> rez 2>&1
-	#./eq plot --logwidth -x 0.01 --xaxis "log(x)" >> rez 2>&1
-	#./eq plot --logwidth -x 0.01 --yaxis --xaxis "log(x)" >> rez 2>&1
+	./eq plot --logwidth -x 0.01 --xaxis "log(x)" >> rez 2>&1
+	./eq plot -t "loglog" --logwidth -x 0.01 --yaxis --xaxis "log(x)" >> rez 2>&1
 
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs
