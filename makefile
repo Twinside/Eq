@@ -75,18 +75,22 @@ staticrelease: EqManips/BaseLibrary.hs
 
 run:
 	echo "" > rez
-	eq.exe plot "log(x)" > rez 2>&1
-	eq.exe plot "tan(x)" >> rez 2>&1
-	eq.exe plot "sin(x)" >> rez 2>&1
-	eq.exe plot "sin(x) * 3" >> rez 2>&1
-	eq.exe plot "sin(x) * 5" >> rez 2>&1
-	eq.exe plot "sin(x) / 3" >> rez 2>&1
-	eq.exe plot "exp(x)" >> rez 2>&1
-	eq.exe plot --zeroaxis "sin(x) * 5" >> rez 2>&1
-	eq.exe plot --zeroaxis --xaxis "sin(x) * 5" >> rez 2>&1
-	eq.exe plot --zeroaxis --yaxis --xaxis "sin(x) * 5" >> rez 2>&1
-	eq.exe plot -y 0.5 --ye 100 --logheight --xaxis --zeroaxis "exp(x)" >> rez 2>&1
-	eq.exe plot --logheight --xaxis "exp(x)" >> rez 2>&1
+	./eq plot "log(x)" > rez 2>&1
+	./eq plot "tan(x)" >> rez 2>&1
+	./eq plot "sin(x)" >> rez 2>&1
+	./eq plot "sin(x) * 3" >> rez 2>&1
+	./eq plot "sin(x) * 5" >> rez 2>&1
+	./eq plot "sin(x) / 3" >> rez 2>&1
+	./eq plot "exp(x)" >> rez 2>&1
+	./eq plot --zeroaxis "sin(x) * 5" >> rez 2>&1
+	./eq plot --zeroaxis --xaxis "sin(x) * 5" >> rez 2>&1
+	./eq plot --zeroaxis --yaxis --xaxis "sin(x) * 5" >> rez 2>&1
+	./eq plot -y 0.5 --ye 100 --logheight --xaxis --zeroaxis "exp(x)" >> rez 2>&1
+	./eq plot --logheight --xaxis "exp(x)" >> rez 2>&1
+	./eq plot --yaxis -y 0.5 --ye 100 --yaxis --logheight --xaxis --zeroaxis "exp(x / 3)" --zeroaxis >> rez 2>&1
+	./eq plot --zeroaxis --logheight --yaxis --xaxis "exp(x)" >> rez 2>&1
+	#./eq plot --logwidth -x 0.01 --xaxis "log(x)" >> rez 2>&1
+	#./eq plot --logwidth -x 0.01 --yaxis --xaxis "log(x)" >> rez 2>&1
 
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs

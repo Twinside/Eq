@@ -119,6 +119,8 @@ addYAxisLabel dim successor rez@(((xPos, shiftHeight), adds), vals) =
                                             $ doubleShow dim yVal] ++
                                     future
 
+-- | Represent a tuple of canvas extension and a list
+-- of characters. It's ((leftAdd, bottomAdd), (rightAdd, topAdd))
 type CharCanvas =
     (((Int,Int),(Int,Int)), [((Int,Int), Char)])
 
@@ -263,7 +265,9 @@ widthSuccessor dim = case scaling dim of
   Linear -> (\v -> v - addVal, \v -> v + addVal)
     where addVal = (vMax - vMin) / toEnum (projectionSize dim - 2)
           (vMin, vMax) = dimensionRange dim
-  Logarithmic -> error "Unimplemented"
+  Logarithmic -> (\v -> v  / mulVal,\v -> v * mulVal)
+    where mulVal = (vMax / vMin) ** (1.0 / toEnum (projectionSize dim - 1))
+          (vMin, vMax) = dimensionRange dim
 
 -- | How to map the height value onto the screen,
 -- by taking tinto action the 'canvas' size
@@ -279,8 +283,7 @@ sizeMapper dim =
       where (vMin', vMax') = (log vMin, log vMax)
             scaler = toEnum fullSize / (abs (vMax' - vMin') + 1)
 
-   (Logarithmic, False) -> trace (">> " ++ show ((vMin, vMax), (vMin', vMax', scaler)))
-                $ \val -> truncate $ (log $ val - vMin') * scaler
+   (Logarithmic, False) -> \val -> truncate $ (log $ val - vMin') * scaler
       where (vMin', vMax') = (log 0.1, log $ vMax - vMin)
             scaler = toEnum fullSize / (abs (vMax' - vMin') + 1)
 
@@ -392,7 +395,7 @@ plot2D (_width, height) xStop f widthSucc xPlot yPlot xInit =
                 direction prevScreen x
           | direction == Forward && (x <= xBegin || x >= xEnd) = []
           | direction == Backward && (x <= xEnd || x >= xBegin) = []
-          | otherwise = 
+          | otherwise =
           let val = f x
               xNext = if direction == Forward then xSucc x
                                              else xPrev x
