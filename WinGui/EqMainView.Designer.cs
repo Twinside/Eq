@@ -39,7 +39,9 @@
             // rezEntrySplitter
             // 
             this.rezEntrySplitter.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.rezEntrySplitter.Cursor = System.Windows.Forms.Cursors.Default;
             this.rezEntrySplitter.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.rezEntrySplitter.FixedPanel = System.Windows.Forms.FixedPanel.Panel2;
             this.rezEntrySplitter.Location = new System.Drawing.Point(0, 0);
             this.rezEntrySplitter.Name = "rezEntrySplitter";
             this.rezEntrySplitter.Orientation = System.Windows.Forms.Orientation.Horizontal;
@@ -51,8 +53,8 @@
             // rezEntrySplitter.Panel2
             // 
             this.rezEntrySplitter.Panel2.Controls.Add(this.txtEntry);
-            this.rezEntrySplitter.Size = new System.Drawing.Size(330, 483);
-            this.rezEntrySplitter.SplitterDistance = 394;
+            this.rezEntrySplitter.Size = new System.Drawing.Size(365, 555);
+            this.rezEntrySplitter.SplitterDistance = 407;
             this.rezEntrySplitter.TabIndex = 0;
             // 
             // txtResult
@@ -64,7 +66,7 @@
             this.txtResult.Multiline = true;
             this.txtResult.Name = "txtResult";
             this.txtResult.ReadOnly = true;
-            this.txtResult.Size = new System.Drawing.Size(328, 392);
+            this.txtResult.Size = new System.Drawing.Size(363, 405);
             this.txtResult.TabIndex = 0;
             // 
             // txtEntry
@@ -75,15 +77,15 @@
             this.txtEntry.Multiline = true;
             this.txtEntry.Name = "txtEntry";
             this.txtEntry.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtEntry.Size = new System.Drawing.Size(328, 83);
-            this.txtEntry.TabIndex = 0;
+            this.txtEntry.Size = new System.Drawing.Size(363, 142);
+            this.txtEntry.TabIndex = 1;
             this.txtEntry.KeyUp += new System.Windows.Forms.KeyEventHandler(this.txtEntry_KeyUp);
             // 
             // EqMainView
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(330, 483);
+            this.ClientSize = new System.Drawing.Size(365, 555);
             this.Controls.Add(this.rezEntrySplitter);
             this.Name = "EqMainView";
             this.Text = "Eq!";
@@ -99,8 +101,8 @@
         #endregion
 
         private System.Windows.Forms.SplitContainer rezEntrySplitter;
-        private System.Windows.Forms.TextBox txtEntry;
         private System.Windows.Forms.TextBox txtResult;
+        private System.Windows.Forms.TextBox txtEntry;
     }
 }
 

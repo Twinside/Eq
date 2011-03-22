@@ -12,3 +12,9 @@ linesOfArray :: (Enum i, Ix i, IArray a Char)
              => a (i,i) Char -> [String]
 linesOfArray a = map (lineOfArray a) [yMin .. yMax]
     where ((_,yMin),(_, yMax)) = bounds a
+
+charArrayToString :: (Enum i, Ix i, IArray a Char)
+                  => a (i,i) Char -> String
+charArrayToString = concat . reverse 
+                  . map (++ "\n") . linesOfArray
+

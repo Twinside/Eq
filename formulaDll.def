@@ -4,4 +4,10 @@ EXPORTS
  eq_evalW               = eq_evalW
  eq_translate_mathml	= eq_translate_mathml
  eq_end_runtime         = eq_end_runtime
+ eq_format              = eq_format
+ eq_formatW             = eq_formatW
+ eq_eval_with_contextW  = eq_eval_with_contextW
+ eq_eval_with_context   = eq_eval_with_context
+ eq_create_context      = eq_create_context
+ eq_delete_context      = eq_delete_context
 

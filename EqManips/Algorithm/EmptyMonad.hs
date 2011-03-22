@@ -5,13 +5,6 @@ module EqManips.Algorithm.EmptyMonad( fromEmptyMonad, asAMonad )  where
 import Control.Applicative
 import Control.Monad.Identity
 
-instance Applicative Identity where
-    pure = return
-    f <*> a = do
-        f' <- f
-        a' <- a
-        return $ f' a'
-
 -- | a function to unwrap empty monad, just
 -- to be able to compose easily.
 fromEmptyMonad :: Identity a -> a

@@ -15,11 +15,6 @@ import EqManips.Algorithm.Utils
 
 infix 4 =~=
 
-instance Applicative (State s) where
-    pure = return 
-    a <*> b = 
-        do { a' <- a; b' <- b; return $ a' b' }
-    
 type UnificationContext a = State [(String, FormulaPrim)] a
 
 -- | Just a little shortcut to be able to write more

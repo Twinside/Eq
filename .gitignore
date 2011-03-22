@@ -18,6 +18,7 @@ coverageReport
 *.ncb
 *.suo
 *.user
+*.so
 formulaDll_stub.c
 formulaDll_stub.h
 Debug

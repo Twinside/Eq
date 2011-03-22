@@ -74,12 +74,29 @@ staticrelease: EqManips/BaseLibrary.hs
 	upx --best eq$(EXEEXT)
 
 run:
-	./eq eval "(1 + 3 * x + 2 * x^2 - 7 * x ^3) / (1 + x - 2 * x ^2)"
+	echo "" > rez
+	./eq plot "log(x)" > rez 2>&1
+	./eq plot "tan(x)" >> rez 2>&1
+	./eq plot "sin(x)" >> rez 2>&1
+	./eq plot "sin(x) * 3" >> rez 2>&1
+	./eq plot "sin(x) * 5" >> rez 2>&1
+	./eq plot "sin(x) / 3" >> rez 2>&1
+	./eq plot "exp(x)" >> rez 2>&1
+	./eq plot --zeroaxis "sin(x) * 5" >> rez 2>&1
+	./eq plot --zeroaxis --xaxis "sin(x) * 5" >> rez 2>&1
+	./eq plot --zeroaxis --yaxis --xaxis "sin(x) * 5" >> rez 2>&1
+	./eq plot -y 0.5 --ye 100 --logheight --xaxis --zeroaxis "exp(x)" >> rez 2>&1
+	./eq plot --logheight --xaxis "exp(x)" >> rez 2>&1
+	./eq plot --yaxis -y 0.5 --ye 100 --yaxis --logheight --xaxis --zeroaxis "exp(x / 3)" --zeroaxis >> rez 2>&1
+	./eq plot --zeroaxis --logheight --yaxis --xaxis "exp(x)" >> rez 2>&1
+	./eq plot --logwidth -x 0.01 --xaxis "log(x)" >> rez 2>&1
+	./eq plot -t "loglog" --logwidth -x 0.01 --yaxis --xaxis "log(x)" >> rez 2>&1
 
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs
-	ghc $(DEBUG) -c dllMain.cpp
-	unixfind . | grep "\.o$$" | xargs ghc $(DEBUG) -shared -optl-mwindows \
+	ghc $(DEBUG) -c dllMain.c
+	unixfind . | grep "\.o$$" | sed -e 's:\\:/:g' | \
+				xargs ghc $(DEBUG) -shared -optl-mwindows \
 										-o formulaDll.dll \
 										-package parsec \
 										-package array \
@@ -90,4 +107,7 @@ dll:
 										-package HaXml \
 										-lOle32 \
 										formulaDll.def
+
+sharedlib:
+	ghc -O2 --make -cpp  -no-hs-main -optl '-shared' -optc '-DMODULE=FormulaDll' -o eqlinlib.so formulaDll.hs module_init.c
 

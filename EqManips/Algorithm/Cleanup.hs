@@ -74,6 +74,8 @@ mul x (BinOp _ OpDiv [UnOp _ OpNegate (CInteger 1), denom]) = Left $ negate x / 
 mul (BinOp _ OpPow [a, n]) (BinOp _ OpPow [b, m]) | a == b = Left $ a ** (n + m)
 mul (CInteger 1) x = Left x
 mul x (CInteger 1) = Left x
+mul (UnOp _ OpNegate (CInteger 1)) x = Left $ negate x
+mul x (UnOp _ OpNegate (CInteger 1)) = Left $ negate x
 mul (CFloat 1.0) x = Left x
 mul x (CFloat 1.0) = Left x
 mul (CInteger i1) (CInteger i2) = Left . int $ i1 * i2
@@ -95,6 +97,7 @@ power x y = Right (x,y)
 divide :: BiRuler
 divide (CInteger 0) _ = Left $ int 0
 divide x (CInteger 1) = Left x
+divide x (UnOp _ OpNegate (CInteger 1)) = Left $ negate x
 divide f1@(CInteger i1) f2@(CInteger i2)
     | i1 `mod` i2 == 0 = Left . int $ i1 `div` i2
     | otherwise = if greatestCommonDenominator > 1
@@ -124,6 +127,10 @@ cosinus :: FormulaPrim -> FormulaPrim
 cosinus (CInteger 0) = int 1
 cosinus (NumEntity Pi) = int (-1)
 cosinus (BinOp _ OpDiv [NumEntity Pi, CInteger 6]) = sqrt 3 / int 3
+cosinus (BinOp _ OpDiv [UnOp _ OpNegate (NumEntity Pi), CInteger 3]) = Fraction $ 1 % 2
+cosinus (BinOp _ OpDiv [UnOp _ OpNegate (NumEntity Pi)
+                       ,UnOp _ OpNegate (CInteger 3)]) = Fraction $ 1 % 2
+cosinus (BinOp _ OpDiv [NumEntity Pi, UnOp _ OpNegate (CInteger 3)]) = Fraction $ 1 % 2
 cosinus (BinOp _ OpMul [NumEntity Pi, CInteger i])
     | i `mod` 2 == 0 = int 1
     | otherwise = int (-1)

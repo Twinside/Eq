@@ -23,10 +23,6 @@ convertToCpp f = convertToCppS f ""
 convertToCppS :: Formula TreeForm -> ShowS
 convertToCppS (Formula f) = fst $ runState (cNo f) defaultConf
 
-instance Applicative (State s) where
-    pure = return
-    (<*>) = ap
-
 defaultConf :: CppConf
 defaultConf =
     CppConf { failures = []

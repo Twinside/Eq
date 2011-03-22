@@ -134,8 +134,8 @@ parseArgs (v, _) (n:xs) = parseArgs (v, read n) xs
 runTestList :: [(String, Bool -> String -> Int -> IO ())] -> IO ()
 runTestList tests = do
     args <- getArgs
-    let (verbose, n) = parseArgs (False, 100) args
-    mapM_ (\(s,a) -> printf "%-25s: " s >> a verbose s n) tests
+    let (isVerbose, n) = parseArgs (False, 100) args
+    mapM_ (\(s,a) -> printf "%-25s: " s >> a isVerbose s n) tests
 
 main :: IO ()
 main = do

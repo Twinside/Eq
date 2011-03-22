@@ -1,0 +1,24 @@
+﻿<Window x:Class="WpfGui.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Eq!" Height="481" Width="282">
+    <Grid>
+        <Grid Name="grid1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" MinHeight="20" MaxHeight="80" />
+            </Grid.RowDefinitions>
+            <ToolBar Grid.Row="0">
+                <Button Name="btnShowMathDraw" Width="17" Height="17" Click="btnShowMathDraw_Click" />
+            </ToolBar>
+            <RichTextBox Grid.Row="1" Name="rchTxtResultView" />
+            <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="5" ResizeBehavior="PreviousAndNext"/>
+            <DockPanel Grid.Row="3" LastChildFill="True" >
+                <Button DockPanel.Dock="Right" Name="eqValidate" Content="ok" Click="eqValidate_Click" />
+                <TextBox DockPanel.Dock="Left" Name="txtInput" AcceptsReturn="True" />
+            </DockPanel>
+        </Grid>
+    </Grid>
+</Window>
