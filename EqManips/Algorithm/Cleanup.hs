@@ -127,6 +127,10 @@ cosinus :: FormulaPrim -> FormulaPrim
 cosinus (CInteger 0) = int 1
 cosinus (NumEntity Pi) = int (-1)
 cosinus (BinOp _ OpDiv [NumEntity Pi, CInteger 6]) = sqrt 3 / int 3
+cosinus (BinOp _ OpDiv [UnOp _ OpNegate (NumEntity Pi), CInteger 3]) = Fraction $ 1 % 2
+cosinus (BinOp _ OpDiv [UnOp _ OpNegate (NumEntity Pi)
+                       ,UnOp _ OpNegate (CInteger 3)]) = Fraction $ 1 % 2
+cosinus (BinOp _ OpDiv [NumEntity Pi, UnOp _ OpNegate (CInteger 3)]) = Fraction $ 1 % 2
 cosinus (BinOp _ OpMul [NumEntity Pi, CInteger i])
     | i `mod` 2 == 0 = int 1
     | otherwise = int (-1)

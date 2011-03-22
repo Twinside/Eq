@@ -350,7 +350,6 @@ consEval l toAppend =
 -- | General evaluation/reduction function
 eval :: EvalFun -> EvalFun
 eval evaluator (Meta _ m f) = metaEvaluation evaluator m f
-eval _ (NumEntity Pi) = return $ CFloat pi
 eval evaluator (Matrix _ n m mlines) = do
     cells <- sequence [mapM evaluator line | line <- mlines]
     return $ matrix n m cells
