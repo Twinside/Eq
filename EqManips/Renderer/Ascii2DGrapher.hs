@@ -1,4 +1,3 @@
-module EqManips.Renderer.Ascii2DGrapher where
 -- | This module implement an ASCII Art graph plotter,
 -- using subdivision to provide good looking ascii graph.
 module EqManips.Renderer.Ascii2DGrapher(

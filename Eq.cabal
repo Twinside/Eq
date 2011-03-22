@@ -60,6 +60,7 @@ Executable eq
                  , EqManips.Algorithm.Simplify
                  , EqManips.Algorithm.Unification
                  , EqManips.Algorithm.Utils
+                 , EqManips.Algorithm.StackVM.Stack
                  , EqManips.BaseLibrary
                  , EqManips.Conf
                  , EqManips.Domain
