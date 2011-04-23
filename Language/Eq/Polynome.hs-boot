@@ -1,6 +1,6 @@
-module EqManips.Polynome where
+module Language.Eq.Polynome where
 
-import {-# SOURCE #-} EqManips.Types
+import {-# SOURCE #-} Language.Eq.Types
 
 convertToPolynome :: Formula ListForm -> Maybe Polynome
 convertToFormula :: Polynome -> Formula ListForm

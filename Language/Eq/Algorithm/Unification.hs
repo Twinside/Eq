@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
-module EqManips.Algorithm.Unification( unify, getFirstUnifying ) where
+module Language.Eq.Algorithm.Unification( unify, getFirstUnifying ) where
 
 import Data.List( foldl' )
 
@@ -9,9 +9,9 @@ import Control.Applicative
 import Control.Monad.Writer
 import Control.Monad.State.Lazy
 
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.Algorithm.Utils
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.Algorithm.Utils
 
 infix 4 =~=
 

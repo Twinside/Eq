@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
-module EqManips.Tests.ContinuousGenerator( ContinuousFormula( .. )
+module Language.Eq.Tests.ContinuousGenerator( ContinuousFormula( .. )
                                          , ContinuousBinop( .. )
                                          , ContinuousUnop( .. )
                                          , formulaGen 
@@ -8,7 +8,7 @@ module EqManips.Tests.ContinuousGenerator( ContinuousFormula( .. )
 import Control.Applicative
 import Control.Monad
 import Test.QuickCheck
-import EqManips.Types
+import Language.Eq.Types
 
 newtype ContinuousEntity = ContinuousEntity Entity
 newtype ContinuousBinop = ContinuousBinop BinOperator

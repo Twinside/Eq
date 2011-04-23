@@ -1,8 +1,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Types
+module Language.Eq.Types
          ( FormulaPrim( .. )
          , Formula( .. )
 
@@ -49,19 +50,20 @@ module EqManips.Types
          , indexes, list
          ) where
 
+import Data.Data
 import Data.Ord( comparing )
 import Data.Monoid( Monoid( .. ), getSum )
 import qualified Data.Monoid as Monoid
-import qualified EqManips.ErrorMessages as Err
+import qualified Language.Eq.ErrorMessages as Err
 
 import Data.Bits
 import Data.Ratio
 import Data.List( foldl', foldl1' )
 import Data.Maybe( fromJust )
 
-import EqManips.Propreties
-import {-# SOURCE #-} EqManips.Polynome()
-import {-# SOURCE #-} EqManips.Renderer.Sexpr
+import Language.Eq.Propreties
+import {-# SOURCE #-} Language.Eq.Polynome()
+import {-# SOURCE #-} Language.Eq.Renderer.Sexpr
 
 -- | All Binary operators
 data BinOperator  =
@@ -329,7 +331,7 @@ binOpMerger op node1 node2 = binOp op [node1, node2]
 -- with the type system.
 -- - formula Form : how is handled the binop form
 newtype Formula formulaForm = Formula { unTagFormula :: FormulaPrim }
-    deriving (Eq, {-Show,-} Ord)
+    deriving (Eq, {-Show,-} Ord, Typeable)
 
 -- | Type token for format of the form [a,b,c,d,e...]
 data ListForm

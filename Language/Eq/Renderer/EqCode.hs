@@ -1,11 +1,11 @@
-module EqManips.Renderer.EqCode( unparse, unparseS ) where
+module Language.Eq.Renderer.EqCode( unparse, unparseS ) where
 
 import Data.List( foldl' )
 import Data.Ratio
 
-import EqManips.Types
-import EqManips.Propreties
-import EqManips.Polynome( convertToFormula )
+import Language.Eq.Types
+import Language.Eq.Propreties
+import Language.Eq.Polynome( convertToFormula )
 
 -- | Public function to translate a formula back to it's
 -- original notation. NOTE : it's not used as a Show instance...

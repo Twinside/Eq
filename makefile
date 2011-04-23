@@ -14,26 +14,13 @@ endif
 EQ     := dist/build/eq/eq$(EXEEXT)
 EQTEST := dist/build/eqtestsuite/eqtestsuite$(EXEEXT)
 
-# Calculated on demand, I hope...
-PARSECVER = $(shell ghc-pkg list --simple-output parsec | tr " " "\n" | grep "parsec-3\." | tail -1)
-
-build: EqManips/BaseLibrary.hs
+build:
 	runhaskell Setup.hs build
 	cp $(EQ) .
 	cp $(EQTEST) .
 
 clean:
 	runhaskell Setup.hs clean
-
-# only way to get this shit working on unix...
-EqManips/BaseLibrary.hs: EqManips/libMaker.hs EqManips/base-library.eq
-	ghc -package $(PARSECVER) --make -cpp -o libMaker EqManips/libMaker.hs
-	./libMaker
-	$(FIND) EqManips -name "*.o" | xargs rm
-	$(FIND) EqManips -name "*.hi" | xargs rm
-	$(FIND) EqManips -name "*.o-boot" | xargs rm
-	$(FIND) EqManips -name "*.hi-boot" | xargs rm
-	rm libMaker$(EXEEXT)
 
 showdoc:
 	echo dist\doc\html\FormulaRenderer\eq\index.html

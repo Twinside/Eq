@@ -1,4 +1,4 @@
-module EqManips.EvaluationContext( EqTransformInfo( .. )
+module Language.Eq.EvaluationContext( EqTransformInfo( .. )
                                  , EqContext
                                  , performTransformation 
                                  , performTransformationWithContext
@@ -24,15 +24,15 @@ import Data.Map (Map)
 import Control.Applicative
 import qualified Data.Map as Map
 
-import EqManips.Types
-import EqManips.Algorithm.Utils
+import Language.Eq.Types
+import Language.Eq.Algorithm.Utils
 
 #ifdef _DEBUG
 import System.IO
-import qualified EqManips.Renderer.RenderConf as RenderConf
+import qualified Language.Eq.Renderer.RenderConf as RenderConf
 
-import {-# SOURCE #-} EqManips.Renderer.Ascii( formatFormula )
-import {-# SOURCE #-} EqManips.Renderer.Sexpr
+import {-# SOURCE #-} Language.Eq.Renderer.Ascii( formatFormula )
+import {-# SOURCE #-} Language.Eq.Renderer.Sexpr
 #endif /* _DEBUG */
 
 -- | The real context info.

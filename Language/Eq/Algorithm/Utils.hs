@@ -1,5 +1,5 @@
 -- | Utility function/types used in the project.
-module EqManips.Algorithm.Utils ( biAssocM, biAssoc
+module Language.Eq.Algorithm.Utils ( biAssocM, biAssoc
                                 , asAMonad
                                 , fromEmptyMonad 
                                 , treeIfyFormula,  treeIfyBinOp 
@@ -29,10 +29,10 @@ import Control.Applicative
 import qualified Data.Monoid as Monoid
 
 import Data.Monoid( All( .. ), mempty )
-import EqManips.Algorithm.EmptyMonad
-import EqManips.Propreties
-import EqManips.Types
-import {-# SOURCE #-} EqManips.FormulaIterator
+import Language.Eq.Algorithm.EmptyMonad
+import Language.Eq.Propreties
+import Language.Eq.Types
+import {-# SOURCE #-} Language.Eq.FormulaIterator
 import Data.List( foldl', sortBy )
 
 -----------------------------------------------------------

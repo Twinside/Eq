@@ -1,6 +1,6 @@
 -- | This module implement an ASCII Art graph plotter,
 -- using subdivision to provide good looking ascii graph.
-module EqManips.Renderer.Ascii2DGrapher(
+module Language.Eq.Renderer.Ascii2DGrapher(
                                        -- * Plotting configuration
                                          PlotConf( .. )
                                        , ScalingType( .. )
@@ -13,8 +13,8 @@ module EqManips.Renderer.Ascii2DGrapher(
 import Data.Array.Unboxed
 import Text.Printf
 
-import EqManips.Types
-import qualified EqManips.Algorithm.StackVM.Stack as VM
+import Language.Eq.Types
+import qualified Language.Eq.Algorithm.StackVM.Stack as VM
 
 -- | Alias in case I want to change in the future.
 type ValueType = Double

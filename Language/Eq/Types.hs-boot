@@ -1,4 +1,4 @@
-module EqManips.Types where
+module Language.Eq.Types where
 
 data Formula a
 data ListForm

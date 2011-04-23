@@ -1,14 +1,14 @@
-module EqManips.Algorithm.Cleanup ( cleanup
+module Language.Eq.Algorithm.Cleanup ( cleanup
                                   , cleanupFormulaPrim
                                   , cleanupRules ) where
 
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.FormulaIterator
-import EqManips.Algorithm.Utils
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.FormulaIterator
+import Language.Eq.Algorithm.Utils
 import Data.Ratio
 
-import qualified EqManips.ErrorMessages as Err
+import qualified Language.Eq.ErrorMessages as Err
 
 type BiRuler = FormulaPrim -> FormulaPrim -> Either FormulaPrim (FormulaPrim, FormulaPrim)
 

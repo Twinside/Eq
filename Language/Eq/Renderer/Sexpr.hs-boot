@@ -1,6 +1,6 @@
-module EqManips.Renderer.Sexpr where
+module Language.Eq.Renderer.Sexpr where
 
-import {-# SOURCE #-} EqManips.Types
+import {-# SOURCE #-} Language.Eq.Types
 
 sexprRender :: Formula anyForm -> String
 sexprRenderS :: Formula anyForm -> ShowS

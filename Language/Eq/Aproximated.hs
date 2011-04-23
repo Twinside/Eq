@@ -12,12 +12,12 @@
 --
 -- You may want to perform symbolic computation on the resulting
 -- formula.
-module EqManips.Aproximated( Aproximated
+module Language.Eq.Aproximated( Aproximated
                            , formulaOfAproximation
                            , valueOfAproximation
                            ) where
 
-import EqManips.Types
+import Language.Eq.Types
 
 newtype Aproximated a =
     Aproximated (Formula, a)
@@ -141,21 +141,21 @@ instance RealFrac a => RealFrac (Aproximated a) where
            , Aproximated (app ,frac))
 
     truncate (Aproximated (_f,_n)) =
-        error "EqManips.Aproximated - truncate called. You will obtain wrong result."
+        error "Language.Eq.Aproximated - truncate called. You will obtain wrong result."
         {-Aproximated (f, truncate newNum)-}
 
     {- TODO 3 add rounding to formula -}
     round (Aproximated (_f,_n)) =
-        error "EqManips.Aproximated - round called. You will obtain wrong result."
+        error "Language.Eq.Aproximated - round called. You will obtain wrong result."
         {-Aproximated (f, round n)-}
 
     {- TODO 3 add ceiling to formula -}
     ceiling (Aproximated (_f,_n)) =
-        error "EqManips.Aproximated - ceiling called. You will obtain wrong result."
+        error "Language.Eq.Aproximated - ceiling called. You will obtain wrong result."
         {-Aproximated (f, ceiling n)-}
 
     {- TODO 3 add floor to formula -}
     floor (Aproximated (_f,_n)) =
-        error "EqManips.Aproximated - floor called. You will obtain wrong result."
+        error "Language.Eq.Aproximated - floor called. You will obtain wrong result."
         {-Aproximated (f, floor n)-}
 

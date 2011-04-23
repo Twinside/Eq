@@ -1,11 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module EqManips.Algorithm.Inject( inject ) where
+module Language.Eq.Algorithm.Inject( inject ) where
 
 import Control.Applicative
-import EqManips.Types
-import EqManips.FormulaIterator
-import EqManips.EvaluationContext
-import EqManips.Algorithm.Utils
+import Language.Eq.Types
+import Language.Eq.FormulaIterator
+import Language.Eq.EvaluationContext
+import Language.Eq.Algorithm.Utils
 
 -- | Replace all variables that get a definition by
 -- their definition if there is one. Otherwise let

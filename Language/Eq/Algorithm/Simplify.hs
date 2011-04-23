@@ -1,14 +1,14 @@
-module EqManips.Algorithm.Simplify( simplifyFormula ) where
+module Language.Eq.Algorithm.Simplify( simplifyFormula ) where
 
 import Control.Applicative
 
-import EqManips.Types
-import EqManips.EvaluationContext
-import EqManips.Algorithm.Eval.Utils
-import EqManips.Algorithm.Eval.Types
+import Language.Eq.Types
+import Language.Eq.EvaluationContext
+import Language.Eq.Algorithm.Eval.Utils
+import Language.Eq.Algorithm.Eval.Types
 
 #ifdef _DEBUG
-import EqManips.Algorithm.Utils
+import Language.Eq.Algorithm.Utils
 
 tracer :: String -> BinOperator -> FormulaPrim -> FormulaPrim
        -> EqContext ()
@@ -25,7 +25,11 @@ tracer str op f1 f2 =
 -- Some propreties which should work for the addition
 -- operation.
 addSimplification :: EvalFun -> EvalOp
+#ifdef _DEBUG
 addSimplification eval a second@(BinOp _ OpMul [b, c])
+#else
+addSimplification eval a (BinOp _ OpMul [b, c])
+#endif
     | hashOfFormula a == hashOfFormula c 
         && a == c = do
 #ifdef _DEBUG
@@ -34,7 +38,11 @@ addSimplification eval a second@(BinOp _ OpMul [b, c])
         subCoeff <- eval $ b + 1
         left $ subCoeff * c
 
+#ifdef _DEBUG
 addSimplification eval first@(BinOp _ OpMul [a, c]) b
+#else
+addSimplification eval (BinOp _ OpMul [a, c]) b
+#endif
     | hashOfFormula c == hashOfFormula b 
         && b == c = do
 #ifdef _DEBUG
@@ -56,7 +64,11 @@ subSimplification :: EvalFun -> EvalOp
 {-subSimplification eval (Variable v) (BinOp _ OpDiv [a, somethingWithV])-}
 
 {- if c == b  then a * c - b = (a-1) * c -}
+#ifdef _DEBUG
 subSimplification eval first@(BinOp _ OpMul [a, c]) b
+#else
+subSimplification eval (BinOp _ OpMul [a, c]) b
+#endif
     | hashOfFormula c == hashOfFormula b 
         && b == c = do
 #ifdef _DEBUG

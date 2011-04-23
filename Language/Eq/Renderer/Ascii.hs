@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | Module in charge of rendering an equation in ASCII
 -- provide sizing information and rendering
-module EqManips.Renderer.Ascii( renderFormula
+module Language.Eq.Renderer.Ascii( renderFormula
                               , formulaTextTable
                               , formatFormula ) where
 
@@ -9,14 +9,14 @@ import Data.List( foldl' )
 import Data.Array.Unboxed
 import Data.Maybe( fromMaybe )
 import Data.Ratio
-import EqManips.Types
-import EqManips.Renderer.Placer
-import EqManips.Algorithm.Utils
-import EqManips.Propreties
-import EqManips.Polynome
-import EqManips.Renderer.RenderConf
+import Language.Eq.Types
+import Language.Eq.Renderer.Placer
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Propreties
+import Language.Eq.Polynome
+import Language.Eq.Renderer.RenderConf
 
-import qualified EqManips.UnicodeSymbols as Unicode
+import qualified Language.Eq.UnicodeSymbols as Unicode
 
 import CharArray
 type Pos = (Int, Int)

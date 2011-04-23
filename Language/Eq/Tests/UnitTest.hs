@@ -1,4 +1,4 @@
-module EqManips.Tests.UnitTest( eqUnittests, runEqTests ) where
+module Language.Eq.Tests.UnitTest( eqUnittests, runEqTests ) where
 
 import Control.Applicative
 import System.Directory  
@@ -6,16 +6,16 @@ import System.FilePath
 import Data.Ratio
 
 import Test.HUnit
-import EqManips.Types
-import EqManips.EvaluationContext
-import EqManips.Renderer.Ascii
-import EqManips.Renderer.Sexpr
-import EqManips.Renderer.Latex
-import EqManips.Renderer.Mathml
-import EqManips.Renderer.RenderConf
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Eval
-import EqManips.InputParser.EqCode hiding( expr )
+import Language.Eq.Types
+import Language.Eq.EvaluationContext
+import Language.Eq.Renderer.Ascii
+import Language.Eq.Renderer.Sexpr
+import Language.Eq.Renderer.Latex
+import Language.Eq.Renderer.Mathml
+import Language.Eq.Renderer.RenderConf
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Algorithm.Eval
+import Language.Eq.InputParser.EqCode hiding( expr )
 
 infixr 1 ==>
 

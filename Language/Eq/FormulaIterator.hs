@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module EqManips.FormulaIterator( depthFirstFormula
+module Language.Eq.FormulaIterator( depthFirstFormula
                                , depthFormulaTraversal 
                                , depthFormulaPrimTraversal 
                                , depthPrimTraversal 
@@ -9,9 +9,9 @@ module EqManips.FormulaIterator( depthFirstFormula
 
 import Control.Applicative
 import Control.Monad.Identity
-import EqManips.Types
+import Language.Eq.Types
 
-import EqManips.EvaluationContext
+import Language.Eq.EvaluationContext
 
 -- | Depth first traversal of formula.
 -- the function is applied to each subformula when

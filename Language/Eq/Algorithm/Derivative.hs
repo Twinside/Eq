@@ -1,17 +1,17 @@
-module EqManips.Algorithm.Derivative( derivateFormula
+module Language.Eq.Algorithm.Derivative( derivateFormula
                                     , Var ) where
 
 import Control.Applicative
 import Control.Monad( foldM )
 import Data.Monoid( Monoid( .. ), Any( .. ) )
 
-import qualified EqManips.ErrorMessages as Err
+import qualified Language.Eq.ErrorMessages as Err
 
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.EvaluationContext
-import EqManips.Algorithm.Inject
-import EqManips.Algorithm.Utils
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.EvaluationContext
+import Language.Eq.Algorithm.Inject
+import Language.Eq.Algorithm.Utils
 
 type Var = String
 

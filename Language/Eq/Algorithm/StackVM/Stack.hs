@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module EqManips.Algorithm.StackVM.Stack( compileExpression
+module Language.Eq.Algorithm.StackVM.Stack( compileExpression
                                        , evalProgram 
                                        , ValueType
                                        ) where
@@ -7,9 +7,9 @@ module EqManips.Algorithm.StackVM.Stack( compileExpression
 import Control.Applicative
 import Data.List( foldl' )
 
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.Algorithm.Cleanup( cleanupFormulaPrim )
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.Algorithm.Cleanup( cleanupFormulaPrim )
 
 type ValueType = Double
 

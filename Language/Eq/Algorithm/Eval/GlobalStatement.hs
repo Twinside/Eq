@@ -1,10 +1,10 @@
-module EqManips.Algorithm.Eval.GlobalStatement( evalGlobalStatement ) where
+module Language.Eq.Algorithm.Eval.GlobalStatement( evalGlobalStatement ) where
 
-import qualified EqManips.ErrorMessages as Err
-import EqManips.Types
-import EqManips.EvaluationContext
+import qualified Language.Eq.ErrorMessages as Err
+import Language.Eq.Types
+import Language.Eq.EvaluationContext
 
-import EqManips.Algorithm.Eval.Types
+import Language.Eq.Algorithm.Eval.Types
 
 
 -- | Add a function into the symbol table.

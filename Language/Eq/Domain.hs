@@ -1,4 +1,4 @@
-module EqManips.Domain where
+module Language.Eq.Domain where
 
 -- | Describe the bound kinds of an interval
 data Openness =

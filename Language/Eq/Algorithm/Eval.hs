@@ -1,23 +1,23 @@
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.Eval( reduce
+module Language.Eq.Algorithm.Eval( reduce
                               , exactReduce 
                               , evalGlobalLossyStatement 
                               , evalGlobalLosslessStatement 
                               ) where
 
-import EqManips.Types
+import Language.Eq.Types
 
-import EqManips.Algorithm.Cleanup
+import Language.Eq.Algorithm.Cleanup
 
-import EqManips.Algorithm.Eval.GenericEval
-import EqManips.Algorithm.Eval.GlobalStatement
-import EqManips.Algorithm.Eval.Floating
-import EqManips.Algorithm.Eval.Polynomial
-import EqManips.Algorithm.Eval.Ratio
-import EqManips.Algorithm.Eval.Complex
-import EqManips.Algorithm.Eval.Types
+import Language.Eq.Algorithm.Eval.GenericEval
+import Language.Eq.Algorithm.Eval.GlobalStatement
+import Language.Eq.Algorithm.Eval.Floating
+import Language.Eq.Algorithm.Eval.Polynomial
+import Language.Eq.Algorithm.Eval.Ratio
+import Language.Eq.Algorithm.Eval.Complex
+import Language.Eq.Algorithm.Eval.Types
 
-import EqManips.Algorithm.Simplify
+import Language.Eq.Algorithm.Simplify
 
 evalGlobalLossyStatement, evalGlobalLosslessStatement :: FormulaEvaluator
 evalGlobalLossyStatement = evalGlobalStatement reduce'

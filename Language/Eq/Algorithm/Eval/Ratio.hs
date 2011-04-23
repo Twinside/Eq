@@ -1,9 +1,9 @@
-module EqManips.Algorithm.Eval.Ratio( ratioEvalRules ) where
+module Language.Eq.Algorithm.Eval.Ratio( ratioEvalRules ) where
 
-{-import qualified EqManips.ErrorMessages as Err-}
-import EqManips.Types
-import EqManips.Algorithm.Eval.Utils
-import EqManips.Algorithm.Eval.Types
+{-import qualified Language.Eq.ErrorMessages as Err-}
+import Language.Eq.Types
+import Language.Eq.Algorithm.Eval.Utils
+import Language.Eq.Algorithm.Eval.Types
 
 -- The two following rules can generate 0 in the polynomial
 -- we have to clean them

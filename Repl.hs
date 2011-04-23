@@ -2,13 +2,13 @@ module Repl( repl ) where
 
 import qualified Data.Map as Map
 
-import EqManips.Algorithm.Utils
-import EqManips.Types
-import EqManips.Renderer.Ascii
-import EqManips.Renderer.RenderConf
-import EqManips.BaseLibrary
-import EqManips.InputParser.EqCode
-import EqManips.EvaluationContext
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Types
+import Language.Eq.Renderer.Ascii
+import Language.Eq.Renderer.RenderConf
+import Language.Eq.BaseLibrary
+import Language.Eq.InputParser.EqCode
+import Language.Eq.EvaluationContext
 
 import System.IO
 

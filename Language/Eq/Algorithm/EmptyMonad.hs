@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.EmptyMonad( fromEmptyMonad, asAMonad )  where
+module Language.Eq.Algorithm.EmptyMonad( fromEmptyMonad, asAMonad )  where
 
 import Control.Applicative
 import Control.Monad.Identity

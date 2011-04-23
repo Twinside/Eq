@@ -1,12 +1,12 @@
-module EqManips.Renderer.Mathml( mathmlRender ) where
+module Language.Eq.Renderer.Mathml( mathmlRender ) where
 
-import EqManips.Types hiding ( matrix )
-import EqManips.Algorithm.Utils
-import EqManips.Propreties
+import Language.Eq.Types hiding ( matrix )
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Propreties
 
-import EqManips.Renderer.Latex
-import EqManips.Renderer.EqCode
-import EqManips.Renderer.RenderConf
+import Language.Eq.Renderer.Latex
+import Language.Eq.Renderer.EqCode
+import Language.Eq.Renderer.RenderConf
 
 mathmlRender :: Conf -> Formula TreeForm -> String
 mathmlRender conf (Formula f) =

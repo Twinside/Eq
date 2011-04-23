@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Polynome( convertToPolynome
+module Language.Eq.Polynome( convertToPolynome
                         , convertToFormula
                         , polynomizeFormula
                         , polyMap
@@ -26,10 +26,10 @@ import Data.Either( partitionEithers )
 import Data.List( sortBy, groupBy, foldl' )
 import Data.Ratio
 
-import EqManips.Types
-import EqManips.Algorithm.Utils
-import EqManips.FormulaIterator
-import qualified EqManips.ErrorMessages as Err
+import Language.Eq.Types
+import Language.Eq.Algorithm.Utils
+import Language.Eq.FormulaIterator
+import qualified Language.Eq.ErrorMessages as Err
 
 -- | will pack/simplify internal representation of a polynome.
 -- If there is only one null coefficient only subPoly will be present

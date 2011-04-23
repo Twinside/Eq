@@ -1,14 +1,14 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module EqManips.Renderer.Cpp( convertToCpp, convertToCppS ) where
+module Language.Eq.Renderer.Cpp( convertToCpp, convertToCppS ) where
 
 import Control.Monad.State.Lazy
 import Control.Applicative
 import Data.Ratio
 
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.Algorithm.Utils
-import qualified EqManips.ErrorMessages as Err
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.Algorithm.Utils
+import qualified Language.Eq.ErrorMessages as Err
 
 data CppConf = CppConf
     { failures :: [String]

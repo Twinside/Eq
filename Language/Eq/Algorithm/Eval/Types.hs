@@ -1,4 +1,4 @@
-module EqManips.Algorithm.Eval.Types( EvalOp
+module Language.Eq.Algorithm.Eval.Types( EvalOp
                                     , EvalFun
                                     , FormulOperator
                                     , EvalPredicate
@@ -6,8 +6,8 @@ module EqManips.Algorithm.Eval.Types( EvalOp
                                     , taggedEvaluator, deTagEvaluator 
                                     ) where
 
-import EqManips.Types
-import EqManips.EvaluationContext
+import Language.Eq.Types
+import Language.Eq.EvaluationContext
 
 type EvalOp = FormulaPrim
             -> FormulaPrim

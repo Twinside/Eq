@@ -1,15 +1,15 @@
-module EqManips.Algorithm.Eval.Polynomial( polyEvalRules ) where
+module Language.Eq.Algorithm.Eval.Polynomial( polyEvalRules ) where
 
 import Data.Either( partitionEithers )
 
-import qualified EqManips.ErrorMessages as Err
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.EvaluationContext
-import EqManips.Algorithm.Cleanup
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Eval.Utils
-import EqManips.Algorithm.Eval.Types
+import qualified Language.Eq.ErrorMessages as Err
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.EvaluationContext
+import Language.Eq.Algorithm.Cleanup
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Algorithm.Eval.Utils
+import Language.Eq.Algorithm.Eval.Types
 
 leftclean :: FormulaPrim -> EqContext (Either FormulaPrim a)
 leftclean = left . unTagFormula . cleanup . Formula 
@@ -36,11 +36,13 @@ add e e' = right (e, e')
 ----            '-'
 -----------------------------------------------
 sub :: EvalOp
-sub leftArg@(Poly _ p1) rightArg@(Poly _ p2) = 
 #ifdef _DEBUG
+sub leftArg@(Poly _ p1) rightArg@(Poly _ p2) = 
   addTrace ( "Polynome/Polynome '-'"
            , treeIfyFormula . Formula 
                             $ leftArg - rightArg) >>
+#else
+sub (Poly _ p1) (Poly _ p2) = 
 #endif
     leftclean (poly $ p1 - p2)
 

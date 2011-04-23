@@ -1,11 +1,11 @@
 import Control.Applicative( (<$>) )
 import Control.Monad( when )
 import Data.Maybe( fromMaybe )
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.Algorithm.Utils
-import EqManips.InputParser.EqCode
-import EqManips.Renderer.Sexpr
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.Algorithm.Utils
+import Language.Eq.InputParser.EqCode
+import Language.Eq.Renderer.Sexpr
 
 polynomes :: [String]
 polynomes =

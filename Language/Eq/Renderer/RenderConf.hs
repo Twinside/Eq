@@ -1,4 +1,4 @@
-module EqManips.Renderer.RenderConf( confLoad
+module Language.Eq.Renderer.RenderConf( confLoad
                                    , Conf( .. )
                                    , defaultRenderConf
                                    ) where

@@ -1,14 +1,14 @@
-module EqManips.Algorithm.Eval.Complex( complexEvalRules ) where
+module Language.Eq.Algorithm.Eval.Complex( complexEvalRules ) where
 
-{-import qualified EqManips.ErrorMessages as Err-}
+{-import qualified Language.Eq.ErrorMessages as Err-}
 import Control.Applicative( (<$>), (<*>) )
-import EqManips.Types
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Eval.Utils
-import EqManips.Algorithm.Eval.Types
+import Language.Eq.Types
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Algorithm.Eval.Utils
+import Language.Eq.Algorithm.Eval.Types
 
 #ifdef _DEBUG
-import EqManips.EvaluationContext
+import Language.Eq.EvaluationContext
 #endif
 
 reshape :: FormulaPrim -> FormulaPrim

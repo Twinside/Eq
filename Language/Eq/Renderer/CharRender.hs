@@ -1,12 +1,12 @@
-module EqManips.Renderer.CharRender( CharacterSoup, CharacterSoupS
+module Language.Eq.Renderer.CharRender( CharacterSoup, CharacterSoupS
 								   , renderFormula, renderFormulaS
 								   ) where
 
 {-import Data.List( foldl' )-}
-import EqManips.Types
-import EqManips.Renderer.Placer
-{-import EqManips.Algorithm.Utils-}
-import EqManips.Propreties
+import Language.Eq.Types
+import Language.Eq.Renderer.Placer
+{-import Language.Eq.Algorithm.Utils-}
+import Language.Eq.Propreties
 
 type PosX = Int
 type PosY = Int

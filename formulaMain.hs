@@ -1,13 +1,3 @@
-import EqManips.Types
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Cleanup
-import EqManips.Renderer.Ascii
-import EqManips.Renderer.Latex
-import EqManips.Renderer.Mathml
-import EqManips.Renderer.RenderConf
-
-import EqManips.Renderer.Ascii2DGrapher
-
 import CharArray
 
 #ifdef _DEBUG
@@ -28,14 +18,8 @@ import Data.Maybe( fromMaybe )
 
 import qualified Data.Map as Map
 
+import Language.Eq
 -- Just to be able to compile...
-import EqManips.Algorithm.Eval
-import EqManips.EvaluationContext
-import EqManips.Preprocessor
-import EqManips.Linker
-import EqManips.BaseLibrary
-import EqManips.InputParser.MathML
-import EqManips.InputParser.EqCode
 
 import Repl
 

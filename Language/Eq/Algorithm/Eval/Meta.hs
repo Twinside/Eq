@@ -1,19 +1,19 @@
-module EqManips.Algorithm.Eval.Meta ( metaEval
+module Language.Eq.Algorithm.Eval.Meta ( metaEval
                                     , metaFilter
                                     ) where
 
 import Control.Applicative
 import Data.List( sort )
 
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Expand
-import EqManips.Algorithm.Cleanup
-import EqManips.Algorithm.Eval.Types
-import EqManips.Types
-import EqManips.EvaluationContext
-import EqManips.FormulaIterator
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Algorithm.Expand
+import Language.Eq.Algorithm.Cleanup
+import Language.Eq.Algorithm.Eval.Types
+import Language.Eq.Types
+import Language.Eq.EvaluationContext
+import Language.Eq.FormulaIterator
 
-import qualified EqManips.ErrorMessages as Err
+import qualified Language.Eq.ErrorMessages as Err
 
 -- | The only meta evaluation avaible
 metaEval :: (Formula ListForm -> EqContext (Formula ListForm))

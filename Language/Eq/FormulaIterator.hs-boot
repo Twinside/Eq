@@ -1,7 +1,7 @@
-module EqManips.FormulaIterator where
+module Language.Eq.FormulaIterator where
 
 import Control.Applicative
-import EqManips.Types
+import Language.Eq.Types
 
 depthFirstFormula :: (Applicative m, Monad m) 
                   => (Formula a -> m (Formula b)) -> Formula a -> m (Formula b)

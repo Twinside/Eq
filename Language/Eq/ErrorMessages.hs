@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 -- | This module should be imported as qualified
-module EqManips.ErrorMessages where
+module Language.Eq.ErrorMessages where
 
 --------------------------------------------------
 ----            Generic stuff

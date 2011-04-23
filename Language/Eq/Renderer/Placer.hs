@@ -1,4 +1,4 @@
-module EqManips.Renderer.Placer( SizeTree( .. )
+module Language.Eq.Renderer.Placer( SizeTree( .. )
 							   , Dimensioner( .. )
 							   , Dimension, BaseLine, RelativePlacement
 							   , sizeExtract 
@@ -11,12 +11,12 @@ module EqManips.Renderer.Placer( SizeTree( .. )
 import Data.List( foldl', transpose )
 import Data.Ratio
 
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.Algorithm.Utils
-import EqManips.Propreties
-import EqManips.Renderer.RenderConf
-import qualified EqManips.ErrorMessages as Err
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Propreties
+import Language.Eq.Renderer.RenderConf
+import qualified Language.Eq.ErrorMessages as Err
 
 type OpPriority = Int
 type BaseLine = Int

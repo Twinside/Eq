@@ -1,4 +1,4 @@
-module EqManips.Algorithm.Eval.Utils( left
+module Language.Eq.Algorithm.Eval.Utils( left
                                     , right
                                     , binOpReducer
                                     , binEval
@@ -7,11 +7,11 @@ module EqManips.Algorithm.Eval.Utils( left
 import Control.Applicative
 import Data.List( sort, foldl' )
 
-import EqManips.Types
-import EqManips.EvaluationContext
-import EqManips.Algorithm.Eval.Types
-import EqManips.Algorithm.Utils
-import EqManips.Propreties
+import Language.Eq.Types
+import Language.Eq.EvaluationContext
+import Language.Eq.Algorithm.Eval.Types
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Propreties
 
 left :: (Monad m) => a -> m (Either a b)
 left = return . Left

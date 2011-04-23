@@ -1,9 +1,9 @@
 
-import EqManips.Types
-import EqManips.InputParser.EqCode
-import EqManips.Algorithm.Eval
-import EqManips.Algorithm.Utils
-import EqManips.EvaluationContext
+import Language.Eq.Types
+import Language.Eq.InputParser.EqCode
+import Language.Eq.Algorithm.Eval
+import Language.Eq.Algorithm.Utils
+import Language.Eq.EvaluationContext
 import System.IO
 -- | Maybe replace this with template haskell...
 
@@ -12,16 +12,16 @@ import System.IO
 -- haskell file for further use
 main :: IO ()
 main = do
-	eqLib <- readFile "EqManips/base-library.eq"
+	eqLib <- readFile "Language/Eq/base-library.eq"
 	let formulaList = parseProgramm eqLib
 	either (error "Error") (\formulal ->
 	    let rez = performLastTransformation $
 						mapM evalGlobalLosslessStatement formulal
 		in do
-		outFile <- openFile "EqManips/BaseLibrary.hs" WriteMode
-		hPutStr outFile "module EqManips.BaseLibrary( defaultSymbolTable ) where\n"
+		outFile <- openFile "Language/Eq/BaseLibrary.hs" WriteMode
+		hPutStr outFile "module Language.Eq.BaseLibrary( defaultSymbolTable ) where\n"
 		hPutStr outFile "\n"
-		hPutStr outFile "import EqManips.Types\n"
+		hPutStr outFile "import Language.Eq.Types\n"
 		hPutStr outFile "import Data.Map\n"
 		hPutStr outFile "\n"
 		hPutStr outFile "defaultSymbolTable :: Map String (Formula ListForm)\n"

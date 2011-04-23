@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
-module EqManips.Propreties( Property( .. )
+module Language.Eq.Propreties( Property( .. )
                           , TypeInfo( .. )
                           , obtainProp
                           ) where

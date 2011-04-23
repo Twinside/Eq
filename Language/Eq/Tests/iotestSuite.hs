@@ -4,23 +4,23 @@ import Data.Monoid( All( .. ), mempty, mappend )
 
 import Control.Monad
 
-import EqManips.Types
---import EqManips.Linker
-import EqManips.Propreties
-import EqManips.FormulaIterator
-import EqManips.EvaluationContext
-import qualified EqManips.Algorithm.Cleanup as Cleanup
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Expand
-import EqManips.Algorithm.Eval
-import EqManips.Tests.FullGenerator()
-import EqManips.Tests.ContinuousGenerator()
+import Language.Eq.Types
+--import Language.Eq.Linker
+import Language.Eq.Propreties
+import Language.Eq.FormulaIterator
+import Language.Eq.EvaluationContext
+import qualified Language.Eq.Algorithm.Cleanup as Cleanup
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Algorithm.Expand
+import Language.Eq.Algorithm.Eval
+import Language.Eq.Tests.FullGenerator()
+import Language.Eq.Tests.ContinuousGenerator()
 
 import Test.QuickCheck
 {-import Test.QuickCheck.Batch-}
 
 --import Text.ParserCombinators.Parsec.Prim( runParser )
-import EqManips.Tests.UnitTest
+import Language.Eq.Tests.UnitTest
 
 cleanup :: FormulaPrim -> FormulaPrim
 cleanup = unTagFormula . Cleanup.cleanup . Formula

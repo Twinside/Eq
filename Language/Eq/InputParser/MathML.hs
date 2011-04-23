@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module EqManips.InputParser.MathML ( mathMlToEqLang
+module Language.Eq.InputParser.MathML ( mathMlToEqLang
                                    , mathMlToEqLang'
                                    ) where
 
 import Control.Applicative
-import EqManips.Algorithm.Utils
-import qualified EqManips.UnicodeSymbols as Uni
+import Language.Eq.Algorithm.Utils
+import qualified Language.Eq.UnicodeSymbols as Uni
 
 import Text.XML.HaXml.Parse
 import Text.XML.HaXml.Types

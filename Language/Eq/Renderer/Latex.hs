@@ -1,13 +1,13 @@
-module EqManips.Renderer.Latex ( latexRender, latexRenderS ) where
+module Language.Eq.Renderer.Latex ( latexRender, latexRenderS ) where
 
 import Data.Ratio
 
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.Algorithm.Utils
-import EqManips.Propreties
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Propreties
 
-import EqManips.Renderer.RenderConf
+import Language.Eq.Renderer.RenderConf
 
 latexRender :: Conf -> Formula TreeForm -> String
 latexRender conf f = latexRenderS conf f ""

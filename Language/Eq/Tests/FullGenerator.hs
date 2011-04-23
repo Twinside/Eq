@@ -1,13 +1,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans -fno-warn-missing-methods #-}
-module EqManips.Tests.FullGenerator( formulaGen ) where
+module Language.Eq.Tests.FullGenerator( formulaGen ) where
 
 import Data.Ratio
 
 import Control.Applicative
 import Control.Monad
 import Test.QuickCheck
-import EqManips.Types
+import Language.Eq.Types
 
 -- | To generate variables without clashing everywhere else
 newtype VarLetter = VarLetter Char

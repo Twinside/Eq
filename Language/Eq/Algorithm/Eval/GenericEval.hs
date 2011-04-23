@@ -1,22 +1,22 @@
 {-# LANGUAGE Rank2Types #-}
-module EqManips.Algorithm.Eval.GenericEval ( eval ) where
+module Language.Eq.Algorithm.Eval.GenericEval ( eval ) where
 
 import Data.Ratio
 
-import qualified EqManips.ErrorMessages as Err
+import qualified Language.Eq.ErrorMessages as Err
 import Control.Applicative
-import EqManips.Types
-import EqManips.Conf
-import EqManips.EvaluationContext
-import EqManips.Algorithm.Cleanup
-import EqManips.Algorithm.Inject
-import EqManips.Algorithm.Derivative
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Eval.Meta
+import Language.Eq.Types
+import Language.Eq.Conf
+import Language.Eq.EvaluationContext
+import Language.Eq.Algorithm.Cleanup
+import Language.Eq.Algorithm.Inject
+import Language.Eq.Algorithm.Derivative
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Algorithm.Eval.Meta
 
-import EqManips.Algorithm.Unification
-import EqManips.Algorithm.Eval.Types
-import EqManips.Algorithm.Eval.Utils
+import Language.Eq.Algorithm.Unification
+import Language.Eq.Algorithm.Eval.Types
+import Language.Eq.Algorithm.Eval.Utils
 
 import Data.List( transpose, foldl' )
 

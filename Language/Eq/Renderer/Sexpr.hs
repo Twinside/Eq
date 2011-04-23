@@ -1,9 +1,9 @@
-module EqManips.Renderer.Sexpr( sexprRender, sexprRenderS ) where
+module Language.Eq.Renderer.Sexpr( sexprRender, sexprRenderS ) where
 
 import Data.Ratio
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.Algorithm.Utils
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.Algorithm.Utils
 
 sexprRender :: Formula anyForm -> String
 sexprRender f = sexprRenderS f ""

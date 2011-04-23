@@ -1,4 +1,4 @@
-module EqManips.Preprocessor ( processFile
+module Language.Eq.Preprocessor ( processFile
                              , LangDef( .. )
                              , kindAssociation
                              ) where
@@ -8,14 +8,14 @@ import Data.List
 import Control.Applicative
 import Text.Parsec.Error( ParseError )
 
-import EqManips.Algorithm.Eval
-import EqManips.Algorithm.Utils
-import EqManips.InputParser.EqCode
-import EqManips.Renderer.Ascii
-import EqManips.Renderer.Cpp
-import EqManips.EvaluationContext
-import EqManips.Types
-import EqManips.Renderer.RenderConf
+import Language.Eq.Algorithm.Eval
+import Language.Eq.Algorithm.Utils
+import Language.Eq.InputParser.EqCode
+import Language.Eq.Renderer.Ascii
+import Language.Eq.Renderer.Cpp
+import Language.Eq.EvaluationContext
+import Language.Eq.Types
+import Language.Eq.Renderer.RenderConf
 
 data LangDef = LangDef {
           initComm :: String

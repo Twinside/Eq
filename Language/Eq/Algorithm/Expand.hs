@@ -1,9 +1,9 @@
-module EqManips.Algorithm.Expand ( expand ) where
+module Language.Eq.Algorithm.Expand ( expand ) where
 
-import EqManips.Types
-import EqManips.Algorithm.Utils
-import EqManips.FormulaIterator
-import EqManips.Propreties
+import Language.Eq.Types
+import Language.Eq.Algorithm.Utils
+import Language.Eq.FormulaIterator
+import Language.Eq.Propreties
 
 -- | Algorithm to call to perform a global formula
 -- expension

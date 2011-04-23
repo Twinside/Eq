@@ -1,4 +1,4 @@
-module EqManips.InputParser.EqCode
+module Language.Eq.InputParser.EqCode
     ( program  -- if you want to define some definition before
     , expr     -- if you want to evaluate just an expression
     , parseFormula
@@ -10,10 +10,10 @@ module EqManips.InputParser.EqCode
 import Control.Applicative( (<$>), (<*) )
 import Control.Monad.Identity
 
-import EqManips.Types
-import EqManips.Polynome
-import EqManips.Linker
-import EqManips.Algorithm.Utils
+import Language.Eq.Types
+import Language.Eq.Polynome
+import Language.Eq.Linker
+import Language.Eq.Algorithm.Utils
 
 import Text.Parsec.Expr
 import Text.Parsec

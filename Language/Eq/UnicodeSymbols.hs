@@ -1,4 +1,4 @@
-module EqManips.UnicodeSymbols where
+module Language.Eq.UnicodeSymbols where
 
 varAssoc :: [(String, String)]
 varAssoc = map (\(v, i) -> (v, [toEnum i]))
@@ -16,7 +16,7 @@ varAssoc = map (\(v, i) -> (v, [toEnum i]))
     , ("sigma",  sigma)
     , ("mu",     mu)
     , ("psi",    psi)
-    , ("pi",     EqManips.UnicodeSymbols.pi)
+    , ("pi",     Language.Eq.UnicodeSymbols.pi)
     , ("infinity", infinity)
     ]
 

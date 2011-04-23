@@ -3,18 +3,18 @@
 -- points operations which are by nature lossy. So this set
 -- of rules may or may not be used in the context of global
 -- evaluation to preserve the "true" meaning of the formula.
-module EqManips.Algorithm.Eval.Floating ( evalFloat, floatEvalRules ) where
+module Language.Eq.Algorithm.Eval.Floating ( evalFloat, floatEvalRules ) where
 
 import Control.Applicative
 
 import Data.Maybe( fromMaybe )
 import Data.Ratio
 
-import qualified EqManips.ErrorMessages as Err
-import EqManips.Algorithm.Eval.Types
-import EqManips.Algorithm.Eval.Utils
-import EqManips.EvaluationContext
-import EqManips.Types
+import qualified Language.Eq.ErrorMessages as Err
+import Language.Eq.Algorithm.Eval.Types
+import Language.Eq.Algorithm.Eval.Utils
+import Language.Eq.EvaluationContext
+import Language.Eq.Types
 
 
 -- | General function favored to use the reduction rules

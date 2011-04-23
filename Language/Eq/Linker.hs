@@ -1,6 +1,6 @@
 -- | This module will link variable names to
 -- symbols.
-module EqManips.Linker( DocString, LongDescr
+module Language.Eq.Linker( DocString, LongDescr
                       , entityList
                       , metaFunctionList 
                       , unaryFunctions 
@@ -12,7 +12,7 @@ import Data.List
 import Data.Maybe( fromMaybe )
 import qualified Data.Map as Map
 
-import EqManips.Types
+import Language.Eq.Types
 
 -- | Linking formula doesn't change it's form,
 -- so we can keep it

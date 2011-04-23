@@ -55,11 +55,12 @@ Executable eq
                  , HaXml >= 1.9 && < 2.0
                  , array
                  , mtl
+                 , template-haskell
                  , containers
                  , filepath
 
 Executable eqtestsuite
-    Main-Is: EqManips/Tests/iotestSuite.hs
+    Main-Is: Language/Eq/Tests/iotestSuite.hs
     ghc-options: -fhpc -Wall -O2
     extensions: CPP
     if flag(debug)
@@ -71,6 +72,7 @@ Executable eqtestsuite
                  , filepath
                  , containers
                  , directory
+                 , template-haskell
                  , QuickCheck >= 2.4 && < 2.5
                  , HUnit >= 1.2.2.1 && < 2.0
 
