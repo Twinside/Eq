@@ -1,12 +1,10 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Language.Eq.Quasiquote( eqDefs ) where
 
-import Control.Applicative
-
-import Data.List( foldl' )
 import Language.Eq.Algorithm.Eval
 import Language.Eq.Types
 import Language.Eq.EvaluationContext
@@ -17,13 +15,6 @@ import qualified Data.Map as M
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Language.Haskell.TH.Syntax
-
-instance Applicative Q where
-    pure = return
-    a <*> b = do
-        a' <- a
-        b' <- b
-        return $ a' b'
 
 -- | Quasi quote transforming Eq code into a symbol list
 -- of type :: (String, Formula ListForm)
@@ -44,16 +35,6 @@ symbolTableExtractor str = case parseProgramm str of
                    $ mapM evalGlobalLosslessStatement flist 
 
 
-constr :: String -> Exp -> Exp
-constr str = AppE (ConE $ mkName str)
-
-recConstr :: String -> Int -> Exp
-recConstr str i = AppE (ConE $ mkName str) 
-                       (LitE . IntegerL $ toInteger i)
-
-appList :: Exp -> [Exp] -> Exp
-appList = foldl' AppE
-
 instance Lift Double where
     lift d = return . LitE . DoublePrimL $ toRational d
 
@@ -70,79 +51,43 @@ instance Lift Entity where
     lift = return . ConE . mkName . show
 
 instance Lift (Formula ListForm) where
-    lift (Formula f) = constr "Formula" <$> lift f
+    lift (Formula f) = [| Formula f |] 
 
 instance Lift (Formula TreeForm) where
-    lift (Formula f) = constr "Formula" <$> lift f
+    lift (Formula f) = [| Formula f |]
+
+instance Lift Rational where
+    lift = return . LitE . RationalL
 
 instance Lift PolyCoeff where
-    lift (CoeffFloat f) =
-        AppE (ConE $ mkName "CoeffFloat") <$> lift f
-    lift (CoeffInt i) =
-        AppE (ConE $ mkName "CoeffInt") <$> lift i
-    lift (CoeffRatio r) =
-        return . AppE (ConE $ mkName "CoeffRatio") . LitE $ RationalL r
+    lift (CoeffFloat f) = [| CoeffFloat f |]
+    lift (CoeffInt i) = [| CoeffInt i |]
+    lift (CoeffRatio r) = [| CoeffRatio r |]
 
 instance Lift Polynome where
-    lift (Polynome s lst) =
-        AppE . (constr "Polynome") <$> lift s
-                                   <*> lift lst
-    lift (PolyRest c) =
-        constr "PolyRest" <$> lift c
+    lift (Polynome s lst) = [| Polynome s lst |]
+    lift (PolyRest c) = [| PolyRest c |]
 
 instance Lift FormulaPrim where
-    lift (Variable str) =
-        constr "Variable" <$> lift str
-    lift (NumEntity entity) =
-        constr "NumEntity" <$> lift entity
-    lift (Truth b) =
-        constr "Truth" <$> lift b
-    lift (CInteger i) =
-        constr "CInteger" <$> lift i
-    lift (CFloat f) =
-        constr "CFloat" <$> lift f
-
-    lift (Fraction r) =
-        return . constr "Fraction" . LitE $ RationalL r
-    
-    lift (Complex i (e1, e2)) =
-        AppE <$> (AppE (recConstr "Complex" i) <$> lift e1)
-             <*> (lift e2)
-    
-    lift (Indexes i e el) =
-        AppE <$> (AppE (recConstr "Indexes" i) <$> lift e)
-             <*> (lift el)
-    
-    lift (List i el) =
-        AppE (recConstr "List" i) <$> (lift el)
-    lift (App i e el) =
-        AppE <$> (AppE (recConstr "App" i) <$> lift e)
-             <*> (lift el)
-    
-    lift (Sum i e1 e2 e3) =
-        appList (recConstr "Sum" i) <$> mapM lift [e1, e2, e3]
-    lift (Product i e1 e2 e3) =
-        appList (recConstr "Product" i) <$> mapM lift [e1, e2, e3]
-    lift (Derivate i e1 e2) =
-        appList (recConstr "Derivate" i) <$> mapM lift [e1, e2]
-    lift (Integrate i e1 e2 e3 e4) =
-        appList (recConstr "Integrate" i) <$> mapM lift [e1, e2, e3, e4]
-    lift (UnOp i op e) =
-        appList (recConstr "UnOp" i) <$> sequence [lift op, lift e]
-    lift (Lambda i lst) =
-        AppE (recConstr "Lambda" i) <$> lift lst
-
-    lift (BinOp i op el) =
-        AppE <$> (AppE (recConstr "BinOp" i) <$> lift op)
-             <*> lift el
-    lift (Matrix i n m el) =
-        appList (recConstr "Matrix" i) <$> sequence [lift n, lift m, lift el]
-    lift (Poly i p) =
-        AppE (recConstr "Poly" i) <$> lift p
-
-    lift (Block i1 i2 i3) =
-        appList (ConE $ mkName "Block") <$> mapM lift [i1, i2, i3]
-
-    lift (Meta i op sub) =
-        appList (recConstr "Meta" i) <$> sequence [lift op, lift sub]
+    lift (Variable str) = [| Variable str |]
+    lift (NumEntity entity) = [| NumEntity entity |]
+    lift (Truth b) = [| Truth b |]
+    lift (CInteger i) = [| CInteger i |]
+    lift (CFloat f) = [| CFloat f |]
+    lift (Fraction r) = [| Fraction r |]
+    lift (Complex i (e1, e2)) = [| Complex i (e1, e2) |]
+    lift (Indexes i e el) = [| Indexes i e el |]
+    lift (List i el) = [| List i el |]
+    lift (App i e el) = [| App i e el |]
+    lift (Sum i e1 e2 e3) = [| Sum i e1 e2 e3 |]
+    lift (Product i e1 e2 e3) = [| Product i e1 e2 e3 |]
+    lift (Derivate i e1 e2) = [| Derivate i e1 e2 |]
+    lift (Integrate i e1 e2 e3 e4) = [| Integrate i e1 e2 e3 e4 |]
+    lift (UnOp i op e) = [| UnOp i op e |]
+    lift (Lambda i lst) = [| Lambda i lst |]
+    lift (BinOp i op el) = [| BinOp i op el |]
+    lift (Matrix i n m el) = [| Matrix i n m el |]
+    lift (Poly i p) = [| Poly i p |]
+    lift (Block i1 i2 i3) = [| Block i1 i2 i3 |]
+    lift (Meta i op sub) = [| Meta i op sub |]
 
