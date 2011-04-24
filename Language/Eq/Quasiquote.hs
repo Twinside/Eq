@@ -19,6 +19,23 @@ import Language.Haskell.TH.Syntax
 -- | Quasi quote transforming Eq code into a symbol list
 -- of type :: (String, Formula ListForm)
 -- Usefull to prepare a pre-feed symbol table.
+-- To use it, yout must use the following :
+--
+-- @
+-- -- at the top of the file.
+-- {-# LANGUAGE QuasiQuotes #-}
+-- ...
+-- -- in any expression
+-- [eqDefs| myFunc(a,b) :> a ^ 2 + if(b < 0, 2, 3) |]
+--
+-- -- you can put several definitions
+-- [eqDefs| myFunc(a,b) :> a ^ 2 + if(b < 0, 2, 3);
+--          myOtherFunc(a) :> listFromTo(0, a) |]
+-- @
+-- 
+-- Compilation will fail if an error is found in the eq
+-- syntax, giving you a (rather succint) error message
+-- with some position information in the quotation.
 eqDefs :: QuasiQuoter
 eqDefs = QuasiQuoter { quoteExp = symbolTableExtractor
                      , quotePat = undefined
@@ -28,7 +45,8 @@ eqDefs = QuasiQuoter { quoteExp = symbolTableExtractor
 
 symbolTableExtractor :: String -> Q Exp
 symbolTableExtractor str = case parseProgramm str of
-    Left _   -> error "Cannot parse the quasi quoted 'Eq' expression"
+    Left err -> fail $ "Cannot parse the quasi quoted 'Eq' expression"
+             ++ show err
     Right flist -> [e| elemList |]
         where elemList = M.assocs $ context info
               info = performLastTransformationWithContext M.empty 
