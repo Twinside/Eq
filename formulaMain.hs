@@ -1,12 +1,4 @@
-import EqManips.Types
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Cleanup
-import EqManips.Renderer.Ascii
-import EqManips.Renderer.Latex
-import EqManips.Renderer.Mathml
-import EqManips.Renderer.RenderConf
-
-import EqManips.Renderer.Ascii2DGrapher
+import CharArray
 
 #ifdef _DEBUG
 import EqManips.Renderer.Sexpr
@@ -21,19 +13,13 @@ import qualified System.IO as Io
 
 import System.Console.GetOpt
 
-import Data.List( find, intersperse )
+import Data.List( find, intersperse, foldl' )
 import Data.Maybe( fromMaybe )
 
 import qualified Data.Map as Map
 
+import Language.Eq
 -- Just to be able to compile...
-import EqManips.Algorithm.Eval
-import EqManips.EvaluationContext
-import EqManips.Preprocessor
-import EqManips.Linker
-import EqManips.BaseLibrary
-import EqManips.InputParser.MathML
-import EqManips.InputParser.EqCode
 
 import Repl
 
@@ -47,10 +33,34 @@ data Flag =
     | SupportedFunction
     | SupportedOperators
     | SupportedPreprocLanguages
-    deriving Eq
+
+    -- for plotting
+    | PlotWidth
+    | PlotHeight
+    | XBeg
+    | XEnd
+    | YBeg
+    | YEnd
+    | XLogScale
+    | YLogScale
+    | DrawXaxis
+    | DrawYaxis
+    | Draw0axis
+
+    | NoDrawXLabel
+    | NoDrawYLabel
+
+    | XLabelPrecision
+    | YLabelPrecision
+
+    | XLabelSpacing
+    | YLabelSpacing
+
+    | PlotTitle
+    deriving (Eq, Show)
 
 version :: String
-version = "0.2"
+version = "1.1"
 
 commonOption :: [OptDescr (Flag, String)]
 commonOption =
@@ -68,6 +78,84 @@ askingOption =
     , Option "" ["languages"] (NoArg (SupportedPreprocLanguages,""))
                 "Ask for supported languages for the preprocessor"
     ]
+
+plotOption :: [OptDescr (Flag, String)]
+plotOption =
+    [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x), float"
+    , Option ""  ["xe", "xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x), float"
+    , Option "y" ["yBegin"] (ReqArg ((,) YBeg) "YBEG") "Beginning of plot (y), float"
+    , Option ""  ["ye", "yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y), float"
+    , Option "w" ["width"]  (ReqArg ((,) PlotWidth) "Width") "Plotting width, int"
+    , Option "h" ["height"] (ReqArg ((,) PlotHeight) "height") "Plotting height, int"
+    , Option "" ["lx", "logwidth"] (NoArg (XLogScale,""))
+                  "Plot with a logrithmic scale in x"
+    , Option "" ["ly", "logheight"] (NoArg (YLogScale,""))
+                  "Plot with a logrithmic scale in y"
+    , Option "" ["ax", "xaxis"] (NoArg (DrawXaxis,""))
+                  "Draw the X axis on the graph"
+    , Option "" ["ay", "yaxis"] (NoArg (DrawYaxis,""))
+                  "Draw the Y axis on the graph"
+    , Option "" ["a0", "zeroaxis"] (NoArg (Draw0axis,""))
+                  "Draw the 0 axis on the graph"
+    , Option "" ["nlx", "nolabelx"] (NoArg (NoDrawXLabel,""))
+                  "Don't draw label on x Axis"
+    , Option "" ["nly", "nolabely"] (NoArg (NoDrawYLabel,""))
+                  "Don't draw label on Y Axis"
+    , Option "" ["lpx", "xlabelprecision"] 
+                (ReqArg ((,) XLabelPrecision) "p") 
+                "Display label on x axis with 'p' decimals"
+    , Option "" ["lpy", "ylabelprecision"] 
+                (ReqArg ((,) YLabelPrecision) "p") 
+                "Display label on y axis with 'p' decimals"
+    , Option "" ["spx", "labelspacingx"]
+                (ReqArg ((,) XLabelSpacing) "s")
+                "Put a label evry 's' chars on x axis"
+    , Option "" ["spy", "labelspacingy"]
+                (ReqArg ((,) YLabelSpacing) "s")
+                "Put a label evry 's' chars on y axis"
+    , Option "t" ["title"]
+                (ReqArg ((,) PlotTitle) "t")
+                "Add a title t under the graph"
+    ]
+
+preparePlotConf :: PlotConf -> (Flag, String) -> PlotConf
+preparePlotConf conf (PlotWidth, val) = 
+    conf { xDim = (xDim conf){ projectionSize = read val } }
+preparePlotConf conf (PlotHeight, val) =
+    conf { yDim = (yDim conf){ projectionSize = read val }}
+preparePlotConf conf (XBeg, val) =
+    conf { xDim = (xDim conf){ minVal = read val }}
+preparePlotConf conf (XEnd, val) =
+    conf { xDim = (xDim conf){ maxVal = read val }}
+preparePlotConf conf (YBeg, val) =
+    conf { yDim = (yDim conf){ minVal = read val }}
+preparePlotConf conf (YEnd, val) =
+    conf { yDim = (yDim conf){ maxVal = read val }}
+preparePlotConf conf (XLogScale, _) =
+    conf { xDim = (xDim conf){ scaling = Logarithmic } }
+preparePlotConf conf (YLogScale, _) =
+    conf { yDim = (yDim conf){ scaling = Logarithmic } }
+preparePlotConf conf (DrawXaxis, _) =
+    conf { xDim = (xDim conf){ drawAxis = True } }
+preparePlotConf conf (DrawYaxis, _) =
+    conf { yDim = (yDim conf){ drawAxis = True } }
+preparePlotConf conf (Draw0axis, _) =
+    conf { draw0Axis = True }
+preparePlotConf conf (NoDrawXLabel, _) =
+    conf { xDim = (xDim conf){ labelEvery = Nothing } }
+preparePlotConf conf (NoDrawYLabel, _) =
+    conf { yDim = (yDim conf){ labelEvery = Nothing } }
+preparePlotConf conf (XLabelSpacing, val) =
+    conf { xDim = (xDim conf){ labelEvery = Just $ read val} }
+preparePlotConf conf (YLabelSpacing, val) =
+    conf { yDim = (yDim conf){ labelEvery = Just $ read val} }
+preparePlotConf conf (XLabelPrecision, val) =
+    conf { xDim = (xDim conf){ labelPrecision = read val} }
+preparePlotConf conf (YLabelPrecision, val) =
+    conf { yDim = (yDim conf){ labelPrecision = read val} }
+preparePlotConf conf (PlotTitle, val) =
+    conf { graphTitle = Just val }
+preparePlotConf conf _ = conf
 
 preprocOptions :: [OptDescr (Flag, String)]
 preprocOptions = commonOption
@@ -100,8 +188,8 @@ filterCommand transformator args = do
     Io.putStr "==========================================\n\n"
     hClose output
     return True
-     where (opt, left, _) = getOpt Permute formatOption args
-           (input, outputFile) = getInputOutput opt left
+     where (opt, rest, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt rest
 
 -- | Command which just format an equation
 -- without affecting it's form.
@@ -116,8 +204,8 @@ formatCommand formulaFormater args = do
                 hClose output
                 return True)
            formula
-     where (opt, left, _) = getOpt Permute formatOption args
-           (input, outputFile) = getInputOutput opt left
+     where (opt, rest, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt rest
            conf = defaultRenderConf{ useUnicode = Unicode `lookup` opt /= Nothing }
 
 printErrors :: [(Formula TreeForm, String)] -> IO ()
@@ -226,9 +314,32 @@ transformParseFormula operation args = do
                return . null $ errorList rez)
            formulaList
 
-     where (opt, left, _) = getOpt Permute formatOption args
-           (input, outputFile) = getInputOutput opt left
+     where (opt, rest, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt rest
            conf = defaultRenderConf{ useUnicode = Unicode `lookup` opt /= Nothing }
+
+plotCommand :: [String] -> IO Bool
+plotCommand args = do
+    formulaText <- input
+    finalFile <- outputFile
+
+    let formulaList = parseProgramm formulaText
+    either (parseErrorPrint finalFile)
+           (\formulal -> do
+               case plot2DExpression plotConf . unTagFormula $ head formulal of
+                Left err -> do
+                    Io.hPutStr finalFile err
+                    hClose finalFile
+                    return False
+
+                Right v -> do
+                    Io.hPutStr finalFile $ charArrayToString  v
+                    return True)
+           formulaList
+     where (opt, rest, _) = getOpt Permute (commonOption ++ plotOption) args
+           plotConf = foldl' preparePlotConf defaultPlotConf 
+                             opt
+           (input, outputFile) = getInputOutput opt rest
 
 printVer :: IO ()
 printVer = 
@@ -310,7 +421,8 @@ commandList =
             , filterCommand mathMlToEqLang', commonOption)
     , ("show"       , "Try to retrieve some information about supported options"
             , introspect, askingOption)
-    -- , ( , )
+    , ("plot", "Print an ASCII-art plot of the given function"
+            , plotCommand, commonOption ++ plotOption)
     ]
 
 reducedCommand :: [(String, [String] -> IO Bool)]
