@@ -46,6 +46,7 @@ Executable eq
 
     if flag(debug)
         cpp-options:-D_DEBUG
+        Ghc-options:-D_DEBUG
 
     if flag(optimize)
         Ghc-options:-O3

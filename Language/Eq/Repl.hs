@@ -1,4 +1,4 @@
-module Repl( repl ) where
+module Language.Eq.Repl( repl ) where
 
 import qualified Data.Map as Map
 

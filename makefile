@@ -32,7 +32,7 @@ profiling:
 	runhaskell Setup.hs configure --user --flags="profiling optimize"
 
 debug:
-	runhaskell Setup.hs configure --user --flags="debug profiling optimize"
+	runhaskell Setup.hs configure --user --flags="debug optimize"
 
 release:
 	runhaskell Setup.hs configure --user --flags="optimize"

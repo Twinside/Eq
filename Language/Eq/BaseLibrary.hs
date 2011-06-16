@@ -3,6 +3,7 @@ module Language.Eq.BaseLibrary( defaultSymbolTable ) where
 
 import Language.Eq.Quasiquote
 import Language.Eq.Types
+import Language.Eq.Renderer.Ascii()
 import qualified Data.Map as M
 
 defaultSymbolTable :: M.Map String (Formula ListForm)
@@ -21,7 +22,7 @@ if( otherwise, a, b ) :> undefined;
 
 -- map( function, list )
 map( f,        [] ) :> [];
-map( f,   x :: xs ) :> f( x ) :: map( f, xs );
+map( f,   x :: xs ) :> {f}( x ) :: map( {f}, xs );
 map( f, otherwise ) :> undefined;
 
 -- foldl( function :: acc -> elem -> acc, accumulator, list )
@@ -33,6 +34,15 @@ foldl( a,   b,       c ) :> undefined;
 foldr( f, acc, []      ) :> acc;
 foldr( f, acc, x :: xs ) :> f( foldr( f, acc, xs ), x );
 foldr( a,   b,       c ) :> undefined;
+
+-- zip :: ( [a], [b] ) -> [[a, b]]
+zip( [], a ) :> [];
+zip(  b, []) :> [];
+zip( x :: xs, y :: ys ) :> [x, y] :: zip( xs, ys );
+
+-- replicate :: Int -> a -> [a]
+replicate(0, a) :> [];
+replicate(n, a) :> a :: replicate(n - 1, a);
 
 -- just to provide a function englobing list appending
 -- operator

@@ -1,7 +1,7 @@
 import CharArray
 
 #ifdef _DEBUG
-import EqManips.Renderer.Sexpr
+import Language.Eq.Renderer.Sexpr
 #endif
 
 import Control.Monad
@@ -19,9 +19,7 @@ import Data.Maybe( fromMaybe )
 import qualified Data.Map as Map
 
 import Language.Eq
--- Just to be able to compile...
-
-import Repl
+import Language.Eq.Repl
 
 -- Debugging
 {-import EqManips.Renderer.CharRender-}
@@ -430,6 +428,9 @@ reducedCommand = map (\(n,_,a,_) -> (n,a)) commandList
 
 main :: IO ()
 main = do
+#ifdef _DEBUG
+    putStrLn "Debug build"
+#endif
     args <- getArgs
     if null args
        then error "No command given, try the help command"
