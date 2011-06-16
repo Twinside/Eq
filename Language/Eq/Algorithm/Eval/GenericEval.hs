@@ -331,7 +331,7 @@ indexCompute m@(Matrix _ n _ lst) idx@[CInteger i]
     | otherwise = eqPrimFail (indexes m idx) Err.out_of_bound_index
 
 indexCompute l@(List _ lst) idx@(CInteger i : rest)
-    | i - 1 < toInteger (length lst) = indexCompute (lst !! (fromInteger i - 1)) rest
+    | i >= 1 && i - 1 < toInteger (length lst) = indexCompute (lst !! (fromInteger i - 1)) rest
     | otherwise = eqPrimFail (indexes l idx) Err.out_of_bound_index
 
 indexCompute a b = return $ indexes a b
