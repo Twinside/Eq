@@ -1,6 +1,7 @@
 module Language.Eq.Algorithm.Simplify( simplifyFormula ) where
 
 import Control.Applicative
+import Data.Ratio
 
 import Language.Eq.Types
 import Language.Eq.EvaluationContext
@@ -129,6 +130,22 @@ divSimplification _ (BinOp _ OpMul lst) (CInteger constant)
 
 divSimplification _ a b = right (a,b)
 
+simplifySqrt :: EvalFun -> FormulaPrim -> EqContext FormulaPrim
+simplifySqrt _eval (Fraction r)
+  | isIntegerRoot (numerator r) && isIntegerRoot (denominator r) =
+      return . Fraction $ integerRoot (numerator r) % integerRoot (denominator r)
+  | isIntegerRoot (numerator r) =
+      return $ (CInteger . integerRoot $ numerator r) 
+             / (sqrt . CInteger $ denominator r)
+  | isIntegerRoot (denominator r) = return $ (sqrt . CInteger $ numerator r) 
+                                           / (CInteger . integerRoot $ denominator r)
+     where integerRoot :: Integer -> Integer
+           integerRoot i = let doubleValue = fromInteger i :: Double
+                           in truncate $ sqrt doubleValue
+
+           isIntegerRoot i = i == (integerRoot i) ^ (2 :: Int)
+simplifySqrt _ formula = pure $ sqrt formula
+
 --------------------------------------------------
 ----            Main Function
 --------------------------------------------------
@@ -142,5 +159,6 @@ simplifyFormula f (BinOp _ OpMul lst) =
     binEval OpMul (mulSimplification f) (mulSimplification f) lst
 simplifyFormula f (BinOp _ OpDiv lst) =
     binEval OpDiv (divSimplification f) (mulSimplification f) lst
+simplifyFormula f (UnOp _ OpSqrt sub) = simplifySqrt f sub
 simplifyFormula _ formu = pure formu
 
