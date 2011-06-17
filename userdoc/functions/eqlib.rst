@@ -63,6 +63,12 @@ Eq's library
 
 List functions
 ==============
+.. function:: length( list )
+
+    Return the length (number of elements) of a list
+
+    .. command-output:: eq eval "length([a, b, c, 10])"
+
 .. function:: concat( alist, anotherList )
 
     Return the concatenation of two lists.
@@ -75,11 +81,19 @@ List functions
 
     .. command-output:: eq eval "reverse([a, b, c])"
 
-.. function:: length( list )
+.. function:: zip( list_a, list_b )
 
-    Return the length (number of elements) of a list
+    Combine two list into a list of list, each sublist
+    having an element of a as first element, and an element
+    of b as second element.
 
-    .. command-output:: eq eval "length([a, b, c, 10])"
+    .. command-output:: eq eval "zip([1, 2, 3], [a, b, c])"
+
+.. function:: replicate( count, element )
+
+    Create a list with element repeated count times
+
+    .. command-output:: eq eval "replicate(8, a_variable)"
 
 List-generation functions
 =========================
