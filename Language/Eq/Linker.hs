@@ -178,8 +178,9 @@ multiParamsFunctions =
     ]
 
 lambdaBuilder :: [FormulaPrim] -> FormulaPrim
-lambdaBuilder [arg, body] = meta LambdaBuild $ lambda [([arg], body)]
-lambdaBuilder lst = app (Variable "Lambda") lst
+lambdaBuilder [] = app (Variable "Lambda") []
+lambdaBuilder lst@[_] = app (Variable "Lambda") lst
+lambdaBuilder lst = meta LambdaBuild $ lambda [(init lst, last lst)]
 
 derivateBuilder :: [FormulaPrim] -> FormulaPrim
 derivateBuilder [what, var] = derivate what var

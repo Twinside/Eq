@@ -30,10 +30,10 @@ metaEval evaluator Sort (Formula (List _ lst)) =
         where unclap formu = unTagFormula <$> evaluator (Formula formu)
 metaEval evaluator Sort f = return . sortFormula =<< evaluator f
 
-metaEval evaluator LambdaBuild (Formula (Lambda _ [([arg], body)])) = do
-    arg' <- metaFilter (\a -> unTagFormula <$> (evaluator $ Formula a)) arg
+metaEval evaluator LambdaBuild (Formula (Lambda _ [(args, body)])) = do
+    args' <- mapM (metaFilter (\a -> unTagFormula <$> (evaluator $ Formula a))) args
     body' <- metaFilter (\a -> unTagFormula <$> (evaluator $ Formula a)) body
-    return . Formula $ lambda [([arg'], body')]
+    return . Formula $ lambda [(args', body')]
 metaEval _ LambdaBuild _ = eqFail (Formula $ Block 1 1 1) Err.wrong_lambda_format 
 
 

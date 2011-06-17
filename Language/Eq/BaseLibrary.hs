@@ -20,7 +20,7 @@ if(      true, a, b ) :> a;
 if(     false, a, b ) :> b;
 if( otherwise, a, b ) :> undefined;
 
--- map( function, list )
+-- map( a -> b, [a] )
 map( f,        [] ) :> [];
 map( f,   x :: xs ) :> {f}( x ) :: map( {f}, xs );
 map( f, otherwise ) :> undefined;
@@ -85,6 +85,15 @@ min( a, b ) :> if( a < b, a, b );
 -- provide equality when everything else is undefined :-P
 eq( a, a ) :> true;
 eq( a, b ) :> false;
+
+-- generateMatrix :: ((i, j) -> a, Int, Int) -> [[a]]
+generateMatrix( f, width, height ) :> matrix(
+    map( Lambda( lineId
+               , map( Lambda( col, {f}({lineId}, {col}))
+                    , {listFromTo(0, {width} - 1)}))
+       , listFromTo(0, height - 1)
+       )
+    );
 
 -- modintern( n<p, rest, module )
 modintern(  true, rest, num ) :> rest;

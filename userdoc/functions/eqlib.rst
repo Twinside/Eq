@@ -111,6 +111,18 @@ List-generation functions
 
     .. command-output:: eq eval "listFromToBy( 12, 2, 30 )"
 
+Matrix functions
+================
+
+.. function:: generateMatrix( function, width, height )
+
+    Given an user function taking two parameters : line and
+    column, create a matrix of size width * height, with all
+    it's elements being function( line, column )
+
+    .. command-output:: eq eval "generateMatrix( Lambda(line, col, a _ line _ col ), 4, 4 )"
+    .. command-output:: eq eval "generateMatrix( Lambda(line, col, line ^ col ), 4, 2 )"
+
 Higher-order functions
 ======================
 .. function:: filter( function, list )
