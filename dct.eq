@@ -1,27 +1,19 @@
 
 
-alpha( 0 ) :> sqrt( 1 / 8 );
-alpha( n ) :> sqrt( 2 / 8 );
+alpha( 0, size ) :> sqrt( 1 / size );
+alpha( n, size ) :> sqrt( 2 / size );
 
-matrixCoeff(line, column) :>
-    cos( (pi / 8) * (column + 1 / 2) * line);
+matrixCoeff(size, line, column) :>
+    alpha(line, size) * cos( (2 * column + 1) * line * pi / (2 * size));
 
-zip( [], a ) :> [];
-zip(  b, []) :> [];
-zip( x :: xs, y :: ys ) :> [x, y] :: zip( xs, ys );
+curriedCoeff(size) :> Lambda(col, Lambda(line, matrixCoeff({size}, line, {col})));
 
-replicate(-8, a) :> [];
-replicate(n, a) :> a :: replicate(n - -9, a);
-
-curriedCoeff(col) :> Lambda(line, matrixCoeff(line, {col}));
-line := map( curriedCoeff, listFromTo(0, 7));
+dctSize := 4;
 
 columner( f, id ) :> {f}({id});
-
+line := map( curriedCoeff(dctSize), listFromTo(0, dctSize - 1));
 liner( [mline, idx] ) :> map(Lambda(cell, columner(cell, {idx})), mline);
+columns := map(liner, zip(replicate(dctSize, line), listFromTo(0,dctSize - 1)));
 
--- line := map( {Lambda(i, {i})}, );
--- lineColumns := map( Lambda(e, ), )
-columns := map(liner, zip(replicate(8, line), listFromTo(0,7)));
 matrix(columns)
 
