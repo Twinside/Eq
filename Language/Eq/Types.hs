@@ -439,7 +439,7 @@ instance Ord FormulaPrim where
     compare _ (CInteger _) = GT
     compare _ (CFloat _) = GT
     compare _ (Block _ _ _) = LT
-    compare _ (NumEntity _) = GT
+    compare _ (NumEntity _) = LT
 
     -- we don't sort matrixes, because the mul
     compare (Matrix _ _ _ _) (Matrix _ _ _ _) = EQ

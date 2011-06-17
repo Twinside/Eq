@@ -12,6 +12,8 @@ import Language.Eq.Algorithm.Eval.Types
 -----------------------------------------------
 add :: EvalOp
 add (Fraction r1) (Fraction r2) = left . Fraction $ r1 + r2
+add (CInteger i) (Fraction r) = left . Fraction $ toRational i + r
+add (Fraction r) (CInteger i) = left . Fraction $ r + toRational i
 add a b = right (a,b)
 
 -----------------------------------------------
@@ -19,6 +21,8 @@ add a b = right (a,b)
 -----------------------------------------------
 sub :: EvalOp
 sub (Fraction r1) (Fraction r2) = left . Fraction $ r1 - r2
+sub (CInteger i) (Fraction r) = left . Fraction $ toRational i - r
+sub (Fraction r) (CInteger i) = left . Fraction $ r - toRational i
 sub a b = right (a,b)
 
 -----------------------------------------------
@@ -26,6 +30,8 @@ sub a b = right (a,b)
 -----------------------------------------------
 mul :: EvalOp
 mul (Fraction r1) (Fraction r2) = left . Fraction $ r1 * r2
+mul (CInteger i) (Fraction r) = left . Fraction $ toRational i * r
+mul (Fraction r) (CInteger i) = left . Fraction $ r * toRational i
 mul a b = right (a,b)
 
 -----------------------------------------------

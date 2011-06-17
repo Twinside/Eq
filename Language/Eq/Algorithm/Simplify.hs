@@ -115,6 +115,20 @@ mulSimplification _ a b
         left (a ** 2)
     | otherwise = right (a,b)
 
+divSimplification :: EvalFun -> EvalOp
+divSimplification _ (BinOp _ OpMul lst) (CInteger constant)
+    | any hasFraction lst = return . Left $ (binOp OpMul $ changeFraction lst)
+        where hasFraction (Fraction _) = True
+              hasFraction _ = False
+
+              newCoeff frac = Fraction $ frac / toRational constant
+
+              changeFraction [] = []
+              changeFraction (Fraction f:xs) = newCoeff f : xs
+              changeFraction (x:xs) = x : changeFraction xs
+
+divSimplification _ a b = right (a,b)
+
 --------------------------------------------------
 ----            Main Function
 --------------------------------------------------
@@ -126,5 +140,7 @@ simplifyFormula f (BinOp _ OpSub lst) =
     binEval OpSub (subSimplification f) (addSimplification f) lst
 simplifyFormula f (BinOp _ OpMul lst) =
     binEval OpMul (mulSimplification f) (mulSimplification f) lst
+simplifyFormula f (BinOp _ OpDiv lst) =
+    binEval OpDiv (divSimplification f) (mulSimplification f) lst
 simplifyFormula _ formu = pure formu
 
