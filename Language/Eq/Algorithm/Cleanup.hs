@@ -116,8 +116,6 @@ sinus (NumEntity Pi) = int 0
 sinus (BinOp _ OpDiv [NumEntity Pi, CInteger 6]) = int 1 / int 2
 sinus (BinOp _ OpMul [NumEntity Pi, CInteger _]) = int 0
 sinus (BinOp _ OpMul [CInteger _, NumEntity Pi]) = int 0
--- TODO : add more complex simplifications one day :]
-{-sinus (BinOp OpMul [Pi, BinOp OpDiv [Pi, CInteger i]])-}
 sinus i = sin i
 
 ----------------------------------------------

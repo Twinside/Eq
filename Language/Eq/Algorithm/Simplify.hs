@@ -2,6 +2,7 @@ module Language.Eq.Algorithm.Simplify( simplifyFormula ) where
 
 import Control.Applicative
 import Data.Ratio
+import Data.Maybe( mapMaybe )
 
 import Language.Eq.Types
 import Language.Eq.EvaluationContext
@@ -116,6 +117,9 @@ mulSimplification _ a b
         left (a ** 2)
     | otherwise = right (a,b)
 
+--------------------------------------------------
+----            '/'
+--------------------------------------------------
 divSimplification :: EvalFun -> EvalOp
 divSimplification _ (BinOp _ OpMul lst) (CInteger constant)
     | any hasFraction lst = return . Left $ (binOp OpMul $ changeFraction lst)
@@ -130,6 +134,35 @@ divSimplification _ (BinOp _ OpMul lst) (CInteger constant)
 
 divSimplification _ a b = right (a,b)
 
+--------------------------------------------------
+----            cos
+--------------------------------------------------
+mod2piMulSimplify :: [FormulaPrim] -> FormulaPrim
+mod2piMulSimplify lst
+  | not $ any (NumEntity Pi ==) lst = binOp OpMul lst
+  | otherwise = packFormula $ mapMaybe coeffReducer lst
+      where packFormula [a] = a
+            packFormula l = binOp OpMul l
+
+            two :: Ratio Integer
+            two = 2 % 1
+            
+            coeffReducer num@(CInteger n)
+              | n `mod` 2 == 0 = Nothing
+              | otherwise = Just num
+            coeffReducer num@(Fraction f)
+              | f > two = coeffReducer . Fraction $ f - two
+              | otherwise = Just num
+            coeffReducer a = Just a
+    
+simplifyCos :: EvalFun -> FormulaPrim -> EqContext FormulaPrim
+simplifyCos _eval (BinOp _ OpMul lst) =
+    pure . cos $ mod2piMulSimplify lst
+simplifyCos _ formula = pure $ cos formula
+
+--------------------------------------------------
+----            Sqrt
+--------------------------------------------------
 simplifySqrt :: EvalFun -> FormulaPrim -> EqContext FormulaPrim
 simplifySqrt _eval (Fraction r)
   | isIntegerRoot (numerator r) && isIntegerRoot (denominator r) =
@@ -160,5 +193,6 @@ simplifyFormula f (BinOp _ OpMul lst) =
 simplifyFormula f (BinOp _ OpDiv lst) =
     binEval OpDiv (divSimplification f) (mulSimplification f) lst
 simplifyFormula f (UnOp _ OpSqrt sub) = simplifySqrt f sub
+simplifyFormula f (UnOp _ OpCos sub) = simplifyCos f sub
 simplifyFormula _ formu = pure formu
 
