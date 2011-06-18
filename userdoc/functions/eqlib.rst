@@ -158,6 +158,9 @@ Higher-order functions
 
     Apply a `function` to all elements of the list
 
+    :param function: A function taking one argument from the list and transform
+                     it to a new element which will be the resul of the function.
+
     .. command-output:: eq eval "mul2(x) :> x * 2; map( mul2, [1, 2, 3, 12] )"
 
 .. function:: foldl( function, accumulator, list )
@@ -171,6 +174,12 @@ Higher-order functions
     example of the use of fold is to write the equivalent of the
     reverse function using a left fold :
 
+    :param function: a function taking two parameters : the accumulator
+                     and a list element. The function return an updated
+                     accumulator.
+    :param accumulator: The initial accumulator given to the function
+    :param list: The list to fold over
+
     .. command-output:: eq eval "foldl( cons, [], [1, 2, 3, 4] )"
 
     .. _a link: http://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
@@ -179,6 +188,12 @@ Higher-order functions
 
     Same as the left fold, but here is the right fold, iterations
     start from the end of the list to the beginning.
+
+    :param function: a function taking two parameters : the accumulator
+                     and a list element. The function return an updated
+                     accumulator.
+    :param accumulator: The initial accumulator given to the function
+    :param list: The list to fold over
 
     .. _a link: http://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
 
