@@ -7,12 +7,13 @@ Lambda
 Creation
 ========
 
-.. function:: Lambda(Argument, Body)
+.. function:: Lambda(Argument1, ..., Body)
 
-    :param Argument: unevaluated parameter name
+    :param Argument: unevaluated parameter name, there must be at leat one
+                     and many are possible
     :param Body: unevaluated body of the lambda
 
-    Create an anonymouse function taking one argument. When
+    Create an anonymous function taking one, or more, argument. When
     the lambda is found in the formula, variables not present
     in it's argument list are bound to variable in the environment
     before any call of the lambda function.

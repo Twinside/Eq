@@ -120,8 +120,25 @@ Matrix functions
     column, create a matrix of size width * height, with all
     it's elements being function( line, column )
 
+    :param function: A function with two parameters line and col,
+                     producing matrix.
+
+    :param width: Width of the matrix, the producing function will
+                  be called with line values from 0 to width - 1.
+
+    :param height: Height of the matrix, the producing function
+                   will be called with line values from 0 to height - 1
+
     .. command-output:: eq eval "generateMatrix( Lambda(line, col, a _ line _ col ), 4, 4 )"
     .. command-output:: eq eval "generateMatrix( Lambda(line, col, line ^ col ), 4, 2 )"
+
+.. function:: transpose( matrix )
+
+    Transpose a matrix (surprisingly), all rows will become columns
+    and all columns will become rows
+
+    .. command-output:: eq eval "generateMatrix( Lambda(line, col, a _ line _ col ), 3, 3 )"
+    .. command-output:: eq eval "transpose(generateMatrix( Lambda(line, col, a _ line _ col ), 3, 3 ))"
 
 Higher-order functions
 ======================
@@ -129,6 +146,11 @@ Higher-order functions
 
     Remove all object which the function doesn't evaluate
     to true.
+
+    :param function: A function with one parameter, which will be evaluated 
+                     for each element of the list, and must return a boolean
+                     (comparison result) value to indicate if we keep or 
+                     drop the element.
 
     .. command-output:: eq eval "enough(x) :> x > 50; filter( enough, [100, 2, 4, 51, 50, 60 ] )"
 
