@@ -107,6 +107,8 @@ data UnOperator =
     | OpLn | OpLog | OpExp
     | OpFactorial
     | OpCeil | OpFloor | OpFrac
+    
+    | OpMatrixWidth | OpMatrixHeight
     deriving (Eq, Show, Enum)
 
 -- | Some entity which cannot be represented in other mannear
@@ -666,6 +668,9 @@ unOpNames = [ (op, reprez) | (op, reprez,_) <- realUnopOperators] ++
     , (OpCeil, "ceil")
     , (OpFloor, "floor")
     , (OpFrac, "frac")
+
+    , (OpMatrixWidth, "matrixWidth")
+    , (OpMatrixHeight, "matrixHeight")
     ]
  
 -------------------------------------------

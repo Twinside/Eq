@@ -142,6 +142,20 @@ fracEval :: EvalFun
 fracEval (CInteger _) = return $ CInteger 0
 fracEval f = return $ unOp OpFrac f
 
+--------------------------------------------------
+----            'matrixWidth'
+--------------------------------------------------
+matrixWidthEval :: EvalFun
+matrixWidthEval (Matrix _ width _ _) = return . CInteger $ toInteger width
+matrixWidthEval f = return $ unOp OpMatrixWidth f
+
+--------------------------------------------------
+----            'matrixHeight'
+--------------------------------------------------
+matrixHeightEval :: EvalFun
+matrixHeightEval (Matrix _ _ height _) = return . CInteger $ toInteger height
+matrixHeightEval f = return $ unOp OpMatrixHeight f
+
 -----------------------------------------------
 ----        'Ceil'
 -----------------------------------------------
@@ -432,6 +446,8 @@ eval evaluator (UnOp _ OpFactorial f) = factorial =<< evaluator f
 eval evaluator (UnOp _ OpFloor f) = floorEval =<< evaluator f
 eval evaluator (UnOp _ OpCeil f) = ceilEval =<< evaluator f
 eval evaluator (UnOp _ OpFrac f) = fracEval =<< evaluator f
+eval evaluator (UnOp _ OpMatrixWidth f) = matrixWidthEval =<< evaluator f
+eval evaluator (UnOp _ OpMatrixHeight f) = matrixHeightEval =<< evaluator f
 
 eval evaluator (UnOp _ OpNegate f) = fNegate =<< evaluator f
 eval evaluator (UnOp _ OpAbs f) = fAbs =<< evaluator f

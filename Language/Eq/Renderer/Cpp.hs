@@ -85,6 +85,8 @@ unOpEr OpFactorial = ""
 unOpEr OpASinh = ""
 unOpEr OpACosh = ""
 unOpEr OpATanh = ""
+unOpEr OpMatrixWidth = ""
+unOpEr OpMatrixHeight = ""
 
 cOut :: Maybe (BinOperator, Bool) -> FormulaPrim -> OutContext ShowS
 cOut ctxt (Poly _ p) = cOut ctxt (unTagFormula . treeIfyFormula $ convertToFormula p)

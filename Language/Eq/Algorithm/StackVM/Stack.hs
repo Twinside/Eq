@@ -104,11 +104,15 @@ stackOpOfUnop OpATanh = ATanh
 stackOpOfUnop OpLn = Ln 
 stackOpOfUnop OpLog = Log 
 stackOpOfUnop OpExp = Exp
-stackOpOfUnop OpFactorial =
-    error "Cannot be compiled"
 stackOpOfUnop OpCeil = Ceil 
 stackOpOfUnop OpFloor = Floor 
 stackOpOfUnop OpFrac = Frac
+stackOpOfUnop OpFactorial =
+    error "Cannot be compiled"
+stackOpOfUnop OpMatrixWidth =
+    error "Cannot be compiled"
+stackOpOfUnop OpMatrixHeight =
+    error "Cannot be compiled"
 
 -- | Convert a polynome into a formula to provide the minimal
 -- formula in term of multiplication need.

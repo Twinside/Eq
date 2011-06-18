@@ -175,7 +175,22 @@ multiParamsFunctions =
                    ,("...", "All the values")
                    ]
                  , matrixBuilder ))
+
+    , ("matrixWidth", ("Retrieve the width of a matrix"
+                      , ""
+                      , [("m", "a matrix")], matrixWidth))
+    , ("matrixHeight", ("Retrieve the height of a matrix"
+                      , ""
+                      , [("m", "a matrix")], matrixHeight))
     ]
+
+matrixWidth :: [FormulaPrim] -> FormulaPrim
+matrixWidth [m] = unOp OpMatrixWidth m
+matrixWidth a = app (Variable "matrixWidth") a
+
+matrixHeight :: [FormulaPrim] -> FormulaPrim
+matrixHeight [m] = unOp OpMatrixHeight m
+matrixHeight a = app (Variable "matrixHeight") a
 
 lambdaBuilder :: [FormulaPrim] -> FormulaPrim
 lambdaBuilder [] = app (Variable "Lambda") []

@@ -194,6 +194,8 @@ stringOfUnOp OpSqrt = "<root/>"
 stringOfUnOp OpFactorial = "<factorial/>"
 stringOfUnOp OpNegate = "<minus/>"
 stringOfUnOp OpFrac = "<ci>frac</ci>"
+stringOfUnOp OpMatrixWidth = "matrixWidth"
+stringOfUnOp OpMatrixHeight = "matrixHeight"
 
 stringOfBinOp :: BinOperator -> String
 stringOfBinOp OpAdd = "<plus/>"

@@ -123,7 +123,11 @@ floatEvalRules formula@(UnOp _ op f) =
           funOf OpFloor = error $ Err.not_here "unop : floor - "
           funOf OpFrac =  error $ Err.not_here "unop : frac - "
           funOf OpCeil = error $ Err.not_here "unop : ceil - "
-          funOf OpFactorial = error $ Err.not_here "unop : Should - "
+          funOf OpFactorial = error $ Err.not_here "unop : factorial  - "
+          funOf OpMatrixWidth = 
+            error $ Err.not_here "unop : MatrixWidth - "
+          funOf OpMatrixHeight = 
+            error $ Err.not_here "unop : MatrixHeight - "
 
 floatEvalRules end = return end
 
