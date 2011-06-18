@@ -79,7 +79,20 @@ Matrix information
 
 Indexation
 ----------
-TODO!
+
+You can access individual elements of the matrix by indexing them.
+It works the same way than with list, you can use one index to obtain
+a line, for example with the following matrix :
+
+.. command-output:: eq eval "generateMatrix(Lambda(l,c, a _ l _ c), 3, 4)"
+
+You can extract the second line this way :
+
+.. command-output:: eq eval "generateMatrix(Lambda(l,c, a _ l _ c), 3, 4) _ 2"
+
+And finally to get the fourth element of the list :
+
+.. command-output:: eq eval "generateMatrix(Lambda(l,c, a _ l _ c), 3, 4) _ 2 _ 3"
 
 Related
 =======
