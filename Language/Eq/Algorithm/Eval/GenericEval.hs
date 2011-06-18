@@ -297,7 +297,7 @@ metaEvaluation evaluator m f = unTagFormula
 matrixCreate :: [FormulaPrim] -> EqContext FormulaPrim
 matrixCreate [List _ whole@(List _ subList:rest)]
   | and $ map isAllList rest =
-      pure . matrix rowCount columnsCount $ map subListExtract whole
+      pure . matrix columnsCount rowCount $ map subListExtract whole
     where columnsCount = length subList
           rowCount = length rest + 1
 
