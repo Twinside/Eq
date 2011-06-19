@@ -105,6 +105,8 @@ divide f1@(CInteger i1) f2@(CInteger i2)
                                   / int (i2 `quot` greatestCommonDenominator)
                         else Right (f1,f2)
         where greatestCommonDenominator = gcd i1 i2
+divide (BinOp _ OpMul (CInteger i: rest)) (CInteger i2) =
+    Left . binOp OpMul $ Fraction (i % i2) : rest
 divide x y = Right (x,y)
 
 ----------------------------------------------

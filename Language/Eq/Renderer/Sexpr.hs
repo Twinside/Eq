@@ -19,7 +19,10 @@ char = (:)
 
 sexprS :: FormulaPrim -> ShowS
 sexprS (Complex _ (re, im)) = str "(complex " . sexprS re . char ' ' . sexprS im . char ')'
-sexprS (Fraction f) = sexprS $ (CInteger $ numerator f) / (CInteger $ denominator f)
+sexprS (Fraction f) = str"(% " . shows (numerator f) 
+                               . str " " 
+                               . shows (denominator f)
+                               . str ") "
 sexprS (Poly _ v@(PolyRest _)) = sexprS . unTagFormula $ convertToFormula v
 sexprS (Poly _ (Polynome v lst)) =
     str "(poly " . str v . char ' ' . concatMapS coeffPrinter lst . char ')'
