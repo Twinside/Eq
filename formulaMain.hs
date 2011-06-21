@@ -33,6 +33,7 @@ data Flag =
     | SupportedPreprocLanguages
 
     -- for plotting
+    | ContourPlotting
     | PlotWidth
     | PlotHeight
     | XBeg
@@ -79,7 +80,8 @@ askingOption =
 
 plotOption :: [OptDescr (Flag, String)]
 plotOption =
-    [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x), float"
+    [ Option "c" ["contour"] (NoArg (ContourPlotting,"")) "Do a contour plot instead of a regular plot"
+    , Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x), float"
     , Option ""  ["xe", "xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x), float"
     , Option "y" ["yBegin"] (ReqArg ((,) YBeg) "YBEG") "Beginning of plot (y), float"
     , Option ""  ["ye", "yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y), float"
@@ -117,6 +119,8 @@ plotOption =
     ]
 
 preparePlotConf :: PlotConf -> (Flag, String) -> PlotConf
+preparePlotConf conf (ContourPlotting, _) =
+    conf { mode = CountourPlot }
 preparePlotConf conf (PlotWidth, val) = 
     conf { xDim = (xDim conf){ projectionSize = read val } }
 preparePlotConf conf (PlotHeight, val) =
@@ -324,7 +328,7 @@ plotCommand args = do
     let formulaList = parseProgramm formulaText
     either (parseErrorPrint finalFile)
            (\formulal -> do
-               case plot2DExpression plotConf . unTagFormula $ head formulal of
+               case plotFunction plotConf . unTagFormula $ head formulal of
                 Left err -> do
                     Io.hPutStr finalFile err
                     hClose finalFile

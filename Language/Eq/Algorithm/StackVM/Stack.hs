@@ -121,8 +121,11 @@ convertPolynomeToEvalFormula (PolyRest c) = Just $ coefToFormula c
 convertPolynomeToEvalFormula (Polynome [var] polyCoeffs) 
     | var == 'x' || var == 'y' = do
       firstTransfo <- convertPolynomeToEvalFormula firstSub
+      let fullTFirstTransfo = if firstCoeff > 0
+                then firstTransfo * fvar ** coefToFormula firstCoeff
+                else firstTransfo
       (lastCoeff, lastFormu) <-
-                 foldl' prefCoeff (Just (firstCoeff, firstTransfo)) restCoeff
+                 foldl' prefCoeff (Just (firstCoeff, fullTFirstTransfo)) restCoeff
       pure . cleanupFormulaPrim $ lastFormu * fvar ** coefToFormula lastCoeff
         where ((firstCoeff,firstSub):restCoeff) = reverse polyCoeffs
               fvar = Variable [var]

@@ -3,13 +3,18 @@
 module Language.Eq.Renderer.Ascii2DGrapher(
                                        -- * Plotting configuration
                                          PlotConf( .. )
+                                       , PlotingMode( .. )
                                        , ScalingType( .. )
                                        , Dimension( .. )
                                        , defaultPlotConf
-                                       -- * Da Ploting LAUNCHER !!
+
+                                       -- * Real ploting functions
+                                       , plotFunction
                                        , plot2DExpression
+                                       , contourTrace2DExpression
                                        ) where
 
+import Data.Bits
 import Data.Array.Unboxed
 import Text.Printf
 
@@ -21,6 +26,11 @@ type ValueType = Double
 
 -- | (Begin, End), all inclusive
 type PlotRange = (ValueType, ValueType)
+
+data PlotingMode =
+      RegularPlot
+    | CountourPlot
+    deriving Show
 
 data ScalingType =
       Linear
@@ -42,6 +52,7 @@ data PlotConf = PlotConf
     { xDim :: Dimension
     , yDim :: Dimension
     , draw0Axis :: Bool
+    , mode :: PlotingMode
     , graphTitle :: Maybe String
     }
     deriving Show
@@ -68,6 +79,7 @@ defaultPlotConf = PlotConf
         , labelEvery = Just 4
         }
 
+    , mode = RegularPlot
     , draw0Axis = False
     , graphTitle = Nothing
     }
@@ -228,6 +240,13 @@ addAxis conf (widthScaler, heightScaler) (xSucc, ySucc) a =
     . doWhen (draw0Axis conf)
              (add0Axis conf heightScaler) $ (((0,0), (0,0)), a)
 
+plotFunction :: PlotConf -> FormulaPrim
+             -> Either String (UArray (Int, Int) Char)
+plotFunction conf@(PlotConf { mode = RegularPlot }) =
+    plot2DExpression conf
+plotFunction conf@(PlotConf { mode = CountourPlot}) = 
+    contourTrace2DExpression conf
+
 
 -- | User function to start a plot. Handle all the scary
 -- configuration before starting the plot.
@@ -284,7 +303,6 @@ widthSuccessor dim = case (scaling dim, minVal dim > 0) of
                 dim { minVal = bigpsilon
                     , maxVal = vMax - vMin + bigpsilon}
           
-
 
 -- | How to map the height value onto the screen,
 -- by taking tinto action the 'canvas' size
@@ -460,4 +478,79 @@ plot2D (_width, height) xStop f widthSucc xPlot yPlot xInit =
                     midChar ++ ((xPlot x, screenY),c) : future
             SubdivideIgnore ->
                 lowerRange ++ upperRange ++ midChar ++ future
+
+--  3|0
+--  2|1
+metaBallChars :: Array Int Char
+metaBallChars = array (0, 16 - 1)
+    [ (0x0, ' ')
+    , (0x1, '\\')
+    , (0x2, '/')
+    , (0x3, '|')
+    , (0x4, '\\')
+    , (0x5, '/')
+    , (0x6, '-')
+    , (0x7, '/')
+    , (0x8, '/')
+    , (0x9, '-')
+    , (0xA, '\\')
+    , (0xB, '/')
+    , (0xC, '|')
+    , (0xD, '/')
+    , (0xE, '\\')
+    , (0xF, ' ')
+    ]
+
+-- | User function to make a "contour plot" of a formula.
+contourTrace2DExpression :: PlotConf -> FormulaPrim
+                         -> Either String (UArray (Int, Int) Char)
+contourTrace2DExpression conf formula =
+    case VM.compileExpression formula of
+      Left err -> Left err
+      Right prog ->
+        let size@(w, h)  = canvasSize conf
+            graph = metaBall2D size (VM.evalProgram prog) (< 0.001)
+                        (dimensionRange linearXdim) (dimensionRange linearYdim)
+
+            linearXdim = (xDim conf) { scaling = Linear }
+            linearYdim = (yDim conf) { scaling = Linear }
+
+            successor = widthSuccessor linearXdim
+            (_,ySuccessor) = widthSuccessor linearYdim
+            yScaler = sizeMapper linearYdim
+            xScaler = sizeMapper linearXdim
+
+            (((shiftX, shiftY), (addX, addY)), graph') =
+                addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
+        in Right $ accumArray (\_ e -> e) ' '
+                              ((0, 0) ,(w + shiftX + addX - 1, h + shiftY + addY - 1)) $
+                              [v | v@((x,_),_) <- graph', 
+                                                 x < w + shiftX + addX,
+                                                 x >= 0]
+
+metaBall2D :: (Int, Int) 
+           -> (ValueType -> ValueType -> ValueType) 
+           -> (ValueType -> Bool)
+           -> (ValueType, ValueType)
+           -> (ValueType, ValueType)
+           -> [((Int,Int), Char)]
+metaBall2D (width, height) f thresholdFunction (xMin, xMax) (yMin, yMax) =
+ [((x,y), calcChar (toEnum x * xStep + xMin)
+                  $ toEnum y * yStep + yMin)| x <- [0..width - 1]
+                                            , y <- [0..height - 1]]
+  where xStep = (xMax - xMin) / toEnum width
+        yStep = (yMax - yMin) / toEnum height
+
+        halfX = xStep / 4 + 1 / 2 * xStep
+        halfY = yStep / 4 + 1 / 2 * yStep
+        deltas = [ (halfX, halfY), (halfX, -halfY)
+                 , (-halfX,-halfY), (-halfX, halfY)]
+
+        fBit x y = fromEnum . thresholdFunction $ f x y
+
+        calcChar x y = 
+            let idx = foldl1 (.|.)
+                    [fBit (x + dx) (y + dy) `shiftL` bitIdx
+                                | ((dx, dy), bitIdx) <- zip deltas [0..]]
+            in metaBallChars ! idx
 
