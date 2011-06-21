@@ -147,17 +147,22 @@ mod2piMulSimplify lst
             two :: Ratio Integer
             two = 2 % 1
             
-            coeffReducer num@(CInteger n)
+            coeffReducer (CInteger n)
               | n `mod` 2 == 0 = Nothing
-              | otherwise = Just num
-            coeffReducer num@(Fraction f)
+            coeffReducer (Fraction f)
               | f > two = coeffReducer . Fraction $ f - two
-              | otherwise = Just num
             coeffReducer a = Just a
-    
+
+
+{-piSignSimplify :: [FormulaPrim] -> FormulaPrim-}
+{-piSignSimplify [Fraction f, NumEntity Pi]-}
+    {-| f > 3 % 2 = KeepSign $ Fraction (2 % 1 - f) * NumEntity Pi-}
+    {-| f > 1 % 1 = ChangeSign $ Fraction () * NumEntity Pi-}
+    {-| f > 1 % 2 = ChangeSign $ Fraction (f - 1 % 2) * NumEntity Pi-}
+{-piSignSimplify lst = KeepSign $ binOp OpMul lst-}
+
 simplifyCos :: EvalFun -> FormulaPrim -> EqContext FormulaPrim
-simplifyCos _eval (BinOp _ OpMul lst) =
-    pure . cos $ mod2piMulSimplify lst
+simplifyCos _eval (BinOp _ OpMul lst) = pure . cos $ mod2piMulSimplify lst
 simplifyCos _ formula = pure $ cos formula
 
 --------------------------------------------------
