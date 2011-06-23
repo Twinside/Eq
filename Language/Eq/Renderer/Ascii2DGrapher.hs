@@ -479,25 +479,25 @@ plot2D (_width, height) xStop f widthSucc xPlot yPlot xInit =
             SubdivideIgnore ->
                 lowerRange ++ upperRange ++ midChar ++ future
 
---  3|0
---  2|1
+--  3|0 =>  8|1
+--  2|1     4|2
 metaBallChars :: Array Int Char
 metaBallChars = array (0, 16 - 1)
     [ (0x0, ' ')
-    , (0x1, '\\')
-    , (0x2, '/')
+    , (0x1, '\'')
+    , (0x2, '.')
     , (0x3, '|')
-    , (0x4, '\\')
+    , (0x4, ',')
     , (0x5, '/')
     , (0x6, '-')
-    , (0x7, '/')
-    , (0x8, '/')
+    , (0x7, '\'')
+    , (0x8, '"')
     , (0x9, '-')
     , (0xA, '\\')
-    , (0xB, '/')
+    , (0xB, ',')
     , (0xC, '|')
-    , (0xD, '/')
-    , (0xE, '\\')
+    , (0xD, '.')
+    , (0xE, '\'')
     , (0xF, ' ')
     ]
 
