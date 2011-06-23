@@ -541,8 +541,8 @@ metaBall2D (width, height) f thresholdFunction (xMin, xMax) (yMin, yMax) =
   where xStep = (xMax - xMin) / toEnum width
         yStep = (yMax - yMin) / toEnum height
 
-        halfX = xStep / 4 + 1 / 2 * xStep
-        halfY = yStep / 4 + 1 / 2 * yStep
+        halfX = xStep / 2
+        halfY = yStep / 2
         deltas = [ (halfX, halfY), (halfX, -halfY)
                  , (-halfX,-halfY), (-halfX, halfY)]
 
