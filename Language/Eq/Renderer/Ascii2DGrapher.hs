@@ -17,8 +17,13 @@ module Language.Eq.Renderer.Ascii2DGrapher(
 import Data.Bits
 import Data.Array.Unboxed
 import Text.Printf
+import Numeric
 
+import Language.Eq.Algorithm.Eval
+import Language.Eq.BaseLibrary
+import Language.Eq.EvaluationContext
 import Language.Eq.Types
+
 import qualified Language.Eq.Algorithm.StackVM.Stack as VM
 
 -- | Alias in case I want to change in the future.
@@ -83,6 +88,19 @@ defaultPlotConf = PlotConf
     , draw0Axis = False
     , graphTitle = Nothing
     }
+
+wrappedEvaluation :: Formula ListForm -> Double -> Double -> Double
+wrappedEvaluation formula x y = valuaize . unTagFormula $ result rez
+    where def = [ Formula $ binOp OpAttrib [Variable "y", CFloat y]
+                , Formula $ binOp OpAttrib [Variable "x", CFloat x]
+                , formula ]
+          rez = performLastTransformationWithContext defaultSymbolTable
+              $ mapM evalGlobalLossyStatement def
+          
+          valuaize (CInteger i) = fromInteger i
+          valuaize (CFloat f) = f
+          valuaize (Fraction f) = fromRat f
+          valuaize _ = 1.0 / 0.0
 
 doubleShow :: Dimension -> ValueType -> String
 doubleShow dim = printf "%.*f" (labelPrecision dim)
@@ -247,32 +265,34 @@ plotFunction conf@(PlotConf { mode = RegularPlot }) =
 plotFunction conf@(PlotConf { mode = CountourPlot}) = 
     contourTrace2DExpression conf
 
+preparePlotFunction :: FormulaPrim -> (ValueType -> ValueType -> ValueType)
+preparePlotFunction formula =
+    case VM.compileExpression formula of
+      Left _ -> wrappedEvaluation $ Formula formula
+      Right prog -> VM.evalProgram prog
 
 -- | User function to start a plot. Handle all the scary
 -- configuration before starting the plot.
 plot2DExpression :: PlotConf -> FormulaPrim
                  -> Either String (UArray (Int, Int) Char)
 plot2DExpression conf formula =
-    case VM.compileExpression formula of
-      Left err -> Left err
-      Right prog ->
-        let successor = widthSuccessor $ xDim conf
-            (_,ySuccessor) = widthSuccessor $ yDim conf
-            yScaler = sizeMapper $ yDim conf
-            xScaler = sizeMapper $ xDim conf
-            (xBegin, xEnd) = dimensionRange $ xDim conf
-            size@(w, h)  = canvasSize conf
-            graph = plot2D size xEnd
-                           (flip (VM.evalProgram prog) 0)
-                           successor xScaler yScaler
-                           xBegin
-            (((shiftX, shiftY), (addX, addY)), graph') =
-                addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
-        in Right $ accumArray (\_ e -> e) ' '
-                              ((0, 0) ,(w + shiftX + addX - 1, h + shiftY + addY - 1)) $
-                              [v | v@((x,_),_) <- graph', 
-                                                 x < w + shiftX + addX,
-                                                 x >= 0]
+  let successor = widthSuccessor $ xDim conf
+      (_,ySuccessor) = widthSuccessor $ yDim conf
+      yScaler = sizeMapper $ yDim conf
+      xScaler = sizeMapper $ xDim conf
+      (xBegin, xEnd) = dimensionRange $ xDim conf
+      size@(w, h)  = canvasSize conf
+      graph = plot2D size xEnd
+                     (flip (preparePlotFunction formula) 0)
+                     successor xScaler yScaler
+                     xBegin
+      (((shiftX, shiftY), (addX, addY)), graph') =
+          addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
+  in Right $ accumArray (\_ e -> e) ' '
+                        ((0, 0) ,(w + shiftX + addX - 1, h + shiftY + addY - 1)) $
+                        [v | v@((x,_),_) <- graph', 
+                                           x < w + shiftX + addX,
+                                           x >= 0]
 
 
 -- | This type is a transformation from function
@@ -505,28 +525,25 @@ metaBallChars = array (0, 16 - 1)
 contourTrace2DExpression :: PlotConf -> FormulaPrim
                          -> Either String (UArray (Int, Int) Char)
 contourTrace2DExpression conf formula =
-    case VM.compileExpression formula of
-      Left err -> Left err
-      Right prog ->
-        let size@(w, h)  = canvasSize conf
-            graph = metaBall2D size (VM.evalProgram prog) (< 0.001)
-                        (dimensionRange linearXdim) (dimensionRange linearYdim)
+  let size@(w, h)  = canvasSize conf
+      graph = metaBall2D size (preparePlotFunction formula) (< 0.001)
+                  (dimensionRange linearXdim) (dimensionRange linearYdim)
 
-            linearXdim = (xDim conf) { scaling = Linear }
-            linearYdim = (yDim conf) { scaling = Linear }
+      linearXdim = (xDim conf) { scaling = Linear }
+      linearYdim = (yDim conf) { scaling = Linear }
 
-            successor = widthSuccessor linearXdim
-            (_,ySuccessor) = widthSuccessor linearYdim
-            yScaler = sizeMapper linearYdim
-            xScaler = sizeMapper linearXdim
+      successor = widthSuccessor linearXdim
+      (_,ySuccessor) = widthSuccessor linearYdim
+      yScaler = sizeMapper linearYdim
+      xScaler = sizeMapper linearXdim
 
-            (((shiftX, shiftY), (addX, addY)), graph') =
-                addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
-        in Right $ accumArray (\_ e -> e) ' '
-                              ((0, 0) ,(w + shiftX + addX - 1, h + shiftY + addY - 1)) $
-                              [v | v@((x,_),_) <- graph', 
-                                                 x < w + shiftX + addX,
-                                                 x >= 0]
+      (((shiftX, shiftY), (addX, addY)), graph') =
+          addAxis conf (xScaler, yScaler) (snd successor, ySuccessor) graph
+  in Right $ accumArray (\_ e -> e) ' '
+                        ((0, 0) ,(w + shiftX + addX - 1, h + shiftY + addY - 1)) $
+                        [v | v@((x,_),_) <- graph', 
+                                           x < w + shiftX + addX,
+                                           x >= 0]
 
 metaBall2D :: (Int, Int) 
            -> (ValueType -> ValueType -> ValueType) 
