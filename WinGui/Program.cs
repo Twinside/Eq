@@ -14,7 +14,7 @@ namespace WinGui
         {
             EqBridge kernel = null;
 
-            try { kernel = new EqBridge(); }
+            try { kernel = new EqBridge(true); }
             catch (HaskellRuntimeException e)
             {
                 MessageBox.Show( e.Message

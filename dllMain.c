@@ -58,6 +58,9 @@ EQ_API HsBool eq_begin_runtime()
     return HS_BOOL_TRUE;
 }
 
+EQ_API eq_context_t* eq_create_context_with_base_library()
+    { return eqCreateContextWithBaseLibrary( 0 ); }
+
 EQ_API eq_context_t* eq_create_context()
     { return eqCreateContext( 0 ); }
 

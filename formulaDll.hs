@@ -10,14 +10,15 @@ import Data.IORef
 import qualified Data.Map as Map
 import Foreign.Marshal.Alloc( free, malloc )
 import Foreign.StablePtr
-import EqManips.Types
-import EqManips.InputParser.MathML
-import EqManips.InputParser.EqCode
-import EqManips.Algorithm.Eval
-import EqManips.EvaluationContext
-import EqManips.Algorithm.Utils
-import EqManips.Renderer.Ascii
-import EqManips.Renderer.RenderConf
+import Language.Eq.Types
+import Language.Eq.InputParser.MathML
+import Language.Eq.InputParser.EqCode
+import Language.Eq.Algorithm.Eval
+import Language.Eq.EvaluationContext
+import Language.Eq.Algorithm.Utils
+import Language.Eq.Renderer.Ascii
+import Language.Eq.Renderer.RenderConf
+import Language.Eq.BaseLibrary
 
 dllRenderConf :: Bool -> Conf
 dllRenderConf unicode = defaultRenderConf { useUnicode = unicode }
@@ -85,6 +86,10 @@ eqCreateContext _ = do
     ref <- newIORef Map.empty
     newStablePtr ref
 
+eqCreateContextWithBaseLibrary :: Int -> IO (StablePtr (IORef Context))
+eqCreateContextWithBaseLibrary _ = do
+    ref <- newIORef defaultSymbolTable
+    newStablePtr ref
 eqDeleteContext :: StablePtr (IORef Context) -> IO ()
 eqDeleteContext = freeStablePtr
 
@@ -135,6 +140,7 @@ foreign export ccall "eqEval" eqEval :: CString -> IO CString
 foreign export ccall "eqFreeHaskellString" freeHaskell :: CWString -> IO ()
 foreign export ccall "eqMathMLTranslate" eqMathMLTranslate :: CWString -> IO CWString
 
+foreign export ccall "eqCreateContextWithBaseLibrary" eqCreateContextWithBaseLibrary :: Int -> IO (StablePtr (IORef Context))
 foreign export ccall "eqCreateContext" eqCreateContext :: Int -> IO (StablePtr (IORef Context))
 foreign export ccall "eqDeleteContext" eqDeleteContext :: (StablePtr (IORef Context)) -> IO ()
 foreign export ccall "eqWEvalWithContext" eqWEvalWithContext :: CWString -> StablePtr (IORef Context)

@@ -83,7 +83,7 @@ run:
 dll:
 	ghc $(DEBUG) -c --make -cpp formulaDll.hs
 	ghc $(DEBUG) -c dllMain.c
-	unixfind . | grep "\.o$$" | sed -e 's:\\:/:g' | \
+	unixfind . | grep "\.o$$" | sed -f subst.sed | \
 				xargs ghc $(DEBUG) -shared -optl-mwindows \
 										-o formulaDll.dll \
 										-package parsec \
@@ -93,8 +93,11 @@ dll:
 										-package filepath \
 										-package utf8-string\
 										-package HaXml \
+										-package template-haskell \
 										-lOle32 \
 										formulaDll.def
+	unixfind . | grep "\.o$$" | xargs rm
+	unixfind . | grep "\.hi$$" | xargs rm
 
 sharedlib:
 	ghc -O2 --make -cpp  -no-hs-main -optl '-shared' -optc '-DMODULE=FormulaDll' -o eqlinlib.so formulaDll.hs module_init.c

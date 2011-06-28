@@ -9,5 +9,5 @@ EXPORTS
  eq_eval_with_contextW  = eq_eval_with_contextW
  eq_eval_with_context   = eq_eval_with_context
  eq_create_context      = eq_create_context
+ eq_create_context_with_base_library = eq_create_context_with_base_library 
  eq_delete_context      = eq_delete_context
-
