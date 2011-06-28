@@ -13,11 +13,12 @@
             <ToolBar Grid.Row="0">
                 <Button Name="btnShowMathDraw" Width="17" Height="17" Click="btnShowMathDraw_Click" />
             </ToolBar>
-            <RichTextBox Grid.Row="1" Name="rchTxtResultView" />
+            <RichTextBox Grid.Row="1" Name="rchTxtResultView" FontFamily="Consolas,Monospace" AcceptsReturn="False" VerticalContentAlignment="Bottom" FontSize="10" 
+                         VerticalScrollBarVisibility="Auto"/>
             <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="5" ResizeBehavior="PreviousAndNext"/>
             <DockPanel Grid.Row="3" LastChildFill="True" >
                 <Button DockPanel.Dock="Right" Name="eqValidate" Content="ok" Click="eqValidate_Click" />
-                <TextBox DockPanel.Dock="Left" Name="txtInput" AcceptsReturn="True" />
+                <TextBox DockPanel.Dock="Left" Name="txtInput" AcceptsReturn="True" KeyUp="txtInput_KeyUp"/>
             </DockPanel>
         </Grid>
     </Grid>

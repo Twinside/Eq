@@ -37,10 +37,12 @@ namespace WpfGui
             string result = computationKernel.EvalProgramWithContext(txtInput.Text);
 
             txtInput.Text = "";
-            rchTxtResultView.AppendText("------------------------------\n");
-            rchTxtResultView.AppendText(formated);
-            rchTxtResultView.AppendText("=>\n");
-            rchTxtResultView.AppendText(result);
+            rchTxtResultView.AppendText("------------------------------\r");
+            rchTxtResultView.AppendText(formated.Replace("\n","\r"));
+            rchTxtResultView.AppendText("=>\r");
+            rchTxtResultView.AppendText(result.Replace("\n","\r"));
+
+            rchTxtResultView.ScrollToEnd();
         }
 
         private void btnShowMathDraw_Click(object sender, RoutedEventArgs e)
@@ -65,6 +67,12 @@ namespace WpfGui
             string rez = computationKernel.TranslateMathMLToEq(RecoResult);
             Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background
                                                       , (MethodInvoker)delegate() { txtInput.Text = rez; });
+        }
+
+        private void txtInput_KeyUp(object sender, KeyEventArgs e)
+        { 
+            if (e.Key == Key.Enter && Keyboard.IsKeyDown(Key.LeftShift))
+                eqValidate_Click(null, null);
         }
     }
 }
