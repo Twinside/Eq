@@ -27,7 +27,7 @@ namespace WpfGui
 
         public MainWindow()
         {
-            computationKernel = new WinGui.EqBridge();
+            computationKernel = new WinGui.EqBridge(true);
             InitializeComponent();
         }
 
@@ -74,5 +74,8 @@ namespace WpfGui
             if (e.Key == Key.Enter && Keyboard.IsKeyDown(Key.LeftShift))
                 eqValidate_Click(null, null);
         }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+            { txtInput.Text += (string)((MenuItem)sender).Header + "()"; }
     }
 }
