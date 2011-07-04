@@ -31,18 +31,17 @@ namespace WpfGui
             InitializeComponent();
         }
 
+        public void AppendInput(string txt)
+            { txtInput.Text += txt; }
+
         private void eqValidate_Click(object sender, RoutedEventArgs e)
         {
-            string formated = computationKernel.FormatProgram(txtInput.Text);
-            string result = computationKernel.EvalProgramWithContext(txtInput.Text);
-
+            QueryResult rez = new QueryResult(computationKernel, txtInput.Text);
+            QueryResultView view = new QueryResultView();
+            view.DataContext = rez;
+            view.AppWindow = this;
+            panelResult.Children.Add(view);
             txtInput.Text = "";
-            rchTxtResultView.AppendText("------------------------------\r");
-            rchTxtResultView.AppendText(formated.Replace("\n","\r"));
-            rchTxtResultView.AppendText("=>\r");
-            rchTxtResultView.AppendText(result.Replace("\n","\r"));
-
-            rchTxtResultView.ScrollToEnd();
         }
 
         private void btnShowMathDraw_Click(object sender, RoutedEventArgs e)
@@ -61,6 +60,7 @@ namespace WpfGui
         {
             mathInput.Hide();
         }
+
         private delegate void MethodInvoker();
         void mathInput_Insert(string RecoResult)
         {
@@ -70,8 +70,10 @@ namespace WpfGui
         }
 
         private void txtInput_KeyUp(object sender, KeyEventArgs e)
-        { 
-            if (e.Key == Key.Enter && Keyboard.IsKeyDown(Key.LeftShift))
+        {
+            if (e.Key != Key.Enter) return;
+            
+            if (!Keyboard.IsKeyDown(Key.LeftShift))
                 eqValidate_Click(null, null);
         }
 

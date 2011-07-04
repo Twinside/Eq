@@ -6,7 +6,6 @@
         <Grid Name="grid1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="20" />
-                <RowDefinition Height="30" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" MinHeight="20" MaxHeight="30" />
@@ -42,15 +41,17 @@
                     <MenuItem Header="Sort" Click="MenuItem_Click" />
                 </MenuItem>
             </Menu>
-            <ToolBar Grid.Row="1">
-                <Button Name="btnShowMathDraw" Width="17" Height="17" Click="btnShowMathDraw_Click" />
-            </ToolBar>
-            <RichTextBox Grid.Row="2" Name="rchTxtResultView" FontFamily="Consolas,Monospace" AcceptsReturn="False" VerticalContentAlignment="Bottom" FontSize="10" 
-                         VerticalScrollBarVisibility="Auto"/>
-            <GridSplitter Grid.Row="3" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="5" ResizeBehavior="PreviousAndNext"/>
-            <DockPanel Grid.Row="4" LastChildFill="True" >
-                <Button DockPanel.Dock="Right" Name="eqValidate" Content="ok" Click="eqValidate_Click" />
-                <TextBox DockPanel.Dock="Left" Name="txtInput" AcceptsReturn="True" KeyUp="txtInput_KeyUp"/>
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Name="panelResult" />
+            </ScrollViewer>
+            <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" 
+                          VerticalAlignment="Top" Height="5" 
+                          ResizeBehavior="PreviousAndNext"/>
+            <DockPanel Grid.Row="3" LastChildFill="True" >
+                <Button DockPanel.Dock="Right" Name="eqValidate" 
+                        Content="ok" Click="eqValidate_Click" />
+                <TextBox DockPanel.Dock="Left" Name="txtInput" 
+                         AcceptsReturn="True" KeyUp="txtInput_KeyUp"/>
             </DockPanel>
         </Grid>
     </Grid>
