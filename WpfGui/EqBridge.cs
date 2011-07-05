@@ -66,10 +66,24 @@ namespace WinGui
         [DllImport("formulaDll.dll", EntryPoint = "eq_delete_context", CallingConvention=CallingConvention.Cdecl)]
         private static extern void dllDeleteContext( IntPtr handle );
 
-        [DllImport("formulaDll.dll", EntryPoint = "eq_eval_with_contextW", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr dllCallEqEvalWithContext([MarshalAs(UnmanagedType.LPWStr)]string txt, IntPtr context );
+        [DllImport("formulaDll.dll", EntryPoint = "eq_eval_with_contextW",
+                   CallingConvention = CallingConvention.Cdecl, CharSet=CharSet.Unicode)]
+        private static extern void dllCallEqEvalWithContext([MarshalAs(UnmanagedType.LPWStr)]string txt, 
+                                                              IntPtr context,
+                                                              [Out, MarshalAs(UnmanagedType.LPWStr)]out string rez,
+                                                              [Out, MarshalAs(UnmanagedType.LPWStr)]out string unformated,
+                                                              [Out, MarshalAs(UnmanagedType.LPWStr)]out string mathMl);
 
-        public string EvalProgramWithContext(string txt) { return Marshal.PtrToStringUni(dllCallEqEvalWithContext(txt, contextHandle)); }
+        public Tuple<string, string, string> EvalProgramWithContext(string txt)
+        {
+            string rezBuilder;
+            string unformatedBuilder;
+            string mathMlBUilder;
+            dllCallEqEvalWithContext(txt, contextHandle, out rezBuilder, out unformatedBuilder, out mathMlBUilder);
+
+            return Tuple.Create(rezBuilder.ToString(), unformatedBuilder.ToString(), mathMlBUilder.ToString());
+        }
+
         public string EvalProgram(string txt) { return Marshal.PtrToStringUni(dllCallEqEval(txt)); }
         public string TranslateMathMLToEq(string txt) { return Marshal.PtrToStringUni(dllCallMathMLToEq(txt)); }
         public string FormatProgram(string txt) { return Marshal.PtrToStringUni(dllCallEqFormat(txt)); }

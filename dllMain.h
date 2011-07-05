@@ -21,11 +21,13 @@ extern "C"
 
     EQ_API eq_context_t* eq_create_context();
 
-    EQ_API wchar_t* eq_eval_with_contextW( wchar_t *in
-                                         , eq_context_t *ctxt );
+    EQ_API void eq_eval_with_contextW( wchar_t *in, eq_context_t *ctxt, 
+                                       wchar_t **pRez, wchar_t **pUnparsed,
+                                       wchar_t **pMathml );
 
-    EQ_API char* eq_eval_with_context( char *in
-                                     , eq_context_t *ctxt );
+    EQ_API char* eq_eval_with_context( char *in, eq_context_t *ctxt,
+                                       char **pRez, char **pUnparsed,
+                                       char **pMathml )
 
     EQ_API void eq_delete_context( eq_context_t* handle );
 
