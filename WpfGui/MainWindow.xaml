@@ -48,6 +48,9 @@
                           VerticalAlignment="Top" Height="5" 
                           ResizeBehavior="PreviousAndNext"/>
             <DockPanel Grid.Row="3" LastChildFill="True" >
+                <Button DockPanel.Dock="Right" Name="eqShowEqSelector"
+                        Content="m" Click="btnShowMathDraw_Click" 
+                        Width="30"/>
                 <Button DockPanel.Dock="Right" Name="eqValidate" 
                         Content="ok" Click="eqValidate_Click" />
                 <TextBox DockPanel.Dock="Left" Name="txtInput" 

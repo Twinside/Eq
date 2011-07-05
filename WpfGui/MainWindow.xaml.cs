@@ -56,18 +56,11 @@ namespace WpfGui
             mathInput.Show();
         }
 
-        void mathInput_Close()
-        {
-            mathInput.Hide();
-        }
-
         private delegate void MethodInvoker();
+
+        void mathInput_Close() { mathInput.Hide(); }
         void mathInput_Insert(string RecoResult)
-        {
-            string rez = computationKernel.TranslateMathMLToEq(RecoResult);
-            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background
-                                                      , (MethodInvoker)delegate() { txtInput.Text = rez; });
-        }
+            { AppendInput(computationKernel.TranslateMathMLToEq(RecoResult)); }
 
         private void txtInput_KeyUp(object sender, KeyEventArgs e)
         {
