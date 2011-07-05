@@ -42,7 +42,7 @@ namespace WpfGui
         {
             if (isFlagged)
             {
-                appWindow.AppendInput(((QueryResult)DataContext).RawQuery);
+                appWindow.AppendInput((string)((TextBox)sender).ToolTip);
                 isFlagged = false;
             }
         }

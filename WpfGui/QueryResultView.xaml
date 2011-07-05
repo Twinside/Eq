@@ -10,7 +10,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-<!-- Background="#FF4A5D80" -->
+        <!-- Background="#FF4A5D80" -->
         <TextBox Grid.Row="0"
                  Text="{Binding Path=FormatedQuery}"  FontFamily="Consolas,Monospace" 
                  IsReadOnly="True" IsTabStop="False"
@@ -20,7 +20,8 @@
                  Margin="5" FontSize="10" BorderThickness="0" Foreground="White" 
                  MouseLeave="TextBox_MouseLeave" 
                  PreviewMouseLeftButtonDown="TextBox_MouseDown" 
-                 PreviewMouseLeftButtonUp="TextBox_MouseLeftButtonUp" MouseRightButtonUp="TextBox_MouseRightButtonUp">
+                 PreviewMouseLeftButtonUp="TextBox_MouseLeftButtonUp" 
+                 MouseRightButtonUp="TextBox_MouseRightButtonUp">
             <TextBox.Style>
                 <Style TargetType="TextBox">
                     <Setter Property="Background" Value="#FF4A4D80" />
@@ -36,7 +37,21 @@
         <TextBox Grid.Row="1"
                  Text="{Binding Path=FormatedResult}" FontFamily="Consolas,Monospace" 
                  IsReadOnly="True" IsTabStop="False"
-                 Background="#FFB5CC7F" Margin="5" FontSize="10" BorderThickness="0"
-                 ToolTip="{Binding Path=RawResult}"/>
+                 Margin="5" FontSize="10" BorderThickness="0"
+                 ToolTip="{Binding Path=RawResult}"
+                 MouseLeave="TextBox_MouseLeave" 
+                 PreviewMouseLeftButtonDown="TextBox_MouseDown" 
+                 PreviewMouseLeftButtonUp="TextBox_MouseLeftButtonUp">
+            <TextBox.Style>
+                <Style TargetType="TextBox">
+                    <Setter Property="Background" Value="#FFB5CC7F" />
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#FFC5DC8F" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBox.Style>
+        </TextBox>
     </Grid>
 </UserControl>
