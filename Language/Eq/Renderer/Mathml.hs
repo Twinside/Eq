@@ -47,7 +47,7 @@ cleanify = concatMap deAnchor
 
 mo, msup, mi, mn, mfrac, mrow, parens,
     msubsup, msqrt, mfenced, mtable,
-    mtd, mtr :: ShowS -> ShowS
+    mtd, mtr, msub :: ShowS -> ShowS
 mo = tagger "mo"
 mi = tagger "mi"
 mn = tagger "mn"
@@ -56,6 +56,7 @@ mrow = tagger "mrow"
 parens f = str "<mo>(</mo>" . f . str "<mo>)</mo>"
 msubsup = tagger "msubsup"
 msup = tagger "msup"
+msub = tagger "msub"
 msqrt = tagger "msqrt"
 
 mfenced f = str "<mfenced open=\"[\" close=\"]\">\n" . f . str "</mfenced>\n"
@@ -152,7 +153,15 @@ presentation conf _ (App _ func args) =
 
 presentation conf _ (Matrix _ _ _ lsts) =
     mfenced $ mtable $ concatS [mtr $ concatS [ mtd $ prez conf cell | cell <- row] | row <- lsts ]
-presentation _ _ f = error $ "\n\nWrong MathML presentation rendering : " ++ unparse f ++ "\n" ++ show f
+
+presentation conf _ (Indexes _ src im) =
+    msub ( prez conf src
+         . (interspereseS (mo $ char ',') $ map (prez conf) im)
+         )
+
+presentation _conf _ (Fraction _f) = id
+presentation _conf _ (List _ _im) = id
+presentation _conf _ (Complex _ _im) = id
 
 -----------------------------------------------
 ----        Content
