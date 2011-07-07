@@ -1,8 +1,11 @@
 module Language.Eq.Renderer.Mathml( mathmlRender ) where
 
+import Data.Ratio
+
 import Language.Eq.Types hiding ( matrix )
 import Language.Eq.Algorithm.Utils
 import Language.Eq.Propreties
+import Language.Eq.Polynome
 
 import Language.Eq.Renderer.Latex
 import Language.Eq.Renderer.EqCode
@@ -74,6 +77,15 @@ prez conf = presentation conf Nothing
 --
 presentation :: Conf -> Maybe (BinOperator, Bool) -> FormulaPrim -> ShowS
 presentation _ _ (Block _ _ _) = mi $ str "block"
+
+-- Don't want special cases for them, so we just rewrite them (yes, fucking lazy)
+presentation conf sup (Fraction f) = 
+    presentation conf sup $ CInteger (denominator f) / CInteger (numerator f)
+presentation c sup (Poly _ p) = 
+    presentation c sup . unTagFormula . treeIfyFormula $ convertToFormula p
+presentation conf sup (Complex _ (re, im)) = 
+    presentation conf sup $ re + Variable "i" * im
+
 presentation _ _ (Variable v) = mi $ str v
 presentation _ _ (NumEntity e) = mn $ str $ mathMlOfEntity e
 presentation _ _ (Truth t) = mn $ shows t
@@ -107,6 +119,8 @@ presentation conf Nothing (BinOp _ op [a,b]) =
     presentation conf (Just (op, False)) a
     . mo (str . cleanify $ binopString op)
     . presentation conf (Just (op, True)) b
+
+presentation _ _ (BinOp _ _ _) = str "wrong_binary_form"
 
 -- Unary operators
 presentation conf _ (UnOp _ OpCeil f) = str "<mo>&lceil;</mo>"
@@ -159,9 +173,8 @@ presentation conf _ (Indexes _ src im) =
          . (interspereseS (mo $ char ',') $ map (prez conf) im)
          )
 
-presentation _conf _ (Fraction _f) = id
-presentation _conf _ (List _ _im) = id
-presentation _conf _ (Complex _ _im) = id
+presentation conf _ (List _ lst) = 
+    enclose '['  ']' . interspereseS (mo $ char ',') $ map (prez conf) lst
 
 -----------------------------------------------
 ----        Content
