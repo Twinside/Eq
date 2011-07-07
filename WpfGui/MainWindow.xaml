@@ -41,7 +41,8 @@
                     <MenuItem Header="Sort" Click="MenuItem_Click" />
                 </MenuItem>
             </Menu>
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Row="1" Name="mainScrolView" 
+                          VerticalScrollBarVisibility="Auto">
                 <StackPanel Name="panelResult" />
             </ScrollViewer>
             <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" 

@@ -37,9 +37,12 @@
         <TextBox Grid.Row="1"
                  Text="{Binding Path=FormatedResult}" FontFamily="Consolas,Monospace" 
                  IsReadOnly="True" IsTabStop="False"
-                 Margin="5" FontSize="10" BorderThickness="0"
+                 Margin="5" FontSize="14"  FontWeight="Bold"
+                 BorderThickness="0"
                  ToolTip="{Binding Path=RawResult}"
                  MouseLeave="TextBox_MouseLeave" 
+                 TextAlignment="Right"
+                 Padding="1"
                  PreviewMouseLeftButtonDown="TextBox_MouseDown" 
                  PreviewMouseLeftButtonUp="TextBox_MouseLeftButtonUp">
             <TextBox.Style>

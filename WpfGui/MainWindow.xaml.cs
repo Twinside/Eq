@@ -42,6 +42,7 @@ namespace WpfGui
             view.AppWindow = this;
             panelResult.Children.Add(view);
             txtInput.Text = "";
+            mainScrolView.ScrollToEnd();
         }
 
         private void btnShowMathDraw_Click(object sender, RoutedEventArgs e)
