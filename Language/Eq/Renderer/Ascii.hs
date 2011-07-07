@@ -62,20 +62,20 @@ asciiSizer = Dimensioner
 
     , binop = binopSize
     , productSize = \_ (_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
-            let height = inih + endh + max 2 whath
-                sumW = maximum [iniw, endw, 3]
+            let height = inih + endh + max 2 whath + 1
+                sumW = maximum [iniw, endw, whath, 3]
                 width = sumW + whatw + 1
             in (endh + 1 + whath `div` 2 , (width, height))
 
     , sumSize = \_ (_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) ->
-            let height = inih + endh + max 2 whath + 2
+            let height = inih + endh + max 2 whath + 1
                 sumW = maximum [iniw, endw, whath, 2]
                 width = sumW + whatw + 1
             in (endh + 1 + whath `div` 2 , (width, height))
 
     , integralSize = \_ (_, (iniw,inih)) (_, (endw,endh)) (_, (whatw,whath)) 
                       (_, (dvarw, dvarh))->
-            let height = inih + endh + maximum [2, dvarh, whath] + 2
+            let height = inih + endh + maximum [2, dvarh, whath] + 1
                 sumW = maximum [iniw, endw, whath, 4]
                 width = sumW + whatw + 2 + dvarw
             in (endh + 1 + whath `div` 2 , (width, height))
@@ -204,7 +204,8 @@ renderFormula :: Conf             -- ^ Rendering preferences
 renderFormula conf originalFormula@(Formula formula) = 
     (accumArray (flip const) ' ' size writeList, sizeTree)
         where sizeTree = sizeTreeOfFormula conf asciiSizer originalFormula
-              size = ((0,0), sizeOfTree sizeTree)
+              (w,h) = sizeOfTree sizeTree
+              size = ((0,0), (w - 1, h - 1))
               writeList = renderF conf formula sizeTree (0,0) []
 
 -- | Same idea as behind ShowS, to avoid heavy concatenation

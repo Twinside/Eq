@@ -82,7 +82,7 @@ run:
 	eq plot --contour --yaxis --xe 30 -y 0 --ye 30 --yaxis --xaxis "min(sqrt((x - 15)^ 2 + (y - 15) ^ 2) - 12, sqrt(x ^ 2 + y ^ 2) - 13)" >> rez 2>&1
 
 dll:
-	ghc $(DEBUG) -c --make -cpp formulaDll.hs
+	ghc $(DEBUG) -O2 -c --make -cpp formulaDll.hs
 	ghc $(DEBUG) -c dllMain.c
 	unixfind . | grep "\.o$$" | sed -f subst.sed | \
 				xargs ghc $(DEBUG) -shared -optl-mwindows \
