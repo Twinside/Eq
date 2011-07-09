@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-module CharArray where
+module Language.Eq.CharArray where
 
 import Data.Array.IArray
 

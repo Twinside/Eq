@@ -1,9 +1,12 @@
 function evalFormat( $command, $showFile )
 {
     ls .\tests\format\*Test.txt | % {
+        echo "===================================="
+        $_.name
         ..\..\eq $command -o "out.txt" -f $_.Fullname
         if ($showFile) { cat $_.FullName }
         cat out.txt
+        echo "===================================="
     }
 }
 
@@ -46,4 +49,4 @@ evalFormat format $true > txtFormat.txt
 makePage | out-file -encoding ASCII mathml.xhtml
 
 Latexify | out-file -encoding ASCII latexFormat.tex
-pdflatex latexFormat.tex
+# pdflatex latexFormat.tex

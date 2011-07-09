@@ -13,13 +13,25 @@ import Language.Eq.Renderer.RenderConf
 
 mathmlRender :: Conf -> Formula TreeForm -> String
 mathmlRender conf (Formula f) =
-    str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n"
-    . semantics ( presMarkup 
-                . annotation "MathML-Content" contentMarkup
-                . annotation "Eq-language" (str . cleanify $ unparse f)
-                . annotation "LaTeX" (str . cleanify . latexRender conf $ Formula f))
+      str "<?xml version=\"1.0\" encoding=\"utf-16\" ?>"
+    . str "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n"
+    . presMarkup 
+    . semantics (semanticML . inlineEq  . inlineLatex)
     . str "</math>\n" $ ""
         where contentMarkup = content f
+
+              semanticML = if includeSemanticMathML conf
+                then annotation "MathML-Content" contentMarkup
+                else id
+
+              inlineEq = if includeEqInMathML conf
+                then annotation "Eq-language" (str . cleanify $ unparse f)
+                else id
+
+              inlineLatex = if includeLaTeXInMathML conf
+                then annotation "LaTeX" (str . cleanify . latexRender conf $ Formula f)
+                else id
+
               presMarkup = mrow $ prez conf f
               semantics = tagger "semantics"
               annotation kind c =

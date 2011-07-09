@@ -18,7 +18,7 @@ import Language.Eq.Renderer.RenderConf
 
 import qualified Language.Eq.UnicodeSymbols as Unicode
 
-import CharArray
+import Language.Eq.CharArray
 type Pos = (Int, Int)
 
 -- | Here is all the rules for sizing of equation for an ascii

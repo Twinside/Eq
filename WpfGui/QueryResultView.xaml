@@ -20,8 +20,7 @@
                  Margin="5" FontSize="10" BorderThickness="0" Foreground="White" 
                  MouseLeave="TextBox_MouseLeave" 
                  PreviewMouseLeftButtonDown="TextBox_MouseDown" 
-                 PreviewMouseLeftButtonUp="TextBox_MouseLeftButtonUp" 
-                 MouseRightButtonUp="TextBox_MouseRightButtonUp">
+                 PreviewMouseLeftButtonUp="TextBox_MouseLeftButtonUp">
             <TextBox.Style>
                 <Style TargetType="TextBox">
                     <Setter Property="Background" Value="#FF4A4D80" />
@@ -55,6 +54,13 @@
                     </Style.Triggers>
                 </Style>
             </TextBox.Style>
+            <TextBox.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Copy MathML" Click="CopyMathMl"/>
+                    <MenuItem Header="Copy raw" Click="CopyEq" />
+                    <MenuItem Header="Copy Ascii" Click="CopyText" />
+                </ContextMenu>
+            </TextBox.ContextMenu>
         </TextBox>
     </Grid>
 </UserControl>

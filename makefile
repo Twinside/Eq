@@ -83,7 +83,7 @@ run:
 
 dll:
 	ghc $(DEBUG) -O2 -c --make -cpp formulaDll.hs
-	ghc $(DEBUG) -c dllMain.c
+	ghc $(DEBUG) -O2 -c dllMain.c
 	unixfind . | grep "\.o$$" | sed -f subst.sed | \
 				xargs ghc $(DEBUG) -shared -optl-mwindows \
 										-o formulaDll.dll \

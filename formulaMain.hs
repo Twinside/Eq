@@ -1,4 +1,4 @@
-import CharArray
+--import CharArray
 
 #ifdef _DEBUG
 import Language.Eq.Renderer.Sexpr
@@ -19,6 +19,7 @@ import Data.Maybe( fromMaybe )
 import qualified Data.Map as Map
 
 import Language.Eq
+import Language.Eq.CharArray
 import Language.Eq.Repl
 
 -- Debugging

@@ -10,6 +10,10 @@ data Conf = Conf
     , packNumVarMul :: Bool
     , noBigOpOverSize :: Bool
     , useUnicode :: Bool
+
+    , includeLaTeXInMathML :: Bool
+    , includeEqInMathML :: Bool
+    , includeSemanticMathML :: Bool
     }
 
 defaultRenderConf :: Conf
@@ -18,6 +22,9 @@ defaultRenderConf = Conf
     , packNumVarMul = False
     , noBigOpOverSize = False
     , useUnicode = False
+    , includeLaTeXInMathML = False
+    , includeEqInMathML = False
+    , includeSemanticMathML = False
     }
 
 keyParser :: [(String, Conf -> String -> Conf)]

@@ -47,8 +47,23 @@ namespace WpfGui
             }
         }
 
-        private void TextBox_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        private void CopyMathMl(object sender, RoutedEventArgs e)
         {
+        }
+
+        private void CopyEq(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void CopyText(object sender, RoutedEventArgs e)
+        {
+            var dataObj = new DataObject();
+            QueryResult rez = (QueryResult)DataContext;
+
+            //dataObj.SetData(DataFormats.UnicodeText, rez.FormatedResult);
+            dataObj.SetData("MathML Presentation", rez.MathMlResult.ToCharArray(), false);
+            dataObj.SetData("MathML", rez.MathMlResult.ToCharArray(), false);
+            Clipboard.SetDataObject(dataObj, true);
         }
     }
 }
