@@ -1,5 +1,0 @@
-pat( a + a ) := a * a;
-pat( a + b ) := a + b;
--- 36 + 8 := 44
-pat( x + x ) + pat( y + z )
-

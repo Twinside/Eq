@@ -217,8 +217,10 @@ rules (UnOp _ OpCosh f) = cosinush f
 rules (UnOp _ OpExp f) = exponential f
 rules (BinOp _ OpAdd fs) = reOp OpAdd $ biAssoc add add fs
 rules (BinOp _ OpSub fs) = reOp OpSub $ biAssoc sub add fs
-rules (BinOp _ OpDiv [CInteger a, CInteger b]) = Fraction (a % b)
-rules (BinOp _ OpDiv [UnOp _ OpNegate (CInteger a), CInteger b]) = unOp OpNegate $ Fraction (a % b)
+rules (BinOp _ OpDiv [CInteger a, CInteger b]) 
+    | b /= 0 = Fraction (a % b)
+rules (BinOp _ OpDiv [UnOp _ OpNegate (CInteger a), CInteger b]) 
+    | b /= 0 = unOp OpNegate $ Fraction (a % b)
 
 rules (BinOp _ OpDiv fs) = reOp OpDiv $ biAssoc divide mul fs
 rules (BinOp _ OpPow fs) = reOp OpPow $ biAssoc power mul fs
