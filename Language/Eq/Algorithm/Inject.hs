@@ -32,9 +32,9 @@ injectIntern :: FormulaPrim -> EqContext FormulaPrim
 injectIntern f@(Variable v) =
     maybe f unTagFormula <$> symbolLookup v
 
-injectIntern f@(Poly _ po@(Polynome v _)) =
-    maybe (return f) (substitutePolynome return po) =<< symbolLookup v
+injectIntern (Poly _ po@(Polynome _ _)) = checkPolynomeBinding' po
 
+injectIntern f@(Meta _ Hold _) = return f
 injectIntern f = scope $ reBoundVar f
     where scope Nothing = return f
           scope _ = popContext >> return f

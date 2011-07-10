@@ -1,5 +1,6 @@
-module Language.Eq.Algorithm.Eval.Polynomial( polyEvalRules ) where
+module Language.Eq.Algorithm.Eval.Polynomial( polyEvalRules, checkPolynomeBinding' ) where
 
+import Control.Applicative
 import Data.Either( partitionEithers )
 
 import qualified Language.Eq.ErrorMessages as Err
@@ -104,6 +105,9 @@ substitutePolynome evaluator (Polynome _var coefs) (Formula subst) =
 
               binopize [a] = a
               binopize a = binOp OpAdd a
+
+checkPolynomeBinding' :: Polynome -> EqContext FormulaPrim
+checkPolynomeBinding' p = either poly id <$> checkPolynomeBinding return p
 
 checkPolynomeBinding :: EvalFun -> Polynome -> EqContext (Either Polynome FormulaPrim)
 checkPolynomeBinding _           p@(PolyRest _) = return $ Left p
