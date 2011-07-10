@@ -95,8 +95,6 @@ division f1 f2 = right (f1, f2)
 substitutePolynome :: EvalFun -> Polynome -> Formula ListForm -> EqContext FormulaPrim
 substitutePolynome _ (PolyRest _) _ = error Err.polynome_no_coeff_substitution 
 substitutePolynome evaluator (Polynome _var coefs) (Formula subst) =
-    evaluator $ binOp OpAdd added
-        where added = [formulize subPoly * (subst ** coefToFormula degree) | (degree, subPoly) <- coefs]
     evaluator $ binopize added
         where added = [if degree /= 1
                           then formulize subPoly * (subst ** coefToFormula degree)
