@@ -401,11 +401,12 @@ eval evaluator fullApp@(App _ def var) = do
                         then eqFail (treeIfyFormula $ Formula fullApp) Err.max_recursion 
                           >>= return . unTagFormula
                         else do
-                          body' <- evaluator body
+                          injectedBody <- inject $ Formula body
+                          popContext
+                          body' <- evaluator $ unTagFormula injectedBody
 #ifdef _DEBUG
                           addTrace ("body' | " ++ show body', treeIfyFormula $ Formula body')
 #endif
-                          popContext
                           return body'
          needApply def' args =
              return $ app def' args

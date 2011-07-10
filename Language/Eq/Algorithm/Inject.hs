@@ -6,6 +6,7 @@ import Language.Eq.Types
 import Language.Eq.FormulaIterator
 import Language.Eq.EvaluationContext
 import Language.Eq.Algorithm.Utils
+import Language.Eq.Algorithm.Eval.Polynomial
 
 -- | Replace all variables that get a definition by
 -- their definition if there is one. Otherwise let
@@ -30,6 +31,9 @@ scopePreserver f = keepSafe $ reBoundVar f
 injectIntern :: FormulaPrim -> EqContext FormulaPrim
 injectIntern f@(Variable v) =
     maybe f unTagFormula <$> symbolLookup v
+
+injectIntern f@(Poly _ po@(Polynome v _)) =
+    maybe (return f) (substitutePolynome return po) =<< symbolLookup v
 
 injectIntern f = scope $ reBoundVar f
     where scope Nothing = return f
