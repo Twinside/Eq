@@ -42,7 +42,7 @@ Executable eq
 
     -- If we profile the execution
     if flag(profiling)
-        Ghc-options:-prof -auto-all
+        Ghc-options:-prof -auto-all -rtsopts
 
     if flag(debug)
         cpp-options:-D_DEBUG

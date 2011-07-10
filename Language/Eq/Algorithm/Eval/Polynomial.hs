@@ -97,8 +97,15 @@ substitutePolynome _ (PolyRest _) _ = error Err.polynome_no_coeff_substitution
 substitutePolynome evaluator (Polynome _var coefs) (Formula subst) =
     evaluator $ binOp OpAdd added
         where added = [formulize subPoly * (subst ** coefToFormula degree) | (degree, subPoly) <- coefs]
+    evaluator $ binopize added
+        where added = [if degree /= 1
+                          then formulize subPoly * (subst ** coefToFormula degree)
+                          else formulize subPoly * subst | (degree, subPoly) <- coefs]
               formulize (PolyRest coeff) = coefToFormula coeff
               formulize normalPolynome = poly normalPolynome
+
+              binopize [a] = a
+              binopize a = binOp OpAdd a
 
 checkPolynomeBinding :: EvalFun -> Polynome -> EqContext (Either Polynome FormulaPrim)
 checkPolynomeBinding _           p@(PolyRest _) = return $ Left p
