@@ -602,9 +602,20 @@ lambdaBindingTest :: [(FormulaPrim, FormulaPrim)]
 lambdaBindingTest =
     [ app (lambdaX (poly $ monoPoly "radius" (monoPoly "x" $ polyc 1))) [3]
       ==> (poly $ monoPoly "radius" (polyc 3))
+
     , app (lambdaX (poly $ monoPoly "x" (polyc 3))) [3]
       ==> 9
 
+    , app (lambdaX (poly $ Polynome "y" [ (1, Polynome "x" [ (1, PolyRest 1)
+                                                           , (2, PolyRest 2)])
+                                        , (1, PolyRest 2)]))
+          [poly $ Polynome "x" [(1, PolyRest 3),(2, PolyRest 4)]]
+      ==> poly (Polynome "x" [(0, Polynome "y" [(1,PolyRest 2)])
+                             ,(1, Polynome "y" [(1,PolyRest 3)])
+                             ,(2, Polynome "y" [(1,PolyRest 22)])
+                             ,(3, Polynome "y" [(1,PolyRest 48)])
+                             ,(4, Polynome "y" [(1,PolyRest 32)])
+                             ])
     ]
     where lambdaX body = lambda [([Variable "x"], body)]
           monoPoly v sub = Polynome v [(CoeffInt 1,sub)]

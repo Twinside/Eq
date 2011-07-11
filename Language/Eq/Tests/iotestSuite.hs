@@ -141,6 +141,6 @@ main :: IO ()
 main = do
     valid <- runEqTests
     when valid $ runTestList globalTests
-    --runTestList globalTests
+    runTestList globalTests
 
 

@@ -91,6 +91,15 @@ division p1@(Poly _ p) p2f@(Poly _ p2) =
                                              / unconstruct p2)
 division f1 f2 = right (f1, f2)
 
+-----------------------------------------------
+----        '/'
+-----------------------------------------------
+-- | Handle the division operator. Nicely handle the case
+-- of division by 0.
+power :: EvalOp
+power (Poly _ p) (CInteger i) = left . poly $ p ^ i
+power f1 f2 = right (f1, f2)
+
 -- | If a polynome's variable is bound, replace it by the real
 -- the value.
 substitutePolynome :: EvalFun -> Polynome -> Formula ListForm -> EqContext FormulaPrim
@@ -145,6 +154,7 @@ polyEvalRules _ (BinOp _ OpAdd fs) = binEval OpAdd add add fs
 polyEvalRules _ (BinOp _ OpSub fs) = binEval OpSub sub add fs
 polyEvalRules _ (BinOp _ OpMul fs) = binEval OpMul mul mul fs
 polyEvalRules _ (BinOp _ OpDiv fs) = binEval OpDiv division mul fs
+polyEvalRules _ (BinOp _ OpPow fs) = binEval OpPow power power fs
 polyEvalRules evaluator (Poly _ pol@(Polynome _ _)) = do
     checkPolynomeBinding evaluator pol 
     >>= either (return . poly) return
