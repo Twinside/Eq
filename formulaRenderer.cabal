@@ -1,5 +1,5 @@
 Name:       FormulaRenderer
-Version:    1.1
+Version:    1.1.1
 Synopsis:   Render math formula in ASCII, and perform some simplifications
 Build-Type: Simple
 Category:   Language
