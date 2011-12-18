@@ -3,11 +3,11 @@ Version:    1.1.1
 Synopsis:   Render math formula in ASCII, and perform some simplifications
 Build-Type: Simple
 Category:   Language
-Cabal-Version: >= 1.2
+Cabal-Version:  >= 1.6
 Description:    Haskell formula manipulation program
 Author:         Vincent Berthoux
 Maintainer:     Vincent Berthoux <vincent.berthoux@gmail.com>
-License:        AllRightsReserved
+License:        BSD3
 
 Flag Debug
     Description: Enable debug prints
@@ -21,13 +21,18 @@ Flag StaticLinking
     Description: Try to link statically on Linux
     Default: False
 
-Flag Profiling
-    Description: enable profiling for eq
-    Default: False
-
 Flag optimize
     Description: turn on optimisation
     Default: True
+
+Source-Repository head
+  Type:     git
+  Location: git://github.com/Twinside/Eq.git
+
+Source-Repository this
+  Type:     git
+  Location: git://github.com/Twinside/Eq.git
+  Tag:      v1.1.1
 
 -- Main executable
 Executable eq
@@ -39,10 +44,6 @@ Executable eq
     -- in linux so far.
     if !os(darwin) && !os(windows) && flag(StaticLinking)
         Ghc-options:-static -optl-static -optl-pthread
-
-    -- If we profile the execution
-    if flag(profiling)
-        Ghc-options:-prof -auto-all
 
     if flag(debug)
         cpp-options:-D_DEBUG
@@ -61,7 +62,7 @@ Executable eq
 
 Executable eqtestsuite
     Main-Is: Language/Eq/Tests/iotestSuite.hs
-    ghc-options: -fhpc -Wall -O2
+    ghc-options: -Wall
     extensions: CPP
     if flag(debug)
         cpp-options: -D_DEBUG
