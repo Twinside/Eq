@@ -55,11 +55,12 @@ Executable eq
     Build-Depends: base >= 4.1 && < 5.0
                  , parsec >= 3.0 && < 4.0
                  , HaXml >= 1.9 && < 2.0
-                 , array
                  , mtl
+                 , transformers >= 0.2 && < 0.4
                  , template-haskell
                  , containers
                  , filepath
+                 , array
 
 Executable eqtestsuite
     Main-Is: Language/Eq/Tests/iotestSuite.hs
