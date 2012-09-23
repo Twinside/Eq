@@ -8,7 +8,7 @@ module Language.Eq.InputParser.EqCode
 
 
 import Control.Applicative( (<$>), (<*) )
-import Control.Monad.Identity
+{-import Data.Functor.Identity( Identity )-}
 
 import Language.Eq.Types
 import Language.Eq.Polynome
@@ -62,19 +62,19 @@ reservedOp= P.reservedOp lexer
 integer :: Parsed st Integer
 integer = P.integer lexer
 
-parens :: ParsecT String u Identity a -> ParsecT String u Identity a
+parens :: Parsec String u a -> Parsec String u a
 parens = P.parens lexer
 
-braces :: ParsecT String u Identity a -> ParsecT String u Identity a
+braces :: Parsec String u a -> Parsec String u a
 braces = P.braces lexer
 
-brackets :: ParsecT String u Identity a -> ParsecT String u Identity a
+brackets :: Parsec String u a -> Parsec String u a
 brackets = P.brackets lexer
 
 whiteSpace :: Parsed st ()
 whiteSpace = P.whiteSpace lexer
 
-lexer :: P.GenTokenParser String st Identity
+{-lexer :: P.GenTokenParser String st Identity-}
 lexer  = P.makeTokenParser 
          (haskellStyle { P.reservedOpNames = [ "&", "|", "<", ">"
                                              , "*", "/", "+", "-"
@@ -87,7 +87,7 @@ lexer  = P.makeTokenParser
 -----------------------------------------------------------
 --          Real "grammar"
 -----------------------------------------------------------
-type Parsed st b = ParsecT String st Identity b
+type Parsed st b = Parsec String st b
 
 program :: Parsed st [FormulaPrim]
 program = sepBy expr (whiteSpace >> char ';' >> whiteSpace) <* whiteSpace
@@ -98,7 +98,7 @@ expr :: Parsed st FormulaPrim
 expr = whiteSpace >> buildExpressionParser operatorDefs funCall
     <?> "expression"
 
-operatorDefs :: OperatorTable String st Identity FormulaPrim
+{-operatorDefs :: OperatorTable String st Identity FormulaPrim-}
 operatorDefs = 
     [ [postfix "!" (unOp OpFactorial)]
     , [prefix "-" (unOp OpNegate) ]
@@ -160,13 +160,13 @@ falseConst = return (Truth False) <* (string "false" >> whiteSpace)
 -----------------------------------------------
 ----        Little helpers
 -----------------------------------------------
-binary :: String -> (a -> a -> a) -> Assoc -> Operator String st Identity a
+{-binary :: String -> (a -> a -> a) -> Assoc -> Operator String st Identity a-}
 binary name fun = Infix (do{ reservedOp name; return fun })
 
-prefix :: String -> (a -> a) -> Operator String st Identity a
+{-prefix :: String -> (a -> a) -> Operator String st Identity a-}
 prefix  name fun       = Prefix (do{ reservedOp name; return fun })
 
-postfix :: String -> (a -> a) -> Operator String st Identity a
+{-postfix :: String -> (a -> a) -> Operator String st Identity a-}
 postfix name fun = Postfix (do{ reservedOp name; return fun })
 
 binop :: BinOperator -> FormulaPrim -> FormulaPrim -> FormulaPrim
