@@ -29,4 +29,5 @@ out.txt
 size.txt
 test.txt
 dist
-EqManips/BaseLibrary.hs
+cscope.*
+cabal-dev

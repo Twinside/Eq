@@ -1,17 +1,7 @@
-import EqManips.Types
-import EqManips.Algorithm.Utils
-import EqManips.Algorithm.Cleanup
-import EqManips.Renderer.Ascii
-import EqManips.Renderer.Latex
-import EqManips.Renderer.Mathml
-import EqManips.Renderer.RenderConf
-
-import EqManips.Renderer.Ascii2DGrapher
-
-import CharArray
+--import CharArray
 
 #ifdef _DEBUG
-import EqManips.Renderer.Sexpr
+import Language.Eq.Renderer.Sexpr
 #endif
 
 import Control.Monad
@@ -28,16 +18,9 @@ import Data.Maybe( fromMaybe )
 
 import qualified Data.Map as Map
 
--- Just to be able to compile...
-import EqManips.Algorithm.Eval
-import EqManips.EvaluationContext
-import EqManips.Preprocessor
-import EqManips.Linker
-import EqManips.BaseLibrary
-import EqManips.InputParser.MathML
-import EqManips.InputParser.EqCode
-
-import Repl
+import Language.Eq
+import Language.Eq.CharArray
+import Language.Eq.Repl
 
 -- Debugging
 {-import EqManips.Renderer.CharRender-}
@@ -51,6 +34,7 @@ data Flag =
     | SupportedPreprocLanguages
 
     -- for plotting
+    | ContourPlotting
     | PlotWidth
     | PlotHeight
     | XBeg
@@ -97,7 +81,8 @@ askingOption =
 
 plotOption :: [OptDescr (Flag, String)]
 plotOption =
-    [ Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x), float"
+    [ Option "c" ["contour"] (NoArg (ContourPlotting,"")) "Do a contour plot instead of a regular plot"
+    , Option "x" ["xBegin"] (ReqArg ((,) XBeg) "XBEG") "Beginning of plot (x), float"
     , Option ""  ["xe", "xEnd"] (ReqArg ((,) XEnd) "XEND") "End of plot (x), float"
     , Option "y" ["yBegin"] (ReqArg ((,) YBeg) "YBEG") "Beginning of plot (y), float"
     , Option ""  ["ye", "yEnd"] (ReqArg ((,) YEnd) "YEnd") "End of plot (y), float"
@@ -135,6 +120,8 @@ plotOption =
     ]
 
 preparePlotConf :: PlotConf -> (Flag, String) -> PlotConf
+preparePlotConf conf (ContourPlotting, _) =
+    conf { mode = CountourPlot }
 preparePlotConf conf (PlotWidth, val) = 
     conf { xDim = (xDim conf){ projectionSize = read val } }
 preparePlotConf conf (PlotHeight, val) =
@@ -342,7 +329,7 @@ plotCommand args = do
     let formulaList = parseProgramm formulaText
     either (parseErrorPrint finalFile)
            (\formulal -> do
-               case plot2DExpression plotConf . unTagFormula $ head formulal of
+               case plotFunction plotConf . unTagFormula $ head formulal of
                 Left err -> do
                     Io.hPutStr finalFile err
                     hClose finalFile
@@ -446,6 +433,9 @@ reducedCommand = map (\(n,_,a,_) -> (n,a)) commandList
 
 main :: IO ()
 main = do
+#ifdef _DEBUG
+    putStrLn "Debug build"
+#endif
     args <- getArgs
     if null args
        then error "No command given, try the help command"

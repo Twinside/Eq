@@ -27,20 +27,22 @@ namespace WpfGui
 
         public MainWindow()
         {
-            computationKernel = new WinGui.EqBridge();
+            computationKernel = new WinGui.EqBridge(true);
             InitializeComponent();
         }
 
+        public void AppendInput(string txt)
+            { txtInput.Text += txt; }
+
         private void eqValidate_Click(object sender, RoutedEventArgs e)
         {
-            string formated = computationKernel.FormatProgram(txtInput.Text);
-            string result = computationKernel.EvalProgramWithContext(txtInput.Text);
-
+            QueryResult rez = new QueryResult(computationKernel, txtInput.Text);
+            QueryResultView view = new QueryResultView();
+            view.DataContext = rez;
+            view.AppWindow = this;
+            panelResult.Children.Add(view);
             txtInput.Text = "";
-            rchTxtResultView.AppendText("------------------------------\n");
-            rchTxtResultView.AppendText(formated);
-            rchTxtResultView.AppendText("=>\n");
-            rchTxtResultView.AppendText(result);
+            mainScrolView.ScrollToEnd();
         }
 
         private void btnShowMathDraw_Click(object sender, RoutedEventArgs e)
@@ -55,16 +57,21 @@ namespace WpfGui
             mathInput.Show();
         }
 
-        void mathInput_Close()
-        {
-            mathInput.Hide();
-        }
         private delegate void MethodInvoker();
+
+        void mathInput_Close() { mathInput.Hide(); }
         void mathInput_Insert(string RecoResult)
+            { AppendInput(computationKernel.TranslateMathMLToEq(RecoResult)); }
+
+        private void txtInput_KeyUp(object sender, KeyEventArgs e)
         {
-            string rez = computationKernel.TranslateMathMLToEq(RecoResult);
-            Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background
-                                                      , (MethodInvoker)delegate() { txtInput.Text = rez; });
+            if (e.Key != Key.Enter) return;
+            
+            if (!Keyboard.IsKeyDown(Key.LeftShift))
+                eqValidate_Click(null, null);
         }
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+            { txtInput.Text += (string)((MenuItem)sender).Header + "()"; }
     }
 }

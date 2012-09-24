@@ -40,6 +40,11 @@ You also can build matrices directly from lists (which can be dynamically genera
 .. command-output:: eq eval "matrix( [1, 4, a, b, c, d ] )"
 .. command-output:: eq eval "matrix( [[1, 0], [0, 1]])"
 
+Matrix from function
+--------------------
+To generate from a size and a function with two parameters, you can
+use the :py:func:`generateMatrix` function, from Eq's base library.
+
 Supported operators
 ===================
 
@@ -55,6 +60,39 @@ and division.
 
 .. command-output:: eq eval "matrix( 1, 4, a, b, c, d ) * (x+y)"
 .. command-output:: eq eval "matrix( 4, 1, a, b, c, d ) / x^2"
+
+Matrix information
+==================
+
+.. function:: matrixWidth( matrix )
+
+    Return the width (number of columns) of the matrix.
+
+.. command-output:: eq eval "matrix([[1, 2, 3]])"
+.. command-output:: eq eval "matrixWidth(matrix([[1, 2, 3]]))"
+
+.. function:: matrixHeight( matrix )
+
+    Return the height (number of lines) of the matrix.
+
+.. command-output:: eq eval "matrixHeight(matrix([[1, 2, 3]]))"
+
+Indexation
+----------
+
+You can access individual elements of the matrix by indexing them.
+It works the same way than with list, you can use one index to obtain
+a line, for example with the following matrix :
+
+.. command-output:: eq eval "generateMatrix(Lambda(l,c, a _ l _ c), 3, 4)"
+
+You can extract the second line this way :
+
+.. command-output:: eq eval "generateMatrix(Lambda(l,c, a _ l _ c), 3, 4) _ 2"
+
+And finally to get the fourth element of the list :
+
+.. command-output:: eq eval "generateMatrix(Lambda(l,c, a _ l _ c), 3, 4) _ 2 _ 3"
 
 Related
 =======

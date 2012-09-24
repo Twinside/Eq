@@ -58,6 +58,9 @@ EQ_API HsBool eq_begin_runtime()
     return HS_BOOL_TRUE;
 }
 
+EQ_API eq_context_t* eq_create_context_with_base_library()
+    { return eqCreateContextWithBaseLibrary( 0 ); }
+
 EQ_API eq_context_t* eq_create_context()
     { return eqCreateContext( 0 ); }
 
@@ -83,9 +86,35 @@ EQ_API wchar_t* eq_formatW( wchar_t *in )
 EQ_API void eq_end_runtime()
     { hs_exit(); }
 
-EQ_API wchar_t* eq_eval_with_contextW( wchar_t *in, eq_context_t *ctxt )
-    { return dotNetizeW( (wchar_t*)eqWEvalWithContext( in, ctxt ) ); }
+EQ_API void eq_eval_with_contextW( wchar_t *in, eq_context_t *ctxt, 
+                                   wchar_t **pRez, wchar_t **pUnparsed,
+                                   wchar_t **pMathml )
+{
+    wchar_t *rez;
+    wchar_t *unparsed;
+    wchar_t *mathml;
 
-EQ_API char* eq_eval_with_context( char *in, eq_context_t *ctxt )
-    { return dotNetize( (char*)eqWEvalWithContext( in, ctxt ) ); }
+    eqWEvalWithContext( in, ctxt, &rez, &unparsed, &mathml );
+
+    *pRez = dotNetizeW( rez );
+    *pUnparsed = dotNetizeW( unparsed );
+    *pMathml = dotNetizeW( mathml );
+}
+
+EQ_API char* eq_eval_with_context( char *in, eq_context_t *ctxt,
+                                   char **pRez, char **pUnparsed,
+                                   char **pMathml )
+{
+    char *rez;
+    char *unparsed;
+    char *mathml;
+
+    eqEvalWithContext( in, ctxt, &rez, &unparsed, &mathml );
+
+    *pRez = dotNetize( rez );
+    *pUnparsed = dotNetize( unparsed );
+    *pMathml = dotNetize( mathml );
+
+    return NULL;
+}
 

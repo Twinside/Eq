@@ -63,6 +63,12 @@ Eq's library
 
 List functions
 ==============
+.. function:: length( list )
+
+    Return the length (number of elements) of a list
+
+    .. command-output:: eq eval "length([a, b, c, 10])"
+
 .. function:: concat( alist, anotherList )
 
     Return the concatenation of two lists.
@@ -75,11 +81,19 @@ List functions
 
     .. command-output:: eq eval "reverse([a, b, c])"
 
-.. function:: length( list )
+.. function:: zip( list_a, list_b )
 
-    Return the length (number of elements) of a list
+    Combine two list into a list of list, each sublist
+    having an element of a as first element, and an element
+    of b as second element.
 
-    .. command-output:: eq eval "length([a, b, c, 10])"
+    .. command-output:: eq eval "zip([1, 2, 3], [a, b, c])"
+
+.. function:: replicate( count, element )
+
+    Create a list with element repeated count times
+
+    .. command-output:: eq eval "replicate(8, a_variable)"
 
 List-generation functions
 =========================
@@ -97,6 +111,35 @@ List-generation functions
 
     .. command-output:: eq eval "listFromToBy( 12, 2, 30 )"
 
+Matrix functions
+================
+
+.. function:: generateMatrix( function, width, height )
+
+    Given an user function taking two parameters : line and
+    column, create a matrix of size width * height, with all
+    it's elements being function( line, column )
+
+    :param function: A function with two parameters line and col,
+                     producing matrix.
+
+    :param width: Width of the matrix, the producing function will
+                  be called with line values from 0 to width - 1.
+
+    :param height: Height of the matrix, the producing function
+                   will be called with line values from 0 to height - 1
+
+    .. command-output:: eq eval "generateMatrix( Lambda(line, col, a _ line _ col ), 4, 4 )"
+    .. command-output:: eq eval "generateMatrix( Lambda(line, col, line ^ col ), 4, 2 )"
+
+.. function:: transpose( matrix )
+
+    Transpose a matrix (surprisingly), all rows will become columns
+    and all columns will become rows
+
+    .. command-output:: eq eval "generateMatrix( Lambda(line, col, a _ line _ col ), 3, 3 )"
+    .. command-output:: eq eval "transpose(generateMatrix( Lambda(line, col, a _ line _ col ), 3, 3 ))"
+
 Higher-order functions
 ======================
 .. function:: filter( function, list )
@@ -104,11 +147,19 @@ Higher-order functions
     Remove all object which the function doesn't evaluate
     to true.
 
+    :param function: A function with one parameter, which will be evaluated 
+                     for each element of the list, and must return a boolean
+                     (comparison result) value to indicate if we keep or 
+                     drop the element.
+
     .. command-output:: eq eval "enough(x) :> x > 50; filter( enough, [100, 2, 4, 51, 50, 60 ] )"
 
 .. function:: map( function, list )
 
     Apply a `function` to all elements of the list
+
+    :param function: A function taking one argument from the list and transform
+                     it to a new element which will be the resul of the function.
 
     .. command-output:: eq eval "mul2(x) :> x * 2; map( mul2, [1, 2, 3, 12] )"
 
@@ -123,6 +174,12 @@ Higher-order functions
     example of the use of fold is to write the equivalent of the
     reverse function using a left fold :
 
+    :param function: a function taking two parameters : the accumulator
+                     and a list element. The function return an updated
+                     accumulator.
+    :param accumulator: The initial accumulator given to the function
+    :param list: The list to fold over
+
     .. command-output:: eq eval "foldl( cons, [], [1, 2, 3, 4] )"
 
     .. _a link: http://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
@@ -131,6 +188,12 @@ Higher-order functions
 
     Same as the left fold, but here is the right fold, iterations
     start from the end of the list to the beginning.
+
+    :param function: a function taking two parameters : the accumulator
+                     and a list element. The function return an updated
+                     accumulator.
+    :param accumulator: The initial accumulator given to the function
+    :param list: The list to fold over
 
     .. _a link: http://en.wikipedia.org/wiki/Fold_%28higher-order_function%29
 

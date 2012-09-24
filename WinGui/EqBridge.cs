@@ -32,11 +32,14 @@ namespace WinGui
 
         private IntPtr contextHandle;
 
-        public EqBridge()
+        public EqBridge(bool useDefaultContext)
         {
             haskellRuntimeUseCount++;
             Init();
-            contextHandle = dllCreateContext();
+            if (useDefaultContext)
+                contextHandle = dllCreateContextWithLib();
+            else
+                contextHandle = dllCreateContext();
         }
 
         [DllImport("formulaDll.dll", EntryPoint="eq_begin_runtime", CallingConvention=CallingConvention.Cdecl)]
@@ -54,6 +57,9 @@ namespace WinGui
         [DllImport("formulaDll.dll", EntryPoint = "eq_translate_mathml", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr dllCallMathMLToEq([MarshalAs(UnmanagedType.LPWStr)]string txt);
 
+        [DllImport("formulaDll.dll", EntryPoint = "eq_create_context_with_base_library", CallingConvention=CallingConvention.Cdecl)]
+        private static extern IntPtr dllCreateContextWithLib();
+        
         [DllImport("formulaDll.dll", EntryPoint = "eq_create_context", CallingConvention=CallingConvention.Cdecl)]
         private static extern IntPtr dllCreateContext();
 

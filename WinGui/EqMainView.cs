@@ -21,18 +21,6 @@ namespace WinGui
 
         private void txtEntry_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Enter && e.Modifiers == Keys.Shift)
-            {
-                string formated = computationKernel.FormatProgram(txtEntry.Text);
-                string result = computationKernel.EvalProgramWithContext(txtEntry.Text);
-                
-                txtEntry.Text = "";
-
-                txtResult.AppendText("------------------------------\r\n");
-                txtResult.AppendText(formated.Replace("\n","\r\n"));
-                txtResult.AppendText("=>\r\n");
-                txtResult.AppendText(result.Replace("\n","\r\n"));
-            }
         }
     }
 }

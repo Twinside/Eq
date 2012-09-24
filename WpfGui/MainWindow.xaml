@@ -5,19 +5,57 @@
     <Grid>
         <Grid Name="grid1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="30" />
+                <RowDefinition Height="20" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" MinHeight="20" MaxHeight="80" />
+                <RowDefinition Height="*" MinHeight="20" MaxHeight="30" />
             </Grid.RowDefinitions>
-            <ToolBar Grid.Row="0">
-                <Button Name="btnShowMathDraw" Width="17" Height="17" Click="btnShowMathDraw_Click" />
-            </ToolBar>
-            <RichTextBox Grid.Row="1" Name="rchTxtResultView" />
-            <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="5" ResizeBehavior="PreviousAndNext"/>
+            <Menu Grid.Row="0" DataContext="{Binding}">
+                <MenuItem Header="Functions">
+                    <MenuItem Header="ceil" Click="MenuItem_Click" />
+                    <MenuItem Header="floor" Click="MenuItem_Click" />
+                    <MenuItem Header="frac" Click="MenuItem_Click" />
+                    <MenuItem Header="sin" Click="MenuItem_Click" />
+                    <MenuItem Header="sinh" Click="MenuItem_Click" />
+                    <MenuItem Header="asin" Click="MenuItem_Click" />
+                    <MenuItem Header="asinh" Click="MenuItem_Click" />
+                    <MenuItem Header="cos" Click="MenuItem_Click" />
+                    <MenuItem Header="cosh" Click="MenuItem_Click" />
+                    <MenuItem Header="acos" Click="MenuItem_Click" />
+                    <MenuItem Header="acosh" Click="MenuItem_Click" />
+                    <MenuItem Header="tan" Click="MenuItem_Click" />
+                    <MenuItem Header="tanh" Click="MenuItem_Click" />
+                    <MenuItem Header="atan" Click="MenuItem_Click" />
+                    <MenuItem Header="atanh" Click="MenuItem_Click" />
+                    <MenuItem Header="abs" Click="MenuItem_Click" />
+                    <MenuItem Header="sqrt" Click="MenuItem_Click" />
+                    <MenuItem Header="exp" Click="MenuItem_Click" />
+                    <MenuItem Header="log" Click="MenuItem_Click" />
+                    <MenuItem Header="ln" Click="MenuItem_Click" />
+                </MenuItem>
+                <MenuItem Header="Meta">
+                    <MenuItem Header="Hold" Click="MenuItem_Click" />
+                    <MenuItem Header="Force" Click="MenuItem_Click" />
+                    <MenuItem Header="Expand" Click="MenuItem_Click" />
+                    <MenuItem Header="Cleanup" Click="MenuItem_Click" />
+                    <MenuItem Header="Sort" Click="MenuItem_Click" />
+                </MenuItem>
+            </Menu>
+            <ScrollViewer Grid.Row="1" Name="mainScrolView" 
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Name="panelResult" />
+            </ScrollViewer>
+            <GridSplitter Grid.Row="2" HorizontalAlignment="Stretch" 
+                          VerticalAlignment="Top" Height="5" 
+                          ResizeBehavior="PreviousAndNext"/>
             <DockPanel Grid.Row="3" LastChildFill="True" >
-                <Button DockPanel.Dock="Right" Name="eqValidate" Content="ok" Click="eqValidate_Click" />
-                <TextBox DockPanel.Dock="Left" Name="txtInput" AcceptsReturn="True" />
+                <Button DockPanel.Dock="Right" Name="eqShowEqSelector"
+                        Content="m" Click="btnShowMathDraw_Click" 
+                        Width="30"/>
+                <Button DockPanel.Dock="Right" Name="eqValidate" 
+                        Content="ok" Click="eqValidate_Click" />
+                <TextBox DockPanel.Dock="Left" Name="txtInput" 
+                         AcceptsReturn="True" KeyUp="txtInput_KeyUp"/>
             </DockPanel>
         </Grid>
     </Grid>
