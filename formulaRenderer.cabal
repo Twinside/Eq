@@ -70,6 +70,7 @@ Executable eqtestsuite
         cpp-options: -D_DEBUG
     Build-Depends: base >= 4.1
                  , parsec >= 3.0 && < 4.0
+                 , HaXml >= 1.9 && < 2.0
                  , array
                  , mtl
                  , filepath

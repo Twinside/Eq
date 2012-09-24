@@ -197,6 +197,7 @@ concatMapS f = concatS . map f
 -- | Same functionality as intersperse but combine function
 -- instead of concatenation
 interspereseS :: (a -> a) -> [a -> a] -> a -> a
+interspereseS    _     [] = id
 interspereseS what within =
    foldl' (\acc e -> e . what . acc) lastOne reversed
     where (lastOne : reversed) = reverse within

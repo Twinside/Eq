@@ -30,3 +30,4 @@ size.txt
 test.txt
 dist
 cscope.*
+cabal-dev
