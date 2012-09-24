@@ -320,7 +320,7 @@ renderArgs :: Conf -- ^ How to render stuff
            -> [(FormulaPrim, SizeTree)] -- ^ Arguments to be rendered
            -> (Int, PoserS) -- ^ Width & charList
 renderArgs _ False (x,_) _ _             [] = (x, id)
-renderArgs _ True  (x,y) _ argsMaxHeight [] = trace (printf ":( x:%d y:%d argsMaxHeight:%d" x y argsMaxHeight) $
+renderArgs _ True  (x,y) _ argsMaxHeight [] =
     (x + 2, renderParens (x , y) (2, argsMaxHeight))
 
 renderArgs conf withParenthesis (x,y) argBase argsMaxHeight mixedList =
