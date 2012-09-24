@@ -114,6 +114,10 @@ operatorDefs =
     , [ binary ":>" (binop OpLazyAttrib) AssocRight
       , binary ":=" (binop OpAttrib) AssocRight]
     ]
+  where binary name fun = Infix (do{ reservedOp name; return fun })
+        prefix name fun = Prefix (do{ reservedOp name; return fun })
+        postfix name fun = Postfix (do{ reservedOp name; return fun })
+        binop op left right = binOp op [left, right]
 
 funCall :: Parsed st FormulaPrim
 funCall = do
@@ -156,19 +160,4 @@ trueConst = return (Truth True) <* (string "true" >> whiteSpace)
 
 falseConst :: Parsed st FormulaPrim
 falseConst = return (Truth False) <* (string "false" >> whiteSpace)
-
------------------------------------------------
-----        Little helpers
------------------------------------------------
-{-binary :: String -> (a -> a -> a) -> Assoc -> Operator String st Identity a-}
-binary name fun = Infix (do{ reservedOp name; return fun })
-
-{-prefix :: String -> (a -> a) -> Operator String st Identity a-}
-prefix  name fun       = Prefix (do{ reservedOp name; return fun })
-
-{-postfix :: String -> (a -> a) -> Operator String st Identity a-}
-postfix name fun = Postfix (do{ reservedOp name; return fun })
-
-binop :: BinOperator -> FormulaPrim -> FormulaPrim -> FormulaPrim
-binop op left right = binOp op [left, right]
 
