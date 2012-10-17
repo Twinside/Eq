@@ -1,5 +1,5 @@
 Name:       Eq
-Version:    1.1.1
+Version:    1.1.2
 Synopsis:   Render math formula in ASCII, and perform some simplifications
 Build-Type: Simple
 Category:   Language, Math
@@ -84,7 +84,7 @@ Executable eq
                  , Language.Eq.Polynome
                  , Language.Eq.Preprocessor
                  , Language.Eq.Propreties
-                 , Language.Eq.QuasiQuote
+                 , Language.Eq.Quasiquote
                  , Language.Eq.Renderer.Ascii
                  , Language.Eq.Renderer.Ascii2DGrapher
                  , Language.Eq.Renderer.CharRender
