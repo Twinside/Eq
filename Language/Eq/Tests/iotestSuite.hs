@@ -118,7 +118,7 @@ globalTests =
 testRunner :: Testable a => a -> Bool -> String -> Int -> IO ()
 testRunner prop _verbose _txt count = quickCheckWith config prop
     where config = stdArgs { maxSuccess = count
-                           , maxDiscard = 2 
+                           {-, maxDiscard = 2 -}
                            }
           {-
           display = if verbose

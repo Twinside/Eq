@@ -1,5 +1,5 @@
 Name:       Eq
-Version:    1.1.2
+Version:    1.1.3
 Synopsis:   Render math formula in ASCII, and perform some simplifications
 Build-Type: Simple
 Category:   Language, Math
@@ -28,7 +28,7 @@ Source-Repository head
 Source-Repository this
   Type:     git
   Location: git://github.com/Twinside/Eq.git
-  Tag:      v1.1.1
+  Tag:      v1.1.3
 
 -- Main executable
 Executable eq
@@ -53,8 +53,8 @@ Executable eq
                  , HaXml            >= 1.9 && < 2.0
                  , mtl              >= 2.1 && < 2.2
                  , transformers     >= 0.2 && < 0.4
-                 , template-haskell >= 2.7 && < 2.8
-                 , containers       >= 0.4 && < 0.5
+                 , template-haskell >= 2.8 && < 2.9
+                 , containers       >= 0.4 && < 0.6
                  , filepath         >= 1.3 && < 1.4
                  , array            >= 0.4 && < 0.5
 
@@ -116,12 +116,12 @@ Executable eqtestsuite
     Build-Depends: base         >= 4.1 && < 5.0
                  , parsec       >= 3.1 && < 3.2
                  , HaXml        >= 1.9 && < 2.0
-                 , containers   >= 0.4 && < 0.5
+                 , containers   >= 0.4 && < 0.6
                  , filepath     >= 1.3 && < 1.4
                  , array        >= 0.4 && < 0.5
 
-                 , directory        >= 1.1 && < 1.2
-                 , template-haskell >= 2.7 && < 2.8
-                 , QuickCheck       >= 2.4 && < 2.5
+                 , directory        >= 1.1 && < 1.3
+                 , template-haskell >= 2.8 && < 2.9
+                 , QuickCheck       >= 2.4 && < 2.7
                  , HUnit            >= 1.2.2.1 && < 2.0
 
