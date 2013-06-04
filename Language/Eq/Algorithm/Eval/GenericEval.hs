@@ -146,14 +146,14 @@ fracEval f = return $ unOp OpFrac f
 ----            'matrixWidth'
 --------------------------------------------------
 matrixWidthEval :: EvalFun
-matrixWidthEval (Matrix _ width _ _) = return . CInteger $ toInteger width
+matrixWidthEval (Matrix _ _ width _) = return . CInteger $ toInteger width
 matrixWidthEval f = return $ unOp OpMatrixWidth f
 
 --------------------------------------------------
 ----            'matrixHeight'
 --------------------------------------------------
 matrixHeightEval :: EvalFun
-matrixHeightEval (Matrix _ _ height _) = return . CInteger $ toInteger height
+matrixHeightEval (Matrix _ height _ _) = return . CInteger $ toInteger height
 matrixHeightEval f = return $ unOp OpMatrixHeight f
 
 -----------------------------------------------
@@ -297,7 +297,7 @@ metaEvaluation evaluator m f = unTagFormula
 matrixCreate :: [FormulaPrim] -> EqContext FormulaPrim
 matrixCreate [List _ whole@(List _ subList:rest)]
   | and $ map isAllList rest =
-      pure . matrix columnsCount rowCount $ map subListExtract whole
+      pure . matrix rowCount columnsCount $ map subListExtract whole
     where columnsCount = length subList
           rowCount = length rest + 1
 
@@ -338,7 +338,7 @@ indexCompute mm@(Matrix _ n 1 lst) idxs@(CInteger i : rest)
 indexCompute mm@(Matrix _ n m lst) idxs@(CInteger i : CInteger j : rest)
     | i >= 1 && i <= toInteger n && j >= 1 && j <= toInteger m = 
             indexCompute (lst !! (fromInteger i - 1) !! (fromInteger j - 1)) rest
-    | otherwise = eqPrimFail (indexes mm idxs) Err.out_of_bound_index
+    | otherwise = eqPrimFail (indexes mm idxs) (Err.out_of_bound_index  ++ "n:" ++ show n ++ " m:" ++ show m)
 
 indexCompute m@(Matrix _ n _ lst) idx@[CInteger i]
     | i >= 1 && i <= toInteger n = return . list $ lst !! (fromInteger i - 1)
@@ -533,7 +533,7 @@ matrixMatrixMul :: EvalFun -> EvalOp
 matrixMatrixMul evaluator m1@(Matrix _ n _ mlines) m2@(Matrix _ n' m' mlines')
     | n /= m' = do _ <- eqFail (Formula $ binOp OpMul [m1, m2]) Err.matrix_mul_bad_size
                    right (m1, m2)
-    | otherwise = cellLine >>= left . matrix n n'
+    | otherwise = cellLine >>= left . matrix n m'
         where cellLine = sequence
                     [ sequence [multCell $ zip line row | row <- transpose mlines' ]
                                                         | line <- mlines]
