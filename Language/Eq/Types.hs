@@ -48,7 +48,7 @@ module Language.Eq.Types
          , binOp, unOp, complex, meta
          , app, summ, productt, derivate
          , integrate, lambda, matrix, poly
-         , indexes, list
+         , indexes, list, infer
          ) where
 
 import Data.Data
@@ -93,6 +93,9 @@ data BinOperator  =
     | OpLazyAttrib  -- ^ ':>'
     | OpAttrib      -- ^ ':='
     | OpCons        -- ^ '::'
+
+    | OpType        -- ^ ':'
+    | OpEntail      -- ^ entail(a,b)
     deriving (Eq,Show,Enum)
 
 -- | All `unary` operators are in there. some are mathematical
@@ -184,6 +187,9 @@ data FormulaPrim =
     -- | Width, Height, all formulas
     | Matrix HashResume Int Int [[FormulaPrim]]
 
+    -- | Inference rule
+    | Infer HashResume [[FormulaPrim]] [FormulaPrim]
+
     -- | Form that can be used to make nice simplification.
     | Poly HashResume Polynome
 
@@ -224,11 +230,17 @@ hashOfFormula (Matrix hash _ _ _) = hash
 hashOfFormula (Poly hash _) = hash
 hashOfFormula (Block _ _ _) = 0
 hashOfFormula (Meta hash _ _) = hash
+hashOfFormula (Infer hash _ _) = hash
 
 listHasher :: [FormulaPrim] -> HashResume
 listHasher = foldl' hasher 0
     where hasher acc formula =
               (acc `rotateL` 3) `xor` hashOfFormula formula
+
+nestedListHasher :: [[FormulaPrim]] -> HashResume
+nestedListHasher = foldl' hasher 0
+    where hasher acc formula =
+              (acc `rotateL` 3) `xor` listHasher formula
 
 
 polyCoeffHash :: PolyCoeff -> HashResume
@@ -318,6 +330,10 @@ indexes a b = Indexes hash a b
 list :: [FormulaPrim] -> FormulaPrim
 list lst = List hash lst
     where hash = 0xBBBBBB `xor` listHasher lst
+
+infer :: [[FormulaPrim]] -> [FormulaPrim] -> FormulaPrim
+infer l1 l2 = Infer hash l1 l2
+    where hash = 0xBBBBBB `xor` nestedListHasher l1 `xor` listHasher l2
 
 -- | Special binOp declaration used to merge two previous binary
 -- operators. Update the hash rather than perform full recalculation.
@@ -535,6 +551,8 @@ emptyProps = map . flip (,)
 
 instance Property BinOperator OpProp BinOperator where
     getProps OpEq  = []
+    getProps OpEntail  = []
+    getProps OpType  = []
 
     getProps OpAnd = []
     getProps OpOr = []
@@ -611,8 +629,10 @@ instance Property UnOperator OperatorText String where
 -- of binary operators
 binopDefs :: [(BinOperator, (Int, String, String))]
 binopDefs =
-    [ (OpAttrib,     (8, ":=", "Attribution operator"))
-    , (OpLazyAttrib, (8, ":>", "Lazy attribution operator"))
+    [ (OpAttrib,     (10, ":=", "Attribution operator"))
+    , (OpLazyAttrib, (10, ":>", "Lazy attribution operator"))
+    , (OpEntail, (9, "|-", "Entailment operator"))
+    , (OpType, (8, ":", "Type operator"))
     , (OpCons,(7,  "::", "List appending operator"))
     , (OpAnd, (6,  "&", "Logical and operator"))
     , (OpOr,  (6,  "|", "Logical or operator"))

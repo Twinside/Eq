@@ -90,6 +90,10 @@ topDownScanning f i@(Indexes _ what lst) = do
 topDownScanning f l@(List _ lst) =
     fromMaybeM (list <$> mapM (topDownScanning f) lst) $ f l
 
+topDownScanning f l@(Infer _ l1 l2) = fromMaybeM sub $ f l
+    where recurse = mapM (topDownScanning f)
+          sub = infer <$> mapM recurse l1 <*> recurse l2
+
 topDownScanning f formula@(App _ func args) =
     fromMaybeM (app <$> mayFunc <*> mayArgs) $ f formula
         where mayFunc = topDownScanning f func
@@ -174,6 +178,10 @@ depthPrimTraversal pre f c@(Complex _ (r, i)) = do
     r' <- depthPrimTraversal pre f r
     i' <- depthPrimTraversal pre f i
     f $ complex (r', i')
+
+depthPrimTraversal pre f l@(Infer _ l1 l2) =
+    pre l >> (infer <$> mapM recurse l1 <*> recurse l2) >>= f
+        where recurse = mapM (depthPrimTraversal pre f)
 
 depthPrimTraversal pre f l@(Lambda _ eqs) = do
 	pre l

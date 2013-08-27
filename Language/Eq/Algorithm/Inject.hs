@@ -48,6 +48,7 @@ reBoundVar (Sum _ (BinOp _ OpEq (Variable v: _)) _ _) = Just [v]
 reBoundVar (Lambda _ clauses) = Just $
     concat [concatMap collectSymbols args | (args, _) <- clauses]
 
+reBoundVar (Infer _ _ _) = Nothing
 reBoundVar (Indexes _ _ _) = Nothing
 reBoundVar (List _ _) = Nothing
 reBoundVar (Complex _ _) = Nothing

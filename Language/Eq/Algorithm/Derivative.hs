@@ -63,6 +63,7 @@ derivationRules variable (Formula func) = d func variable
        d f@(BinOp _ _ [_]) _ = eqError f (Err.single_binop "derivate - ")
        d f@(BinOp _ OpEq _) _ = eqError f Err.deriv_no_eq_expr
        d f@(BinOp _ OpAttrib _) _ = eqError f Err.deriv_no_attrib_expr
+       d f@(Infer _ _ _) _ = eqError f Err.deriv_no_infer
      
        -- Eq:format derivate(f + g, x) = derivate( f, x ) + 
        --                          derivate( g, x )

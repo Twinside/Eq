@@ -40,6 +40,9 @@ deparse i r (Complex _ (real, imag)) = ('(':)
                                      . deparse i r imag . (')':)
 deparse _ _ (Truth True) = ("true" ++)
 deparse _ _ (Truth False) = ("false" ++)
+deparse i r (Infer _ l1 l2) =
+    deparse i r $ App 0 (Variable "infer") [ List 0 $ map (List 0) l1
+                                           , List 0 l2]
 deparse _ _ (BinOp _ _ []) =
     error "The formula is denormalized : a binary operator without any operands"
 deparse _ _ (Variable s) = (s ++)

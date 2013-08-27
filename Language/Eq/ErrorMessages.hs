@@ -83,6 +83,7 @@ deriv_no_abs = "Absolute value is not derivable"
 deriv_no_log = "No position for Log for now"
 deriv_no_list = "Cannot derivate lists"
 deriv_no_meta = "No meta operation allowed in derivation"
+deriv_no_infer = "No Inference allowed in derivation"
 
 --------------------------------------------------
 ----            C output
@@ -96,6 +97,7 @@ c_out_bad_iteration = "We can't translate product or sum to a meaningfull loop"
 c_out_bad_binop = "The binary operator has a wrong internal form"
 c_out_complex = "Complex is not yet decided for C/C++ output"
 c_out_list = "List cannot be outputed yet in C/C++"
+c_out_infer = "Inference cannot be outputed yet in C/C++"
 
 --------------------------------------------------
 ----            Polynome

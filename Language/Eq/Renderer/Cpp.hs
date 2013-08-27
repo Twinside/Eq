@@ -142,6 +142,7 @@ cOut _ (Lambda _ _) = outFail Err.c_out_lambda
 cOut _ (Block _ _ _) = outFail Err.c_out_block
 cOut _ (Complex _ _) = outFail Err.c_out_complex
 cOut _ (List _ _) = outFail Err.c_out_list
+cOut _ (Infer _ _ _) = outFail Err.c_out_list
 
 iteration :: String -> FormulaPrim -> FormulaPrim -> FormulaPrim -> OutContext ShowS
 iteration op (BinOp _ OpEq [Variable v, iniExpr]) exprEnd what = do

@@ -80,14 +80,22 @@ asciiSizer = Dimensioner
                 width = sumW + whatw + 2 + dvarw
             in (endh + 1 + whath `div` 2 , (width, height))
 
-    , matrixSize = \_ lst ->
+    , matrixSize = \conf lst ->
         let mHeight = sum [ h | (_,(_,h)) <- map head lst ]
-                      + length lst
-                      + 1
+                    + (length lst - 1) * matrixIntervalHeight conf
+
             firstLine = head lst
-            mWidth = length firstLine + sum [ w | (_,(w,_)) <- firstLine ]
+            inner = matrixIntervalWidth conf
+            mWidth = (length firstLine - 1) * inner
+                    + sum [ w | (_,(w,_)) <- firstLine ]
+
+            surroundingSize | matrixHasSurrounding conf = 3
+                            | otherwise = 0
+
+            surroundingHeight | matrixHasSurrounding conf = 1
+                              | otherwise = 0
         in
-        (mHeight `div` 2, (mWidth + 3, mHeight))
+        (mHeight `div` 2, (mWidth + surroundingSize, mHeight + surroundingHeight ))
 
     , derivateSize = \_ (_,(we,he)) (_,(wv, hv)) ->
         (he, (max we wv + 3, he + hv + 1))
@@ -106,10 +114,11 @@ asciiSizer = Dimensioner
                         (base, (width + 2, max 1 $ base + belowBase))
 
     , indexesSize = \_ (base, (width, height)) subTrees ->
-                            let indexWidth = sum [ w + 1 | (_,(w,_)) <- subTrees ]
+                            let indexWidth = sum [ w | (_,(w,_)) <- subTrees ]
+                                           + length subTrees - 1
                                 indexHeight = maximum [ h | (_,(_,h)) <- subTrees ]
                             in
-                            (base, ( width + indexWidth + 2, height + indexHeight))
+                            (base, ( width + indexWidth + 1, height + indexHeight))
 
     , indexPowerSize = \_conf (base, (width, height)) subTrees (_, (powerWidth, powerHeight)) ->
                             let indexWidth = sum [ w + 1 | (_,(w,_)) <- subTrees ]
@@ -168,7 +177,7 @@ textOfEntity conf Pi
 textOfEntity conf Infinite 
     | useUnicode conf = ((0,(1,1)), [[toEnum Unicode.infinity]])
     | otherwise = ((0,(length "infinite",1)), ["infinite"])
-textOfEntity _ Nabla = ((1,(2,1)), [" _ ","\\/"])
+textOfEntity _ Nabla = ((1,(2,1)), [" _ ","\\e"])
 textOfEntity _ Ellipsis = ((0,(3,1)), ["..."])
 {-
     | useUnicode conf = ((0, (1,1)), [[toEnum Unicode.midlineDots ]])
@@ -176,7 +185,7 @@ textOfEntity _ Ellipsis = ((0,(3,1)), ["..."])
     -}
         
 
--- | Convert a variable to it's possible unicode representation
+-- | Convert Fto it's possible unicode representation
 textOfVariable :: Conf -> String -> String
 textOfVariable conf var
     | useUnicode conf =
@@ -206,7 +215,7 @@ renderFormula conf originalFormula@(Formula formula) =
         where sizeTree = sizeTreeOfFormula conf asciiSizer originalFormula
               (w,h) = sizeOfTree sizeTree
               size = ((0,0), (w - 1, h - 1))
-              writeList = renderF conf formula sizeTree (0,0) []
+              writeList = renderF (Context conf '-') formula sizeTree (0,0) []
 
 -- | Same idea as behind ShowS, to avoid heavy concatenation
 -- use function composition instead which seem to be cheaper
@@ -312,7 +321,7 @@ renderBraces (x,y) (w, h) renderLeft renderRight = leftChar . rightChar
                      . (++) [((right,i), '|')| i <- [middle + 2 .. bottomLine - 1]]
 
 -- | Render a list of arguments, used by lambdas & functions
-renderArgs :: Conf -- ^ How to render stuff
+renderArgs :: Context -- ^ How to render stuff
            -> Bool -- ^ With parenthesis
            -> Pos -- ^ Where to render the arguments
            -> Int -- ^ The baseline for all the arguments
@@ -344,9 +353,14 @@ renderArgs conf withParenthesis (x,y) argBase argsMaxHeight mixedList =
                     baseLine' = y' + (argBase - nodeBase)
                     argWrite = renderF conf node size (x', baseLine')
 
+data Context = Context
+    { ctxtConf :: Conf
+    , fractionChar :: Char
+    }
+
 -- | The real rendering function, return a list of position and char
 -- to be used in accumArray function.
-renderF :: Conf         -- ^ Rendering preferences
+renderF :: Context      -- ^ Rendering preferences
         -> FormulaPrim  -- ^ CurrentNode
         -> SizeTree     -- ^ Previously calculated size
         -> Pos          -- ^ Where to render
@@ -368,17 +382,17 @@ renderF conf (Poly _ p) node pos =
 -- then recurse to the normal flow for the regular render.
 renderF conf node (MonoSizeNode True (base, dim) st) (x,y) =
     renderParens (x,y) dim . renderF conf node neoTree (x+1, y) 
-        where subSize = remParens asciiSizer conf dim
+        where subSize = remParens asciiSizer (ctxtConf conf) dim
               neoTree = MonoSizeNode False (base, subSize) st
 -- Parentheses for binop
 renderF conf node (BiSizeNode True (base, dim) st1 st2) (x,y) =
     renderParens (x,y) dim . renderF conf node neoTree (x+1, y) 
-        where subSize = remParens asciiSizer conf dim
+        where subSize = remParens asciiSizer (ctxtConf conf) dim
               neoTree = BiSizeNode False (base, subSize) st1 st2
 -- Parenthesis for something else
 renderF conf node (SizeNodeList True (base, dim) abase stl) (x,y) =
     renderParens (x,y) dim . renderF conf node neoTree (x+1, y)
-        where subSize = remParens asciiSizer conf dim
+        where subSize = remParens asciiSizer (ctxtConf conf) dim
               neoTree = SizeNodeList False (base, subSize) abase stl
 
 -- Here we make the "simple" rendering, just a conversion.
@@ -388,11 +402,11 @@ renderF _ (CInteger i) _ (x,y) = (++) . map (\(idx,a) -> ((idx,y), a)) $ zip [x.
 renderF _ (CFloat d)   _ (x,y) = (++) . map (\(idx,a) -> ((idx,y), a)) $ zip [x..] (show d)
 
 renderF conf  (Variable s) _ (x,y) = (++) . map (\(idx,a) -> ((idx,y), a)) . zip [x..]
-                                   $ textOfVariable conf s
+                                   $ textOfVariable (ctxtConf conf) s
 
 renderF conf (NumEntity e) _ (x,y) = (++) . concat $
     [ [((x + xi,y + yi),c) | (xi, c) <- zip [0..] elines]
-        | (yi, elines) <- zip [0..] $ snd $ textOfEntity conf e]
+        | (yi, elines) <- zip [0..] $ snd $ textOfEntity (ctxtConf conf) e]
 renderF _ (Truth True) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "true"
 renderF _ (Truth False) _ (x,y) = (++) $ map (\(idx, a) -> ((idx,y), a)) $ zip [x..] "false"
 renderF _ (BinOp _ _ []) _ _ = error "renderF conf - rendering BinOp with no operand."
@@ -432,12 +446,13 @@ renderF conf (BinOp _ OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =
 -- Division is of another kind :]
 renderF conf (BinOp _ OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
     (++) [ ((xi,y + lh), '-') | xi <- [x .. x + w - 1]] 
-    . renderF conf f1 t1 (leftBegin , y)
-    . renderF conf f2 t2 (rightBegin, y + lh + 1)
+    . renderF neoConf f1 t1 (leftBegin , y)
+    . renderF neoConf f2 t2 (rightBegin, y + lh + 1)
         where (lw, lh) = sizeOfTree t1
               (rw, _) = sizeOfTree t2
               leftBegin = x + (w - lw) `div` 2
               rightBegin = x + (w - rw) `div` 2
+              neoConf = conf { fractionChar = '-' }
 
 renderF conf (BinOp _ OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
   leftRender . rightRender . (:) ((x + lw, y + base), mulChar)
@@ -450,7 +465,7 @@ renderF conf (BinOp _ OpMul [f1,f2]) (BiSizeNode False (base,_) t1 t2) (x,y) =
                  then (y, y + leftBase - rightBase)
                  else (y + rightBase - leftBase, y)
 
-          mulChar = case (mulAsDot conf, useUnicode conf) of
+          mulChar = case (mulAsDot $ ctxtConf conf, useUnicode $ ctxtConf conf) of
                 (True, True)  -> toEnum Unicode.bullet
                 (True, False) -> '.'
                 (False, True) -> toEnum Unicode.multiplicationSign
@@ -530,12 +545,14 @@ renderF conf (UnOp _ op f) (MonoSizeNode _ nodeSize subSize) (x,y) =
               opName = op `obtainProp` OperatorText
 
 renderF conf (List _ lst) (SizeNodeList False (_, (w, h)) argBase trees) pos@(x,y) =
-    snd (renderArgs conf False (x+1, y) argBase h sizes) . renderSquareBracket pos (w,h) True True 
+    snd (renderArgs (conf) False (x+1, y) argBase h sizes) 
+      . renderSquareBracket pos (w,h) True True 
         where sizes = zip lst trees
 
 renderF conf (App _ func flist) (SizeNodeList False (base, (_,h)) argBase (s:ts)) 
         (x,y) =
-    snd (renderArgs conf True (x + fw, y) argBase h mixedList) . renderF conf func s (x,baseLine) 
+    snd (renderArgs conf True (x + fw, y) argBase h mixedList) 
+     . renderF conf func s (x,baseLine) 
         where (fw, _) = sizeOfTree s
               baseLine = y + base
               mixedList = zip flist ts
@@ -636,22 +653,52 @@ renderF conf (Sum _ ini end what)
               middleStop = wh `div` 2 + if wh `mod` 2 == 0
                     then -1 else 0
 
+renderF conf (Infer _ hyp dedu) n p = renderF newConf rewritten n p
+  where rewritten = (Matrix 0 0 0 hyp) / (Matrix 0 0 0 $ (:[]) dedu)
+        newConf = conf { fractionChar = '_'
+                       , ctxtConf =
+                            (ctxtConf conf) { matrixIntervalWidth = 10
+                                            , matrixIntervalHeight = 0
+                                            , matrixHasSurrounding = False
+                                            }
+        }
+
 renderF conf (Matrix _ _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
-    renderSquareBracket (x,y) (w,h) True True . final
-     where renderLine (x', y', acc) (formu, ((base,(w',_)),size)) =
-            let (nodeBase, (nodeWidth, _)) = sizeExtract size
-                xStart = x' + (w' - nodeWidth) `div` 2
-                yStart = y' + (base - nodeBase)
-            in
-            (x' + w' + 1, y', renderF conf formu size (xStart, yStart) . acc)
+    brackets . final
+     where brackets
+              | matrixHasSurrounding currentConf =
+                    renderSquareBracket (x,y) (w,h) True True                
+              | otherwise = id
+
+           currentConf = ctxtConf conf
+           widthInterval = matrixIntervalWidth currentConf
+           heightInterval = matrixIntervalHeight currentConf
+           (iniX, iniY) | matrixHasSurrounding currentConf = (x + 2, y + 1)
+                        | otherwise = (x, y)
+
+           newConf = conf { ctxtConf =
+                            currentConf  { matrixIntervalWidth = 1
+                                         , matrixIntervalHeight = 1
+                                         , matrixHasSurrounding = True
+                                         }
+                                    }
+
+           renderLine (x', y', acc) (formu, ((base,(w',_)),size)) =
+              let (nodeBase, (nodeWidth, _)) = sizeExtract size
+                  xStart = x' + (w' - nodeWidth) `div` 2
+                  yStart = y' + (base - nodeBase)
+              in
+              ( x' + w' + widthInterval
+              , y'
+              , renderF newConf formu size (xStart, yStart) . acc)
            
            renderMatrix (x', y', acc) (formulas, sizes) = 
                let ((_,(_,height)),_) = head sizes
                    (_,_, acc') = foldl' renderLine (x', y', acc) $ zip formulas sizes
                in
-               (x', y' + height + 1, acc')
+               (x', y' + height + heightInterval, acc')
 
-           (_,_, final) = foldl' renderMatrix (x + 2, y + 1, id) $ zip subs lst
+           (_,_, final) = foldl' renderMatrix (iniX, iniY, id) $ zip subs lst
 
 renderF _ _ _ _ = error "renderF conf - unmatched case"
 

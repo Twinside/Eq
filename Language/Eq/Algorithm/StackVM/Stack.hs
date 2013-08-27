@@ -178,6 +178,8 @@ compileExpression (BinOp _ op formulas) =
         Right (x:xs) ->
             Right $ x ++ foldr (\lst acc -> lst ++ (stackOp : acc)) [] xs
     Nothing -> Left "Error non continuous operators used"
+compileExpression (Infer _ _ _) =
+    Left "No inference allowed in compiled expression."
 compileExpression (App _ _ _) =
     Left "No function call allowed in compiled expression."
 compileExpression (Sum _ _ _ _) =

@@ -111,6 +111,7 @@ operatorDefs =
       ,binary "<=" (binop OpLe) AssocLeft,  binary ">=" (binop OpGe) AssocLeft]
     , [binary "&" (binop OpAnd) AssocLeft, binary "|" (binop OpOr) AssocLeft]
     , [binary "::" (binop OpCons) AssocRight]
+    , [binary ":" (binop OpType) AssocLeft]
     , [ binary ":>" (binop OpLazyAttrib) AssocRight
       , binary ":=" (binop OpAttrib) AssocRight]
     ]

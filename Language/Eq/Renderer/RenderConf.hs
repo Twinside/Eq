@@ -14,6 +14,10 @@ data Conf = Conf
     , includeLaTeXInMathML :: Bool
     , includeEqInMathML :: Bool
     , includeSemanticMathML :: Bool
+
+    , matrixIntervalWidth  :: Int
+    , matrixIntervalHeight :: Int
+    , matrixHasSurrounding :: Bool
     }
 
 defaultRenderConf :: Conf
@@ -25,6 +29,9 @@ defaultRenderConf = Conf
     , includeLaTeXInMathML = False
     , includeEqInMathML = False
     , includeSemanticMathML = False
+    , matrixIntervalWidth  = 1
+    , matrixIntervalHeight = 1
+    , matrixHasSurrounding = True
     }
 
 keyParser :: [(String, Conf -> String -> Conf)]

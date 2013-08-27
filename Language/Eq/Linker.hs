@@ -8,6 +8,7 @@ module Language.Eq.Linker( DocString, LongDescr
                       , linkFormula
                       ) where
 
+import Control.Applicative( (<$>) )
 import Data.List
 import Data.Maybe( fromMaybe )
 import qualified Data.Map as Map
@@ -176,6 +177,17 @@ multiParamsFunctions =
                    ]
                  , matrixBuilder ))
 
+    , ("infer", ( "Create an inference rule"
+                , ""
+                , [("hypotheses", "The hypothesies")
+                  ,("deduction", "Result of the deduction")
+                  ]
+                , inferBuilder ))
+    , ("entail", ("Entailment operator, used to avoid typing Unicode"
+                 , ""
+                 , [("Hyp", "Hypothesies"), ("Result", "Result")]
+                 , entailBuilder))
+
     , ("matrixWidth", ("Retrieve the width of a matrix"
                       , ""
                       , [("m", "a matrix")], matrixWidth))
@@ -219,6 +231,21 @@ integrateBuilder [ini, end, what, dvar] = integrate ini end what dvar
 integrateBuilder [ini, what, dvar] = integrate ini (Variable "") what dvar
 integrateBuilder [what, dvar] = integrate (Variable "") (Variable "") what dvar
 integrateBuilder lst = app (Variable "integrate") lst
+
+entailBuilder :: [FormulaPrim] -> FormulaPrim
+entailBuilder [a, b] = binOp OpEntail [a, b]
+entailBuilder args = app (Variable "entail") args
+
+inferBuilder :: [FormulaPrim] -> FormulaPrim
+inferBuilder [List _ hypothesies, List _ deductions]
+    | all isList hypothesies = infer (map extractList hypothesies) deductions
+        where isList (List _ _) = True
+              isList _ = False
+
+              extractList (List _ l) = l
+              extractList _ = error "inferBuilder, impossible"
+
+inferBuilder args = app (Variable "infer") args
 
 matrixBuilder :: [FormulaPrim] -> FormulaPrim
 matrixBuilder (CInteger n: CInteger m: exps)
@@ -273,4 +300,5 @@ link (Product _ a b c) = productt (link a) (link b) (link c)
 link (Integrate _ a b c d) = integrate (link a) (link b) (link c) (link d)
 link (Indexes _ main lst) = indexes (link main) $ map link lst
 link (List _ lst) = list $ map link lst
+link (Infer _ l1 l2) = infer (map link <$> l1) (map link l2)
 

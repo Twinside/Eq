@@ -110,6 +110,7 @@ l conf (Just pop,right) (BinOp _ op [a,b]) =
 
 l conf (Nothing,_) (BinOp _ op [a,b]) = lno conf a . str (stringOfBinOp op) . lno conf b
 l _ _ (BinOp _ _ _) = error "latexification require treeified formula"
+l _ _ (Infer _ _ _) = error "Can't export inference to LaTeX"
 
 -- Unary operators
 l conf _ (UnOp _ OpAbs f) = str "\\lvert " . lno conf f . str "\\rvert "

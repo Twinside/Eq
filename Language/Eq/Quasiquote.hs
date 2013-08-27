@@ -108,4 +108,5 @@ instance Lift FormulaPrim where
     lift (Poly i p) = [| Poly i p |]
     lift (Block i1 i2 i3) = [| Block i1 i2 i3 |]
     lift (Meta i op sub) = [| Meta i op sub |]
+    lift (Infer i h d) = [| Infer i h d |]
 

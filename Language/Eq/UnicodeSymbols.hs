@@ -6,6 +6,7 @@ varAssoc = map (\(v, i) -> (v, [toEnum i]))
     , ("beta",  beta)
     , ("chi",   chi)
     , ("gamma", gamma)
+    , ("Gamma", bigGamma)
     , ("delta", delta)
     , ("theta", theta)
     , ("rho"  , rho)
@@ -22,6 +23,9 @@ varAssoc = map (\(v, i) -> (v, [toEnum i]))
 
 midlineDots :: Int
 midlineDots = 0x22EF {- ⋯ -}
+
+vdash :: Int
+vdash = 0x22A2 {- ⊢ -}
 
 ------------------------------------
 -- Miscellaneou mathematical symbols
@@ -465,6 +469,9 @@ chi = 0x03C7 {- χ -}
 
 gamma :: Int
 gamma = 0x3B3 {- γ -}
+
+bigGamma :: Int
+bigGamma = 0x393 {- Γ -}
 
 delta :: Int
 delta = 0x03B4 {- δ -}

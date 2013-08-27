@@ -188,6 +188,9 @@ presentation conf _ (Indexes _ src im) =
 presentation conf _ (List _ lst) = 
     enclose '['  ']' . interspereseS (mo $ char ',') $ map (prez conf) lst
 
+presentation _ _ (Infer _ _ _) =
+    error "Can't export inference to Mathml"
+
 -----------------------------------------------
 ----        Content
 -----------------------------------------------
@@ -245,9 +248,11 @@ stringOfBinOp OpNe = "<neq/>"
 stringOfBinOp OpOr = "<or/>"
 stringOfBinOp OpPow = "<power/>"
 stringOfBinOp OpSub = "<minus/>"
+stringOfBinOp OpType = ":"
 stringOfBinOp OpAttrib = "<!-- Attrib -->"
 stringOfBinOp OpLazyAttrib = "<!-- LazyAttrib -->"
 stringOfBinOp OpCons = "<!-- Cons -->"
+stringOfBinOp OpEntail = "<!-- Entail -->"
 
 bigOperator :: String -> String -> FormulaPrim -> FormulaPrim -> FormulaPrim
             -> ShowS

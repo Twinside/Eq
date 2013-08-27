@@ -45,23 +45,29 @@ data Dimensioner = Dimensioner
     , remParens :: Conf -> Dimension -> Dimension
     , divBar :: Conf -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , powSize :: Conf -> RelativePlacement -> RelativePlacement -> RelativePlacement
-    , binop :: Conf -> BinOperator -> RelativePlacement -> RelativePlacement -> RelativePlacement
+    , binop :: Conf -> BinOperator -> RelativePlacement -> RelativePlacement
+            -> RelativePlacement
     , argSize :: Conf -> (Int, Int, Int) -> RelativePlacement -> (Int, Int, Int)
     , appSize :: Conf -> (Int, Int, Int) -> RelativePlacement -> RelativePlacement
     , lambdaSize :: Conf -> [((Int,Int,Int), RelativePlacement)] -> RelativePlacement
-    , sumSize :: Conf -> RelativePlacement -> RelativePlacement -> RelativePlacement -> RelativePlacement
-    , productSize :: Conf -> RelativePlacement -> RelativePlacement -> RelativePlacement -> RelativePlacement
+    , sumSize :: Conf -> RelativePlacement -> RelativePlacement
+              -> RelativePlacement -> RelativePlacement
+    , productSize :: Conf -> RelativePlacement -> RelativePlacement
+                  -> RelativePlacement -> RelativePlacement
     , integralSize :: Conf -> RelativePlacement -> RelativePlacement 
                    -> RelativePlacement -> RelativePlacement -> RelativePlacement
     , blockSize :: Conf -> (Int, Int, Int) -> RelativePlacement
     , matrixSize :: Conf -> [[RelativePlacement]] -> RelativePlacement
-    , derivateSize :: Conf -> RelativePlacement -> RelativePlacement -> RelativePlacement
+    , derivateSize :: Conf -> RelativePlacement -> RelativePlacement
+                   -> RelativePlacement
     , entitySize :: Conf -> Entity -> RelativePlacement
     , truthSize :: Conf -> Bool -> RelativePlacement
     , listSize :: Conf -> (Int, Int, Int) -> RelativePlacement
 
-    , indexesSize :: Conf -> RelativePlacement -> [RelativePlacement] -> RelativePlacement
-    , indexPowerSize :: Conf -> RelativePlacement -> [RelativePlacement] -> RelativePlacement -> RelativePlacement
+    , indexesSize :: Conf -> RelativePlacement -> [RelativePlacement]
+                  -> RelativePlacement
+    , indexPowerSize :: Conf -> RelativePlacement -> [RelativePlacement]
+                     -> RelativePlacement -> RelativePlacement
     }
 
 sizeExtract :: SizeTree -> RelativePlacement
@@ -196,6 +202,13 @@ sizeOfFormula conf sizer isRight prevPrio (BinOp _ op [formula1, formula2]) =
                 then (base, addParens sizer conf s)
                 else (base, s)
 
+sizeOfFormula conf sizer r p (Infer _ hyp dedu) =
+    sizeOfFormula newConf sizer r p $ (Matrix 0 0 0 hyp) / (Matrix 0 0 0 $ (:[]) dedu)
+      where newConf = conf { matrixIntervalWidth = 10
+                           , matrixIntervalHeight = 0
+                           , matrixHasSurrounding = False
+                           }
+
 sizeOfFormula conf sizer r p f@(BinOp _ _ _) = 
     sizeOfFormula conf sizer r p $ treeIfyBinOp f
 
@@ -208,8 +221,13 @@ sizeOfFormula conf sizer _isRight _prevPrio (Integrate _ inite end what dx) =
 
 sizeOfFormula conf sizer _ _ (Matrix _ _ _ exprs) =
     SizeNodeArray False sizeDim mixedMatrix
-        where lineMapper = map (sizeOfFormula conf sizer False maxPrio)
+        where lineMapper = map (sizeOfFormula neoConf sizer False maxPrio)
               sizeMatrix = map lineMapper exprs
+
+              neoConf = conf { matrixIntervalWidth = 1
+                             , matrixIntervalHeight = 1
+                             , matrixHasSurrounding = True
+                             }
 
               sizeDim = matrixSize sizer conf dimensionMatrix
 
