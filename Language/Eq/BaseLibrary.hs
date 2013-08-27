@@ -95,9 +95,15 @@ generateMatrix( f, width, height ) :> matrix(
        )
     );
 
+-- transpose :: matrix -> matrix
 transpose(m) :>
     generateMatrix( Lambda(line, col, {m} _ (col + 1) _ (line + 1))
                   , matrixHeight(m), matrixWidth(m) );
+
+-- mapMatrix :: ((a -> b), matrix a) matrix b
+mapMatrix(f, m) :>
+      generateMatrix( Lambda(line, col, {f}({m} _ (line + 1) _ (col + 1)))
+                    , matrixWidth(m), matrixHeight(m));
 
 -- modintern( n<p, rest, module )
 modintern(  true, rest, num ) :> rest;
