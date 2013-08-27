@@ -445,10 +445,11 @@ renderF conf (BinOp _ OpPow [f1,f2]) (BiSizeNode False _ t1 t2) (x,y) =
 
 -- Division is of another kind :]
 renderF conf (BinOp _ OpDiv [f1,f2]) (BiSizeNode False (_,(w,_)) t1 t2) (x,y) =
-    (++) [ ((xi,y + lh), '-') | xi <- [x .. x + w - 1]] 
+    (++) [ ((xi,y + lh), c) | xi <- [x .. x + w - 1]] 
     . renderF neoConf f1 t1 (leftBegin , y)
     . renderF neoConf f2 t2 (rightBegin, y + lh + 1)
-        where (lw, lh) = sizeOfTree t1
+        where c = fractionChar conf
+              (lw, lh) = sizeOfTree t1
               (rw, _) = sizeOfTree t2
               leftBegin = x + (w - lw) `div` 2
               rightBegin = x + (w - rw) `div` 2
