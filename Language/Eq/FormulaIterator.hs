@@ -87,6 +87,10 @@ topDownScanning f i@(Indexes _ what lst) = do
     fromMaybeM (indexes what' <$> mapM (topDownScanning f) lst)
                  $ f i
 
+topDownScanning f l@(Display _ lst) =
+    fromMaybeM (display <$> mapM (topDownScanning f) lst) $ f l
+topDownScanning f l@(Stack _ lst) =
+    fromMaybeM (stack <$> mapM (topDownScanning f) lst) $ f l
 topDownScanning f l@(List _ lst) =
     fromMaybeM (list <$> mapM (topDownScanning f) lst) $ f l
 
@@ -168,10 +172,12 @@ depthPrimTraversal pre f i@(Indexes _ main lst) = do
     lst' <- mapM (depthPrimTraversal pre f) lst
     f $ indexes main' lst'
 
-depthPrimTraversal pre f i@(List _ lst) = do
-    pre i
-    lst' <- mapM (depthPrimTraversal pre f) lst
-    f $ list lst'
+depthPrimTraversal pre f i@(List _ lst) =
+    pre i >> mapM (depthPrimTraversal pre f) lst >>= f . list
+depthPrimTraversal pre f i@(Stack _ lst) =
+    pre i >> mapM (depthPrimTraversal pre f) lst >>= f . stack
+depthPrimTraversal pre f i@(Display _ lst) =
+    pre i >> mapM (depthPrimTraversal pre f) lst >>= f . display
 
 depthPrimTraversal pre f c@(Complex _ (r, i)) = do
     pre c

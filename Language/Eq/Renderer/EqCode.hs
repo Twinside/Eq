@@ -55,6 +55,8 @@ deparse _ _ (NumEntity e) = (en e ++)
 deparse _ _ (CInteger i) = shows i
 deparse _ _ (CFloat d) = shows d
 deparse _ _ (List _ l) = ('[':) . argListToString l . (']':)
+deparse _ _ (Display _ l) = ("display("++) . argListToString l . (')':)
+deparse _ _ (Stack _ l) = ("stack("++) . argListToString l . (')':)
 deparse prio left (Indexes _ a b) = deparse prio left a . ("_("++) . argListToString b . (')':)
 
 deparse _ _ (Block i i1 i2) =

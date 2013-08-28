@@ -209,6 +209,17 @@ sizeOfFormula conf sizer r p (Infer _ hyp dedu) =
                            , matrixHasSurrounding = False
                            }
 
+sizeOfFormula conf sizer r p (Display _ lst) =
+    fixup $ sizeOfFormula newConf sizer r p $ Matrix 0 0 0 [lst]
+      where newConf = conf { matrixHasSurrounding = False }
+            fixup (SizeNodeArray yn (1, (w, 2)) sub) =
+                (SizeNodeArray yn (0, (w, 2)) sub)
+            fixup f = f
+
+sizeOfFormula conf sizer r p (Stack _ lst) =
+    sizeOfFormula newConf sizer r p . Matrix 0 0 0 $ map (:[]) lst
+      where newConf = conf { matrixHasSurrounding = False }
+
 sizeOfFormula conf sizer r p f@(BinOp _ _ _) = 
     sizeOfFormula conf sizer r p $ treeIfyBinOp f
 

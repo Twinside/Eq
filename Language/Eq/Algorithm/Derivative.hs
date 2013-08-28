@@ -64,6 +64,8 @@ derivationRules variable (Formula func) = d func variable
        d f@(BinOp _ OpEq _) _ = eqError f Err.deriv_no_eq_expr
        d f@(BinOp _ OpAttrib _) _ = eqError f Err.deriv_no_attrib_expr
        d f@(Infer _ _ _) _ = eqError f Err.deriv_no_infer
+       d f@(Display _ _) _ = eqError f "Can't derive Display"
+       d f@(Stack _ _) _ = eqError f "Can't derive Stack"
      
        -- Eq:format derivate(f + g, x) = derivate( f, x ) + 
        --                          derivate( g, x )

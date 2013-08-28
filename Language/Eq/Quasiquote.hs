@@ -109,4 +109,6 @@ instance Lift FormulaPrim where
     lift (Block i1 i2 i3) = [| Block i1 i2 i3 |]
     lift (Meta i op sub) = [| Meta i op sub |]
     lift (Infer i h d) = [| Infer i h d |]
+    lift (Stack h l) = [| Stack h l |]
+    lift (Display h l) = [| Display h l |]
 

@@ -187,6 +187,10 @@ presentation conf _ (Indexes _ src im) =
 
 presentation conf _ (List _ lst) = 
     enclose '['  ']' . interspereseS (mo $ char ',') $ map (prez conf) lst
+presentation conf _ (Display _ lst) = 
+    interspereseS (mo $ char ' ') $ map (prez conf) lst
+presentation conf _ (Stack _ lst) = 
+    interspereseS (mo $ char ' ') $ map (prez conf) lst
 
 presentation _ _ (Infer _ _ _) =
     error "Can't export inference to Mathml"

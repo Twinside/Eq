@@ -183,6 +183,14 @@ multiParamsFunctions =
                   ,("deduction", "Result of the deduction")
                   ]
                 , inferBuilder ))
+    , ("display", ( "Create a list without separator for display only"
+                  , ""
+                  , []
+                  , display))
+    , ("stack", ( "Create a column without separator for display only"
+                , ""
+                , []
+                , stack))
     , ("entail", ("Entailment operator, used to avoid typing Unicode"
                  , ""
                  , [("Hyp", "Hypothesies"), ("Result", "Result")]
@@ -300,5 +308,7 @@ link (Product _ a b c) = productt (link a) (link b) (link c)
 link (Integrate _ a b c d) = integrate (link a) (link b) (link c) (link d)
 link (Indexes _ main lst) = indexes (link main) $ map link lst
 link (List _ lst) = list $ map link lst
+link (Display _ lst) = display $ map link lst
+link (Stack _ lst) = stack $ map link lst
 link (Infer _ l1 l2) = infer (map link <$> l1) (map link l2)
 

@@ -190,6 +190,10 @@ compileExpression (Indexes _ _ _) =
     Left "No indexes allowed in compiled exprression."
 compileExpression (List _ _) =
     Left "No lists allowed in compiled exprression."
+compileExpression (Display _ _) =
+    Left "No display allowed in compiled exprression."
+compileExpression (Stack _ _) =
+    Left "No stack allowed in compiled exprression."
 compileExpression (Complex _ _) =
     Left "No complex arithmetic allowed in compiled expression."
 compileExpression (Lambda _ _) = 

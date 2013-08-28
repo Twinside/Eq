@@ -224,6 +224,8 @@ isFormulaInteger = getAll . foldf isConstant mempty
           isConstant (App _ _ _) _ = All False
           isConstant (Block _ _ _) _ = All False
           isConstant (Infer _ _ _) _ = All False
+          isConstant (Display _ _) _ = All False
+          isConstant (Stack _ _) _ = All False
           --
           isConstant (CFloat _) _ = All False
           isConstant (CInteger _) _ = All True
@@ -300,6 +302,8 @@ isFormulaConstant = getAll . foldf isConstant mempty
           isConstant (App _ _ _) _ = All False
           isConstant (Block _ _ _) _ = All False
           isConstant (Infer _ _ _) _ = All False
+          isConstant (Stack _ _) _ = All False
+          isConstant (Display _ _) _ = All False
           --
           isConstant (CFloat _) _ = All True
           isConstant (CInteger _) _ = All True

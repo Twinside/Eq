@@ -34,6 +34,10 @@ sexprS (Poly _ (Polynome v lst)) =
 
 sexprS (List _ lst) =
     str "(list " . concatMapS (\a -> char ' ' . sexprS a) lst . str ") "
+sexprS (Stack _ lst) =
+    str "(stack " . concatMapS (\a -> char ' ' . sexprS a) lst . str ") "
+sexprS (Display _ lst) =
+    str "(display " . concatMapS (\a -> char ' ' . sexprS a) lst . str ") "
 
 sexprS (Infer _ l1 l2) =
     str "(infer [" . premices . str "] (" . rez . str "))"

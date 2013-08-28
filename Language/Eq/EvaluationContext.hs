@@ -160,9 +160,9 @@ popContext :: EqContext ()
 popContext = EqContext $ \c ->
     let safeHeadTail (x:xs) = (x, xs)
         safeHeadTail     [] = (Map.empty, [])
-        (oldContext, stack) = safeHeadTail $ contextStack c
+        (oldContext, currStack) = safeHeadTail $ contextStack c
     in
-    (c { contextStack = stack
+    (c { contextStack = currStack
        , context = oldContext
        , contextDepth = contextDepth c - 1
        }

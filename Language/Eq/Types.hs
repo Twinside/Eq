@@ -48,7 +48,7 @@ module Language.Eq.Types
          , binOp, unOp, complex, meta
          , app, summ, productt, derivate
          , integrate, lambda, matrix, poly
-         , indexes, list, infer
+         , indexes, list, infer, display, stack
          ) where
 
 import Data.Data
@@ -157,6 +157,9 @@ data FormulaPrim =
     -- | Yay, adding list to the language
     | List HashResume [FormulaPrim]
 
+    | Display HashResume [FormulaPrim]
+    | Stack HashResume [FormulaPrim]
+
     -- | FunName arguments
     | App HashResume FormulaPrim [FormulaPrim]
     -- | LowBound highbound expression
@@ -218,6 +221,8 @@ hashOfFormula (Fraction frac) = fromIntegral (numerator frac)
 hashOfFormula (Complex hash _) = hash
 hashOfFormula (Indexes hash _ _) = hash
 hashOfFormula (List hash _) = hash
+hashOfFormula (Display hash _) = hash
+hashOfFormula (Stack hash _) = hash
 hashOfFormula (App hash _ _) = hash
 hashOfFormula (Sum hash _ _ _) = hash
 hashOfFormula (Product hash _ _ _) = hash
@@ -331,9 +336,17 @@ list :: [FormulaPrim] -> FormulaPrim
 list lst = List hash lst
     where hash = 0xBBBBBB `xor` listHasher lst
 
+stack :: [FormulaPrim] -> FormulaPrim
+stack lst = Stack hash lst
+    where hash = 0xBCBBCB `xor` listHasher lst
+
+display :: [FormulaPrim] -> FormulaPrim
+display lst = Display hash lst
+    where hash = 0xBCBBBB `xor` listHasher lst
+
 infer :: [[FormulaPrim]] -> [FormulaPrim] -> FormulaPrim
 infer l1 l2 = Infer hash l1 l2
-    where hash = 0xBBBBBB `xor` nestedListHasher l1 `xor` listHasher l2
+    where hash = 0xBBBBDB `xor` nestedListHasher l1 `xor` listHasher l2
 
 -- | Special binOp declaration used to merge two previous binary
 -- operators. Update the hash rather than perform full recalculation.

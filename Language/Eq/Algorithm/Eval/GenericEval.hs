@@ -530,7 +530,7 @@ matrixScalar _ _ _ _ = error Err.matrixScalar_badop
 
 -- | Multiplication between two matrix. Check for matrix sizes.
 matrixMatrixMul :: EvalFun -> EvalOp
-matrixMatrixMul evaluator m1@(Matrix _ n _ mlines) m2@(Matrix _ n' m' mlines')
+matrixMatrixMul evaluator m1@(Matrix _ n _ mlines) m2@(Matrix _ _n' m' mlines')
     | n /= m' = do _ <- eqFail (Formula $ binOp OpMul [m1, m2]) Err.matrix_mul_bad_size
                    right (m1, m2)
     | otherwise = cellLine >>= left . matrix n m'
