@@ -203,7 +203,7 @@ sizeOfFormula conf sizer isRight prevPrio (BinOp _ op [formula1, formula2]) =
                 else (base, s)
 
 sizeOfFormula conf sizer r p (Infer _ hyp dedu) =
-    sizeOfFormula newConf sizer r p $ (Matrix 0 0 0 hyp) / (Matrix 0 0 0 $ (:[]) dedu)
+    sizeOfFormula newConf sizer r p $ (Matrix 0 0 0 hyp) / (Matrix 0 0 0 $ map (:[]) dedu)
       where newConf = conf { matrixIntervalWidth = 10
                            , matrixIntervalHeight = 0
                            , matrixHasSurrounding = False

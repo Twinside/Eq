@@ -664,7 +664,7 @@ renderF conf (Stack _ lst) n p = renderF newConf rewritten n p
         rewritten = Matrix 0 0 0 $ map (:[]) lst
 
 renderF conf (Infer _ hyp dedu) n p = renderF newConf rewritten n p
-  where rewritten = (Matrix 0 0 0 hyp) / (Matrix 0 0 0 $ (:[]) dedu)
+  where rewritten = (Matrix 0 0 0 hyp) / (Matrix 0 0 0 $ map (:[]) dedu)
         newConf = conf { fractionChar = '_'
                        , ctxtConf =
                             (ctxtConf conf) { matrixIntervalWidth = 10
