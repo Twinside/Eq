@@ -208,6 +208,8 @@ compileExpression (Integrate _ _ _ _ _) =
     Left "No integration allowed in compilation."
 compileExpression (Block _ _ _) = 
     Left "There is some errors in expressions."
+compileExpression Void = 
+    Left "There is some errors in expressions."
 compileExpression (Meta _ _ _) =
     Left "No meta operations allowed in compilation."
 

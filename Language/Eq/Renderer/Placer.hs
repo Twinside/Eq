@@ -114,6 +114,7 @@ sizeOfFormula conf sizer _ _ (Truth truthness) = EndNode $ truthSize sizer conf 
 sizeOfFormula conf sizer _ _ (NumEntity f) = EndNode $ entitySize sizer conf f
 sizeOfFormula conf sizer _ _ (Block i1 i2 i3) = 
     EndNode $ blockSize sizer conf (i1, i2, i3)
+sizeOfFormula _ _ _ _ Void = EndNode (0, (0, 0))
 
 -- Simply put a minus in front of the rest of the formula
 sizeOfFormula conf sizer _ _ (UnOp _ op f) =

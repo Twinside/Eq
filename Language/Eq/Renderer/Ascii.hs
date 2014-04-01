@@ -709,6 +709,6 @@ renderF conf (Matrix _ _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
                (x', y' + height + heightInterval, acc')
 
            (_,_, final) = foldl' renderMatrix (iniX, iniY, id) $ zip subs lst
-
+renderF _ Void _ _ = id
 renderF _ _ _ _ = error "renderF conf - unmatched case"
 

@@ -67,6 +67,7 @@ reBoundVar (UnOp _ _ _) = Nothing
 reBoundVar (BinOp _ _ _) = Nothing
 reBoundVar (Matrix _ _ _ _) = Nothing
 reBoundVar (Block _ _ _) = Nothing
+reBoundVar Void = Nothing
 reBoundVar (Product _ _ _ _) = Nothing
 reBoundVar (Sum _ _ _ _) = Nothing
 reBoundVar (Truth _) = Nothing

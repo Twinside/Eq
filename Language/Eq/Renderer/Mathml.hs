@@ -89,6 +89,7 @@ prez conf = presentation conf Nothing
 --
 presentation :: Conf -> Maybe (BinOperator, Bool) -> FormulaPrim -> ShowS
 presentation _ _ (Block _ _ _) = mi $ str "block"
+presentation _ _ Void = mi $ str "void"
 
 -- Don't want special cases for them, so we just rewrite them (yes, fucking lazy)
 presentation conf sup (Fraction f) = 

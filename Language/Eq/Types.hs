@@ -199,6 +199,9 @@ data FormulaPrim =
     -- | Used for debug
     | Block Int Int Int
 
+    -- | empty crap
+    | Void
+
     -- | A meta operation is an operation used
     -- by the sysem, but that doesn't appear in the
     -- normal output.
@@ -236,6 +239,7 @@ hashOfFormula (Poly hash _) = hash
 hashOfFormula (Block _ _ _) = 0
 hashOfFormula (Meta hash _ _) = hash
 hashOfFormula (Infer hash _ _) = hash
+hashOfFormula Void = 1
 
 listHasher :: [FormulaPrim] -> HashResume
 listHasher = foldl' hasher 0

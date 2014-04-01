@@ -79,6 +79,7 @@ l conf _ (Display _ lst) = latexargs conf lst
 l conf _ (Stack _ lst) = latexargs conf lst
 l conf _ (Indexes _ main lst) = lno conf main . str "_{" . latexargs conf lst . char '}'
 l _ _ (Block _ _ _) = str "block"
+l _ _ Void = str "Void"
 l _ _ (Variable v) = str v
 l _ _ (NumEntity e) = str $ latexOfEntity e
 l _ _ (Truth t) = shows t

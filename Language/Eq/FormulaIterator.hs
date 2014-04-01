@@ -139,6 +139,7 @@ topDownScanning f formula@(BinOp _ op fs) =
 
 -- Hmm, it's a debug for renderer, we dont really care
 topDownScanning _ b@(Block _ _ _) = return b
+topDownScanning _ b@Void = return b
 
 
 -- | Depth first traversal providing two events :
@@ -246,4 +247,5 @@ depthPrimTraversal pre post formula@(BinOp _ op fs) = do
 
 -- Hmm, it's a debug for renderer, we dont really care
 depthPrimTraversal _ _ b@(Block _ _ _) = return b
+depthPrimTraversal _ _ b@Void = return b
 

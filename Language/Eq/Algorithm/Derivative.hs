@@ -200,6 +200,7 @@ derivationRules variable (Formula func) = d func variable
        d f@(UnOp _ OpMatrixHeight _) _var = eqError f Err.deriv_no_matrix
        d f@(Truth _) _ = eqError f Err.deriv_no_bool
        d (Block _ _ _) _var = eqError (Block 0 1 1) Err.deriv_block
+       d Void _var = eqError (Block 0 1 1) Err.deriv_block
        d (List _ _) _var = eqError (Block 0 1 1) Err.deriv_no_list
 
 polyDerivate :: Polynome -> String -> Polynome

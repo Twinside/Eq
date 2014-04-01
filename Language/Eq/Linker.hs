@@ -28,6 +28,7 @@ entityList =
     [ ("infinite", ("Represent the inifinity in this program."
                    , ""
                    , NumEntity Infinite))
+    , ("void", ("An empty stuff", "an empty char", Void))
     , ("pi", ( "The number Pi (=3.14159...)."
              , "When used, exact simplification can be used"
              , NumEntity Pi))
@@ -187,6 +188,7 @@ multiParamsFunctions =
                   , ""
                   , []
                   , display))
+    , ("void", ( "void", "", [], voidBuilder))
     , ("stack", ( "Create a column without separator for display only"
                 , ""
                 , []
@@ -255,6 +257,9 @@ inferBuilder [List _ hypothesies, List _ deductions]
 
 inferBuilder args = app (Variable "infer") args
 
+voidBuilder :: [FormulaPrim] -> FormulaPrim
+voidBuilder = app Void
+
 matrixBuilder :: [FormulaPrim] -> FormulaPrim
 matrixBuilder (CInteger n: CInteger m: exps)
     | fromEnum n * fromEnum m > length exps = error "The matrix has not enough expressions"
@@ -297,6 +302,7 @@ link a@(CFloat _) = a
 link a@(CInteger _) = a
 link a@(NumEntity _) = a
 link a@(Block _ _ _) = a
+link a@Void = a
 link t@(Truth _) = t
 link f@(Fraction _) = f
 link (Complex _ (r,i)) = complex (link r, link i)
