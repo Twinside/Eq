@@ -15,30 +15,30 @@ EQ     := dist/build/eq/eq$(EXEEXT)
 EQTEST := dist/build/eqtestsuite/eqtestsuite$(EXEEXT)
 
 build:
-	runhaskell Setup.hs build
+	cabal build
 	cp $(EQ) .
 	cp $(EQTEST) .
 
 clean:
-	runhaskell Setup.hs clean
+	cabal clean
 
 showdoc:
 	echo dist\doc\html\FormulaRenderer\eq\index.html
 
 doc:
-	runhaskell Setup.hs haddock --executables
+	cabal haddock --executables
 
 profiling:
-	runhaskell Setup.hs configure --user --flags="profiling optimize"
+	cabal configure --user --flags="profiling optimize"
 
 debug:
-	runhaskell Setup.hs configure --user --flags="debug optimize"
+	cabal configure --user --flags="debug optimize"
 
 release:
-	runhaskell Setup.hs configure --user --flags="optimize"
+	cabal configure --user --flags="optimize"
 
 conf:
-	runhaskell Setup.hs configure --user --flags="optimize"
+	cabal configure --user --flags="optimize"
 
 test:
 	rm -f *.tix
@@ -54,8 +54,8 @@ coverage:
 # just to be clean.
 staticrelease: EqManips/BaseLibrary.hs
 	- [ -e dist ] && rm -Rf dist
-	runhaskell Setup.hs configure --user --flags="optimize StaticLinking"
-	- runhaskell Setup.hs build
+	cabal configure --user --flags="optimize StaticLinking"
+	- cabal build
 	cp dist/build/eq/eq$(EXEEXT) .
 	strip eq$(EXEEXT)
 	upx --best eq$(EXEEXT)

@@ -206,19 +206,19 @@ polyDerivate :: Polynome -> String -> Polynome
 polyDerivate (PolyRest _) _ = PolyRest $ CoeffInt 0
 polyDerivate (Polynome _ []) _ = error Err.polynome_empty 
 polyDerivate (Polynome v coefs@((c,_):xs)) var
-  | v /= var =      
+  | v /= var =
           let innerDerivate (coef,subPoly) = (coef, polyDerivate subPoly var)
-              emptyCoeff (_, (PolyRest rest)) = isCoeffNull rest
-              emptyCoeff _ = True
           in simplifyPolynome
            . Polynome v
-           . filter emptyCoeff
            $ map innerDerivate coefs
     
-  | otherwise = simplifyPolynome . Polynome v $ map derivator coefHead
+  |  otherwise =
+        simplifyPolynome . Polynome v $ concatMap derivator coefHead
       where coefHead = if isCoeffNull c then xs else coefs
 
-            derivator (coef, subPoly@(Polynome _ _)) = (coef - CoeffInt 1, subPoly)
+            derivator (coef, _) | isCoeffNull coef = []
+            derivator (coef, subPoly@(Polynome _ _)) =
+                [(coef - CoeffInt 1, subPoly)]
             derivator (coef, PolyRest subCoeff) =
-                (coef - CoeffInt 1, PolyRest $ coef * subCoeff)
+                [(coef - CoeffInt 1, PolyRest $ coef * subCoeff)]
           

@@ -9,6 +9,7 @@ module Language.Eq.Polynome( convertToPolynome
                         , scalarToCoeff
                         , coefToFormula 
                         , isCoeffNull 
+                        , isBelowZero
                         , prepareFormula 
                         , syntheticDiv 
                         , polyAsFormula 
@@ -409,6 +410,12 @@ lockStep op whole1@((c1, def1):xs) whole2@((c2, def2):ys)
         (c1, def1 `op` def2) : lockStep op xs ys
     | otherwise   =
         (c2, PolyRest (CoeffInt 0) `op` def2) : lockStep op whole1 ys
+
+isBelowZero :: PolyCoeff -> Bool
+isBelowZero (CoeffInt r) = r < 0
+isBelowZero (CoeffFloat r) = r < 0
+isBelowZero (CoeffRatio r) = r < 0
+isBelowZero _ = False
 
 -- | Tell if a coefficient can be treated as Null
 isCoeffNull :: PolyCoeff -> Bool
