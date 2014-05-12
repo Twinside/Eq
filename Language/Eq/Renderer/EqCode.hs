@@ -59,6 +59,7 @@ deparse _ _ (Display _ l) = ("display("++) . argListToString l . (')':)
 deparse _ _ (Stack _ l) = ("stack("++) . argListToString l . (')':)
 deparse prio left (Indexes _ a b) = deparse prio left a . ("_("++) . argListToString b . (')':)
 
+deparse _ _ Void = ("void" ++)
 deparse _ _ (Block i i1 i2) =
     ("block(" ++) . shows i . (',':) . shows i1 . (',' :) . shows i2 . (')' :)
 

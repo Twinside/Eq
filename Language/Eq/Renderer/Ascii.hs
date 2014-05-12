@@ -664,7 +664,7 @@ renderF conf (Stack _ lst) n p = renderF newConf rewritten n p
         rewritten = Matrix 0 0 0 $ map (:[]) lst
 
 renderF conf (Infer _ hyp dedu) n p = renderF newConf rewritten n p
-  where rewritten = (Matrix 0 0 0 hyp) / (Matrix 0 0 0 $ (:[]) dedu)
+  where rewritten = (Matrix 0 0 0 hyp) / (Matrix 0 0 0 $ map (:[]) dedu)
         newConf = conf { fractionChar = '_'
                        , ctxtConf =
                             (ctxtConf conf) { matrixIntervalWidth = 10
@@ -709,6 +709,6 @@ renderF conf (Matrix _ _n _m subs) (SizeNodeArray _ (_base,(w,h)) lst) (x,y) =
                (x', y' + height + heightInterval, acc')
 
            (_,_, final) = foldl' renderMatrix (iniX, iniY, id) $ zip subs lst
-
+renderF _ Void _ _ = id
 renderF _ _ _ _ = error "renderF conf - unmatched case"
 

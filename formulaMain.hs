@@ -211,6 +211,24 @@ formatCommand formulaFormater args = do
            (input, outputFile) = getInputOutput opt rest
            conf = defaultRenderConf{ useUnicode = Unicode `lookup` opt /= Nothing }
 
+-- | Command which just format an equation
+-- without affecting it's form.
+formatProgrammCommand :: (Conf -> Formula TreeForm -> String) -> [String] -> IO Bool
+formatProgrammCommand formulaFormater args = do
+    formulaText <- input
+    let formulas = parseProgramm formulaText
+    output <- outputFile
+    either (parseErrorPrint output)
+           (\formulas' -> do 
+                mapM_ (Io.hPutStrLn output . formulaFormater conf . treeIfyFormula)
+                      formulas'
+                hClose output
+                return True)
+           formulas
+     where (opt, rest, _) = getOpt Permute formatOption args
+           (input, outputFile) = getInputOutput opt rest
+           conf = defaultRenderConf{ useUnicode = Unicode `lookup` opt /= Nothing }
+
 printErrors :: [(Formula TreeForm, String)] -> IO ()
 printErrors =
     mapM_ (\(f,s) -> do Io.putStrLn s
@@ -407,6 +425,8 @@ commandList =
             , transformParseFormula evalGlobalLosslessStatement, commonOption)
     , ("format", "Load and display the formula in ASCII Art"
             , formatCommand formatFormula, commonOption)
+    , ("formatall", "Load and display the formula in ASCII Art"
+            , formatProgrammCommand formatFormula, commonOption)
     , ("interactive", "Invoke Eq as an interactive prompt",
                 (\_ -> do repl evalGlobalLossyStatement
                           return True), [])

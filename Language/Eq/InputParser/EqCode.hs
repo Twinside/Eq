@@ -71,6 +71,9 @@ braces = P.braces lexer
 brackets :: Parsec String u a -> Parsec String u a
 brackets = P.brackets lexer
 
+stringVal :: Parsed st String
+stringVal = P.stringLiteral lexer
+
 whiteSpace :: Parsed st ()
 whiteSpace = P.whiteSpace lexer
 
@@ -140,6 +143,7 @@ term = try trueConst
     <|> variable
     <|> try ellipses
     <|> try (CFloat <$> float)
+    <|> (Variable <$> stringVal)
     <|> CInteger . fromInteger <$> integer
     <|> parens expr
     <|> meta Force <$> braces expr
@@ -162,13 +166,13 @@ falseConst = return (Truth False) <* (string "false" >> whiteSpace)
 ----        Little helpers
 -----------------------------------------------
 {-binary :: String -> (a -> a -> a) -> Assoc -> Operator String st Identity a-}
-binary name fun = Infix (do{ reservedOp name; return fun })
+binary name fun = Infix $ reservedOp name >> return fun
 
 {-prefix :: String -> (a -> a) -> Operator String st Identity a-}
-prefix  name fun       = Prefix (do{ reservedOp name; return fun })
+prefix  name fun       = Prefix $ reservedOp name >> return fun
 
 {-postfix :: String -> (a -> a) -> Operator String st Identity a-}
-postfix name fun = Postfix (do{ reservedOp name; return fun })
+postfix name fun = Postfix $ reservedOp name >> return fun
 
 binop :: BinOperator -> FormulaPrim -> FormulaPrim -> FormulaPrim
 binop op left right = binOp op [left, right]

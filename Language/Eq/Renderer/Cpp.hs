@@ -140,6 +140,7 @@ cOut _ (Derivate _ _ _) = outFail Err.c_out_derivate
 cOut _ (Integrate _ _ _ _ _) = outFail Err.c_out_integrate
 cOut _ (Lambda _ _) = outFail Err.c_out_lambda 
 cOut _ (Block _ _ _) = outFail Err.c_out_block
+cOut _ Void = outFail Err.c_out_block
 cOut _ (Complex _ _) = outFail Err.c_out_complex
 cOut _ (List _ _) = outFail Err.c_out_list
 cOut _ (Stack _ _) = outFail $ Err.c_out_list ++ " stack"

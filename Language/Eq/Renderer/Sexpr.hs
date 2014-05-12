@@ -50,6 +50,7 @@ sexprS (Indexes _ main lst) =
                     . concatMapS (\a -> char ' ' . sexprS a) lst . str ") "
 
 sexprS (Block _ _ _) = str "(block)"
+sexprS Void = str "(void)"
 sexprS (Variable v) = str v
 sexprS (NumEntity e) = shows e
 sexprS (Truth t) = shows t
